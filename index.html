@@ -522,18 +522,19 @@ $('all').onclick = () => {
 // The deck is shuffled (Web Crypto) before it is fanned out, so the card behind each back is already random.
 let pk = null;
 function renderPickHead() {
-  const n = pk.picks.length, need = pk.sp.positions.length;
-  $('pstep').textContent = n < need ? `เลือกใบที่ ${n + 1} จาก ${need}: ${pk.sp.positions[n].label_th}` : 'เลือกครบแล้ว';
-  $('pickgo').hidden = n < need;
+  const need = pk.sp.positions.length, next = pk.picks.indexOf(null);   // a cancelled card leaves its slot empty; nothing shifts
+  $('pstep').textContent = next >= 0 ? `เลือกไพ่ตำแหน่งที่ ${next + 1} จาก ${need}: ${pk.sp.positions[next].label_th}` : 'เลือกครบแล้ว';
+  $('pickgo').hidden = next >= 0;
   $('slots').innerHTML = pk.sp.positions.map((p, i) =>
-    `<li class="${i < n ? 'on' : i === n ? 'now' : ''}">${i < n
+    `<li class="${pk.picks[i] !== null ? 'on' : i === next ? 'now' : ''}">${pk.picks[i] !== null
       ? `<button type="button" class="sl" data-i="${i}" aria-label="เอาไพ่ใบที่ ${i + 1} (${esc(p.label_th)}) กลับเข้ากอง"></button>`
       : '<span class="sl"></span>'}${esc(p.label_th)}</li>`).join('');
 }
 // The deck is a wheel: drag or swipe sideways to spin it, tap a card to pick it.
 const wheel = {th: 0, v: 0, raf: 0, last: 0, moved: false};
 function startPick() {
-  pk = {order: shuffled(cards.map(c => c.id)), picks: [], sp: chosen(), question: $('q').value, reversed: $('rev').checked};
+  const sp = chosen();
+  pk = {order: shuffled(cards.map(c => c.id)), picks: Array(sp.positions.length).fill(null), sp, question: $('q').value, reversed: $('rev').checked};
   $('ask').hidden = true; $('pick').hidden = false;
   $('fan').innerHTML = cards.map((_, k) => `<button type="button" class="fc" data-k="${k}" aria-label="ไพ่คว่ำใบที่ ${k + 1} จาก ${cards.length}"></button>`).join('');
   renderPickHead();
@@ -613,8 +614,8 @@ function finishPick() {
   pk = null;
 }
 $('pickcancel').onclick = () => { pk = null; $('pick').hidden = true; $('ask').hidden = false; };
-function unpick(i) {   // put a picked card back; later picks move up one position
-  const [k] = pk.picks.splice(i, 1);
+function unpick(i) {   // put a picked card back; the other cards keep their positions
+  const k = pk.picks[i]; pk.picks[i] = null;
   $('fan').querySelector(`.fc[data-k="${k}"]`)?.classList.remove('picked');
   renderPickHead();
 }
@@ -623,12 +624,13 @@ $('fan').onclick = e => {
   if (!b || !pk) return;
   const k = +b.dataset.k, i = pk.picks.indexOf(k);
   if (i >= 0) return unpick(i);
-  if (pk.picks.length >= pk.sp.positions.length) return;
-  pk.picks.push(k); b.classList.add('picked');
+  const slot = pk.picks.indexOf(null);
+  if (slot < 0) return;
+  pk.picks[slot] = k; b.classList.add('picked');
   renderPickHead();
 };
 $('slots').onclick = e => { const b = e.target.closest('button[data-i]'); if (b && pk) unpick(+b.dataset.i); };
-$('pickgo').onclick = () => { if (pk && pk.picks.length === pk.sp.positions.length) finishPick(); };
+$('pickgo').onclick = () => { if (pk && !pk.picks.includes(null)) finishPick(); };
 let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (pk) fitFan(); else if (reading && !$('session').hidden) renderTable(false); }, 150); });
 
 /* ---------- catalog ---------- */
