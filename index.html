@@ -32,6 +32,8 @@ button{cursor:pointer;background:none;border:0;padding:0}
 .top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 32px;
   max-width:1180px;margin:0 auto;padding:24px 28px 0}
 .mark{font:italic 400 1.7rem/1 var(--display);margin:0}
+.mark button{font:inherit;color:inherit;padding:0}
+.mark button:hover{color:var(--gold)}
 .top nav{display:flex;gap:28px}
 .top nav button{padding:4px 0;color:var(--dim);border-bottom:1px solid transparent}
 .top nav button:hover{color:var(--text)}
@@ -200,7 +202,7 @@ dialog::backdrop{background:#000c}
 </head>
 <body>
 <header class="top">
-  <h1 class="mark">Gothic Ivory Rose</h1>
+  <h1 class="mark"><button type="button" id="home">Gothic Ivory Rose</button></h1>
   <nav aria-label="เมนูหลัก">
     <button id="n-read" aria-current="page">เลือกไพ่</button>
     <button id="n-cat">ไพ่ทั้งสำรับ</button>
@@ -303,6 +305,10 @@ function show(name) {
   if (name === 'hist') renderHist();
 }
 for (const [k, b] of Object.entries(views)) $(b).onclick = () => show(k);
+$('home').onclick = () => {
+  pk = null; show('read');
+  $('pick').hidden = $('session').hidden = true; $('ask').hidden = false; scrollTo(0, 0);
+};
 
 /* ---------- layout shared by glyphs and the table ---------- */
 function layout(sp, w) {
