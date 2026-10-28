@@ -70,11 +70,15 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 .switch{display:inline-flex;gap:10px;align-items:center;color:var(--dim);cursor:pointer}
 .switch input{accent-color:var(--gold);width:18px;height:18px}
 .deck-btn{display:flex;flex-direction:column;align-items:center;gap:22px;margin-top:10px}
-.deck{position:relative;display:block;width:190px;aspect-ratio:937/1678}
-.deck i,.deck b{position:absolute;inset:0;background:var(--back) center/100% 100%;box-shadow:0 24px 50px -18px #000;transition:transform .25s}
-.deck i:nth-child(1){transform:translate(-8px,8px) rotate(-3deg)}
-.deck i:nth-child(2){transform:translate(-4px,4px) rotate(-1deg)}
-.deck-btn:hover .deck b{transform:translateY(-8px)}
+.deck{position:relative;display:block;width:min(560px,88vw);height:clamp(190px,28vh,320px)}
+.dc{position:absolute;left:0;top:0;width:var(--w);aspect-ratio:937/1678;background:var(--back) center/100% 100%;box-shadow:0 14px 28px -12px #000;
+  transform:translate(var(--x),calc(var(--y) + var(--l,0px))) rotate(var(--r));transition:transform .65s cubic-bezier(.2,.9,.2,1) var(--d,0ms),opacity .3s}
+.dc.gather{transition:transform .3s ease-in,opacity .3s}
+.dc.stack{box-shadow:0 20px 40px -16px #000}
+.dc em{position:absolute;left:50%;top:50%;width:calc(var(--w)*.4);aspect-ratio:1;translate:-50% -50%;border-radius:50%;display:grid;place-items:center;background:#0b0908e6;border:1px solid var(--gold);
+  font:italic 400 calc(var(--w)*.26)/1 var(--display);color:var(--gold);opacity:0;transition:opacity .4s .55s}
+.dc:not(.stack) em{opacity:.95}
+.deck-btn:hover .dc:not(.stack){--l:-7px}
 .deck-btn span.t{color:var(--gold);font-weight:500}
 
 /* session */
@@ -138,6 +142,8 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 .ori{color:var(--dim);font-weight:400;margin-left:12px}
 .frame{margin:26px 0 0;color:var(--gold);font-size:.98rem}
 .bridge{margin:6px 0 0;color:var(--gold);font-size:.98rem}
+.more{margin:14px 0 0;color:var(--dim);font-size:.92rem;line-height:1.7;max-width:36em}
+.more span{display:block;font-size:.78rem;letter-spacing:.04em;margin-bottom:2px;color:var(--gold);opacity:.8}
 .lead{margin:8px 0 0;font-size:1.4rem;line-height:1.6;max-width:30em}
 .trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:26px;margin:36px 0 0}
 .trio dt{color:var(--dim);font-size:.85rem;margin:0 0 4px}
@@ -200,7 +206,7 @@ dialog::backdrop{background:#000c}
 }
 @media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
-  .slot.deal,.slot.pop,.card.just .front,.card.just .front::after{animation:none}.card,.deck i,.deck b,.fc{transition:none}
+  .slot.deal,.slot.pop,.card.just .front,.card.just .front::after{animation:none}.card,.dc,.fc{transition:none}
 }
 </style>
 </head>
@@ -221,7 +227,7 @@ dialog::backdrop{background:#000c}
     <fieldset class="picks" id="spreads"><legend class="sr">รูปแบบการวาง</legend></fieldset>
     <label class="switch"><input type="checkbox" id="rev"> ให้มีไพ่กลับหัว</label>
     <button class="deck-btn" type="submit" id="deckbtn">
-      <span class="deck" aria-hidden="true"><i></i><i></i><b></b></span>
+      <span class="deck" id="deckstage" aria-hidden="true"></span>
       <span class="t">เริ่มเลือกไพ่</span>
     </button>
   </form>
@@ -271,10 +277,12 @@ import {frameFor, bridgeFor, pairReadings, POSITIONS} from './scripts/reading-gu
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const CATS = [['', 'ทั้งหมด'], ['major', 'ไพ่ใหญ่'], ['wands', 'ไม้เท้า'], ['cups', 'ถ้วย'], ['swords', 'ดาบ'], ['pentacles', 'เหรียญ']];
-let cards, byId, spreads, reading, shown = new Set(), cat = '';
+let cards, byId, spreads, PM, reading, shown = new Set(), cat = '';
 
 try {
-  const [c, s] = await Promise.all(['data/cards.public.json', 'data/spreads.json'].map(u => fetch(u).then(r => r.json())));
+  const [c, s, pm] = await Promise.all(['data/cards.public.json', 'data/spreads.json', 'data/position_meanings_major.json']
+    .map(u => fetch(u).then(r => r.json()).catch(e => { if (!u.includes('position_meanings')) throw e; })));
+  PM = pm;
   cards = c.cards; spreads = s.spreads; byId = Object.fromEntries(cards.map(x => [x.id, x]));
   $('rev').checked = s.default_reversed;
 } catch (e) {
@@ -329,6 +337,32 @@ $('spreads').insertAdjacentHTML('beforeend', spreads.map(s => `<label class="pic
   <span>${esc(s.name_th)}<small>${s.positions.length} ใบ</small></span></label>`).join(''));
 const chosen = () => spreadOf(document.querySelector('input[name=spread]:checked').value);
 
+/* ---------- the deck on the home page: gathers into a stack, then deals out the chosen spread ---------- */
+const stage = $('deckstage');
+stage.innerHTML = Array.from({length: Math.max(...spreads.map(x => x.positions.length))}, (_, k) => `<i class="dc stack"><em>${k + 1}</em></i>`).join('');
+let dealT = 0;
+function dealDeck(animate) {
+  const W = stage.clientWidth, H = stage.clientHeight; if (!W || !H) return;
+  const P = chosen().positions, L = layout(chosen(), 60), h0 = L.H - L.lbl;
+  const s = Math.min(W / L.W, H / h0, 1.6), cw = 60 * s, ch = cw * 1.79;
+  const ox = (W - L.W * s) / 2, oy = (H - h0 * s) / 2, sx = (W - cw) / 2, sy = (H - ch) / 2;
+  const put = (el, x, y, r, d) => { el.style.setProperty('--x', x + 'px'); el.style.setProperty('--y', y + 'px'); el.style.setProperty('--r', r + 'deg'); el.style.setProperty('--d', d + 'ms'); };
+  const els = [...stage.children], stack = k => put(els[k], sx + (k % 3 - 1) * 3, sy + (k % 3 - 1) * 2, (k % 3 - 1) * 2.5, 0);
+  const deal = () => els.forEach((el, k) => {
+    const p = P[k]; el.classList.remove('gather'); el.classList.toggle('stack', !p);
+    if (!p) return stack(k);
+    const a = L.at(p); put(el, ox + a.left * s, oy + a.top * s, p.layout_rotation || 0, animate ? k * 60 : 0);
+  });
+  stage.style.setProperty('--w', cw + 'px');
+  clearTimeout(dealT);
+  if (!animate) return deal();
+  if (!stage.dataset.ready) { stage.dataset.ready = 1; els.forEach((el, k) => { el.style.transition = 'none'; stack(k); }); stage.offsetWidth; els.forEach(el => el.style.transition = ''); }
+  els.forEach((el, k) => { el.classList.add('gather', 'stack'); stack(k); });
+  dealT = setTimeout(deal, 340);
+}
+$('spreads').addEventListener('change', () => dealDeck(true));
+{ let first = true; new ResizeObserver(() => { dealDeck(first); first = false; }).observe(stage); }
+
 /* ---------- table ---------- */
 const posOf = r => spreadOf(reading.spread_id).positions.find(q => q.id === r.position_id);
 
@@ -365,6 +399,8 @@ function renderChapters() {
     const c = byId[r.card_id], pos = POSITIONS[`${reading.spread_id}:${r.position_id}`] || {};
     const items = [['love', 'ความรัก', c.love_th], ['work', 'การงาน', c.work_th], ['advice', 'คำแนะนำ', c.advice_th]];
     if (pos.use) items.sort((x, y) => (y[0] === pos.use) - (x[0] === pos.use));
+    const role = PM?.roles[`${reading.spread_id}:${r.position_id}`];
+    const here = role && PM.cards[c.id]?.[role]?.[r.orientation === 'reversed' ? 'rev' : 'up'];
     return `<article class="chap" id="c${i}">
       <figure><img class="${r.orientation === 'reversed' ? 'rev' : ''}" src="${c.image_web}" alt="${esc(c.alt_th)}"></figure>
       <div>
@@ -373,8 +409,10 @@ function renderChapters() {
         <h3 class="name">${esc(c.name_en)}</h3>
         <p class="th">${esc(c.name_th)}<span class="ori">${oriTh(r.orientation)}</span></p>
         <p class="frame">${esc(frameFor(reading.spread_id, r.position_id, r.orientation))}</p>
-        <p class="bridge">${esc(bridgeFor(reading.spread_id, r.position_id, r.orientation, c))}</p>
-        <p class="lead">${esc(meaningFor(c, r.orientation))}</p>
+        ${here ? `<p class="lead">${esc(here)}</p>
+        <p class="more"><span>ความหมายทั่วไปของไพ่ใบนี้</span>${esc(meaningFor(c, r.orientation))}</p>`
+          : `<p class="bridge">${esc(bridgeFor(reading.spread_id, r.position_id, r.orientation, c))}</p>
+        <p class="lead">${esc(meaningFor(c, r.orientation))}</p>`}
         <dl class="trio">${items.map(([k, label, text]) => `<div class="${pos.use === k ? 'em' : ''}"><dt>${label}</dt><dd>${esc(text)}</dd></div>`).join('')}</dl>
         <p class="qq">${esc(c.reflection_th)}</p>
         <a class="up" href="#table">กลับไปที่โต๊ะ</a>
