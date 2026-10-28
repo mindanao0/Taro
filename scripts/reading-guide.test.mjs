@@ -34,5 +34,5 @@ assert.equal(out.length, 2);
 assert.ok(out.every(x => !/[{}]/.test(x.text)), 'unfilled slot');
 assert.ok(out[0].text.includes('ใบหนึ่ง') || out[0].text.includes('สองใบอยู่คนละท่า'), 'mixed orientation note');
 assert.equal(pairReadings('three', drawn, d => d.i !== 1).length, 0, 'closed cards must not be read');
-assert.ok(!/[{}]/.test(frameFor('three', 'p1', pick('wands-five'), 'upright', 'x')));
+assert.ok(frameFor('three', 'p1', 'upright').length > 10 && frameFor('three', 'p1', 'reversed') !== frameFor('three', 'p1', 'upright'));
 console.log(`PASS: ${keys.length} position frames, ${Object.values(PAIRS).flat().length} pair roles, ${all.length} unique sentences`);

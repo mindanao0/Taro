@@ -123,7 +123,8 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 .name{margin:0;font:400 clamp(2.6rem,5.2vw,4.4rem)/1 var(--display)}
 .th{margin:12px 0 0;font-weight:500;font-size:1.15rem}
 .ori{color:var(--dim);font-weight:400;margin-left:12px}
-.lead{margin:30px 0 0;font-size:1.4rem;line-height:1.6;max-width:30em}
+.frame{margin:26px 0 0;color:var(--gold);font-size:.98rem}
+.lead{margin:8px 0 0;font-size:1.4rem;line-height:1.6;max-width:30em}
 .trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:26px;margin:36px 0 0}
 .trio dt{color:var(--dim);font-size:.85rem;margin:0 0 4px}
 .trio .em dt{color:var(--gold)}
@@ -201,7 +202,7 @@ dialog::backdrop{background:#000c}
 <header class="top">
   <h1 class="mark">Gothic Ivory Rose</h1>
   <nav aria-label="เมนูหลัก">
-    <button id="n-read" aria-current="page">จั่วไพ่</button>
+    <button id="n-read" aria-current="page">เลือกไพ่</button>
     <button id="n-cat">ไพ่ทั้งสำรับ</button>
     <button id="n-hist">บันทึกของฉัน</button>
   </nav>
@@ -216,9 +217,8 @@ dialog::backdrop{background:#000c}
     <label class="switch"><input type="checkbox" id="rev"> ให้มีไพ่กลับหัว</label>
     <button class="deck-btn" type="submit" id="deckbtn">
       <span class="deck" aria-hidden="true"><i></i><i></i><b></b></span>
-      <span class="t">จั่วไพ่</span>
+      <span class="t">เริ่มเลือกไพ่</span>
     </button>
-    <button class="link" type="button" id="pickbtn">หรือเลือกไพ่เองจากกอง</button>
   </form>
 
   <section id="pick" hidden>
@@ -244,7 +244,7 @@ dialog::backdrop{background:#000c}
     <section class="pairs" id="pairs" hidden></section>
     <section class="overview" id="overview" hidden></section>
   </div>
-  <p class="note foot">ไพ่ถูกสุ่มครั้งเดียวตอนจั่ว คำถามและผลอยู่ในเครื่องคุณเท่านั้น ใช้เพื่อสำรวจสถานการณ์ ไม่ใช่คำทำนาย วิธีอ่านภาพรวมสรุปจากคู่มือทั่วไป (รายการอ้างอิงอยู่ใน docs/05) และไม่ใช่กฎตายตัว</p>
+  <p class="note foot">ไพ่ถูกสับด้วย Web Crypto ก่อนวางให้เลือก คุณเป็นคนเลือกเอง คำถามและผลอยู่ในเครื่องคุณเท่านั้น ใช้เพื่อสำรวจสถานการณ์ ไม่ใช่คำทำนาย วิธีอ่านภาพรวมสรุปจากคู่มือทั่วไป (รายการอ้างอิงอยู่ใน docs/05) และไม่ใช่กฎตายตัว</p>
 </section>
 
 <section id="cat" hidden>
@@ -269,7 +269,7 @@ dialog::backdrop{background:#000c}
 <dialog id="dlg"><button class="x" id="dx" aria-label="ปิด">✕</button><div id="dbody"></div></dialog>
 
 <script type="module">
-import {createReading, meaningFor, randomBelow, shuffled} from './scripts/reading-core.mjs';
+import {meaningFor, randomBelow, shuffled} from './scripts/reading-core.mjs';
 import {frameFor, pairReadings, POSITIONS} from './scripts/reading-guide.mjs';
 
 const $ = id => document.getElementById(id);
@@ -375,7 +375,8 @@ function renderChapters() {
         ${pos.read ? `<p class="posq">${esc(pos.read)}</p>` : ''}
         <h3 class="name">${esc(c.name_en)}</h3>
         <p class="th">${esc(c.name_th)}<span class="ori">${oriTh(r.orientation)}</span></p>
-        <p class="lead">${esc(frameFor(reading.spread_id, r.position_id, c, r.orientation, meaningFor(c, r.orientation)))}</p>
+        <p class="frame">${esc(frameFor(reading.spread_id, r.position_id, r.orientation))}</p>
+        <p class="lead">${esc(meaningFor(c, r.orientation))}</p>
         <dl class="trio">${items.map(([k, label, text]) => `<div class="${pos.use === k ? 'em' : ''}"><dt>${label}</dt><dd>${esc(text)}</dd></div>`).join('')}</dl>
         <p class="qq">${esc(c.reflection_th)}</p>
         <a class="up" href="#table">กลับไปที่โต๊ะ</a>
@@ -465,15 +466,11 @@ function begin(rd) {
   reading = rd; shown = new Set();
   $('ask').hidden = true; $('pick').hidden = true; $('session').hidden = false;
   $('recap').innerHTML = `<p class="rq">${esc(rd.question) || 'ไม่ได้ตั้งคำถาม'}</p>
-    <p class="rm"><span>${esc(spreadOf(rd.spread_id).name_th)}</span><button class="link" id="again" type="button">จั่วใหม่</button></p>`;
+    <p class="rm"><span>${esc(spreadOf(rd.spread_id).name_th)}</span><button class="link" id="again" type="button">เลือกใหม่</button></p>`;
   renderTable(true); renderChapters();
   scrollTo(0, 0);
 }
-function draw() {
-  try { begin(createReading(cards, chosen(), {question: $('q').value, reversed: $('rev').checked})); }
-  catch (e) { alert(e.message); }
-}
-$('ask').onsubmit = e => { e.preventDefault(); draw(); };
+$('ask').onsubmit = e => { e.preventDefault(); startPick(); };
 $('recap').onclick = e => {
   if (e.target.id !== 'again') return;
   $('session').hidden = true; $('ask').hidden = false; scrollTo(0, 0); $('q').focus();
@@ -526,7 +523,6 @@ function finishPick() {
       orientation: reversed && randomBelow(2) === 1 ? 'reversed' : 'upright'}))});
   pk = null;
 }
-$('pickbtn').onclick = startPick;
 $('pickcancel').onclick = () => { pk = null; $('pick').hidden = true; $('ask').hidden = false; };
 $('fan').onclick = e => {
   const b = e.target.closest('.fc');
@@ -571,7 +567,7 @@ function renderHist() {
     <p class="meta">${esc(spreadOf(r.spread_id)?.name_th)} เมื่อ ${new Date(r.created_at).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'})}</p>
     <div class="strip">${r.cards.map(x => byId[x.card_id] ? `<img class="${x.orientation === 'reversed' ? 'rev' : ''}" src="${byId[x.card_id].image_web}" alt="${esc(nameOf(byId[x.card_id]))} ${oriTh(x.orientation)}">` : '').join('')}</div>
     <button class="link" data-d="${i}">ลบบันทึกนี้</button></li>`).join('')
-    || '<li class="empty">ยังไม่มีบันทึก จั่วไพ่แล้วกด “บันทึกผลนี้” เพื่อเก็บไว้ในเครื่อง</li>';
+    || '<li class="empty">ยังไม่มีบันทึก เลือกไพ่แล้วกด “บันทึกผลนี้” เพื่อเก็บไว้ในเครื่อง</li>';
 }
 $('list').onclick = e => { const d = e.target.dataset.d; if (d != null) { store(load().filter((_, i) => i != d)); renderHist(); } };
 $('clr').onclick = () => { if (confirm('ลบบันทึกทั้งหมดในเครื่องนี้?')) { store([]); renderHist(); } };
