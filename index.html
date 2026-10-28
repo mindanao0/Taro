@@ -117,7 +117,9 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 .sl{display:block;width:52px;aspect-ratio:937/1678;border:1px dashed #ffffff40}
 .slots li.on .sl{border:0;background:var(--back) center/100% 100%;box-shadow:0 8px 18px -8px #000}
 .slots li.on .sl{cursor:pointer;transition:transform .18s} .slots li.on .sl:hover,.slots li.on .sl:focus-visible{transform:translateY(-4px)}
-.pickacts{display:flex;gap:22px;align-items:baseline} .go{color:var(--gold);border-color:var(--gold)}
+.pickacts{display:flex;gap:22px;align-items:baseline} .go{background:var(--gold);color:#120d06;border:0;border-radius:999px;padding:8px 20px;font-weight:500}
+.go:hover{color:#120d06;filter:brightness(1.1)}
+.slots.many{gap:8px 6px}.slots.many li{width:18%;max-width:64px;font-size:0}.slots.many .sl{width:30px}
 .slots li.now{color:var(--gold)} .slots li.now .sl{border-color:var(--gold)}
 .fanwrap{overflow:hidden;padding:24px 0 8px;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
 .fanwrap.drag{cursor:grabbing}
@@ -285,7 +287,9 @@ try {
   $('rev').checked = s.default_reversed;
 } catch (e) {
   $('err').hidden = false;
-  $('err').textContent = 'โหลดข้อมูลไม่ได้ ให้เปิดผ่านเซิร์ฟเวอร์ด้วยคำสั่ง python3 -m http.server แล้วเข้าที่ localhost';
+  $('err').textContent = location.protocol === 'file:'
+    ? 'โหลดข้อมูลไม่ได้ ให้เปิดผ่านเซิร์ฟเวอร์ด้วยคำสั่ง python3 -m http.server แล้วเข้าที่ localhost'
+    : 'โหลดข้อมูลไม่สำเร็จ ลองรีเฟรชหน้านี้อีกครั้ง หรือตรวจสอบการเชื่อมต่ออินเทอร์เน็ต';
   throw e;
 }
 const spreadOf = id => spreads.find(s => s.id === id);
@@ -300,11 +304,16 @@ function show(name) {
     k === name ? $(b).setAttribute('aria-current', 'page') : $(b).removeAttribute('aria-current');
   }
 }
-for (const [k, b] of Object.entries(views)) $(b).onclick = () => show(k);
-$('home').onclick = () => {
+for (const [k, b] of Object.entries(views)) $(b).onclick = () => { show(k); if (k === 'read' && pk) fitFan(); };
+function toHome() {
   pk = null; show('read');
   $('pick').hidden = $('session').hidden = true; $('ask').hidden = false; scrollTo(0, 0);
-};
+}
+// Picking and reading are one history step, so the phone's Back gesture returns to the start instead of leaving the site.
+const leave = () => history.state?.v ? history.back() : toHome();
+const enter = () => history.state?.v || history.pushState({v: 1}, '');
+$('home').onclick = leave;
+addEventListener('popstate', () => { if (pk || !$('session').hidden) toHome(); });
 
 /* ---------- layout shared by glyphs and the table ---------- */
 function layout(sp, w) {
@@ -509,7 +518,7 @@ function begin(rd) {
 $('ask').onsubmit = e => { e.preventDefault(); startPick(); };
 $('recap').onclick = e => {
   if (e.target.id !== 'again') return;
-  $('session').hidden = true; $('ask').hidden = false; scrollTo(0, 0); $('q').focus();
+  leave(); $('q').focus();
 };
 $('table').onclick = e => { const b = e.target.closest('.card'); if (b) openCard(+b.dataset.i); };
 $('all').onclick = () => {
@@ -525,6 +534,7 @@ function renderPickHead() {
   const need = pk.sp.positions.length, next = pk.picks.indexOf(null);   // a cancelled card leaves its slot empty; nothing shifts
   $('pstep').textContent = next >= 0 ? `เลือกไพ่ตำแหน่งที่ ${next + 1} จาก ${need}: ${pk.sp.positions[next].label_th}` : 'เลือกครบแล้ว';
   $('pickgo').hidden = next >= 0;
+  $('slots').classList.toggle('many', need > 5);
   $('slots').innerHTML = pk.sp.positions.map((p, i) =>
     `<li class="${pk.picks[i] !== null ? 'on' : i === next ? 'now' : ''}">${pk.picks[i] !== null
       ? `<button type="button" class="sl" data-i="${i}" aria-label="เอาไพ่ใบที่ ${i + 1} (${esc(p.label_th)}) กลับเข้ากอง"></button>`
@@ -533,6 +543,7 @@ function renderPickHead() {
 // The deck is a wheel: drag or swipe sideways to spin it, tap a card to pick it.
 const wheel = {th: 0, v: 0, raf: 0, last: 0, moved: false};
 function startPick() {
+  enter();
   const sp = chosen();
   pk = {order: shuffled(cards.map(c => c.id)), picks: Array(sp.positions.length).fill(null), sp, question: $('q').value, reversed: $('rev').checked};
   $('ask').hidden = true; $('pick').hidden = false;
@@ -545,6 +556,7 @@ function startPick() {
 }
 function fitFan() {
   const W = $('fanwrap').clientWidth, n = cards.length, step = 2 * Math.PI / n;
+  if (!W) return;   // hidden (e.g. user is in the catalog); refit when shown again
   const cw = Math.max(64, Math.min(92, W / 9)), ch = cw * 1.79, R = cw * 0.5 / step;
   const max = Math.min(Math.asin(Math.min(1, (W / 2 - cw / 2) / R)), 1.08);
   Object.assign(wheel, {W, step, cw, R, max});
@@ -576,15 +588,15 @@ function spin() {   // momentum after a flick
 }
 {
   const wrap = $('fanwrap'); let down = null;
-  wrap.onpointerdown = e => { down = {x: e.clientX, t: e.timeStamp}; wheel.moved = false; wheel.v = 0; cancelAnimationFrame(wheel.raf); };
+  wrap.onpointerdown = e => { down = {x: e.clientX, t: e.timeStamp, slop: e.pointerType === 'mouse' ? 6 : 12}; wheel.moved = false; wheel.v = 0; cancelAnimationFrame(wheel.raf); };
   wrap.onpointermove = e => {
     if (!down) return;
     const dx = e.clientX - down.x;
-    if (!wheel.moved && Math.abs(dx) < 6) return;
+    if (!wheel.moved && Math.abs(dx) < down.slop) return;
     if (!wheel.moved) { wheel.moved = true; wrap.classList.add('drag'); wrap.setPointerCapture(e.pointerId); }
     const dt = Math.max(1, e.timeStamp - down.t);
     wheel.th += dx / wheel.R; wheel.v = 0.6 * wheel.v + 0.4 * (dx / wheel.R / dt);
-    down = {x: e.clientX, t: e.timeStamp}; drawWheel();
+    down = {...down, x: e.clientX, t: e.timeStamp}; drawWheel();
   };
   wrap.onpointerup = wrap.onpointercancel = () => { down = null; wrap.classList.remove('drag'); if (wheel.moved) spin(); };
   wrap.addEventListener('click', e => { if (wheel.moved) { e.stopPropagation(); e.preventDefault(); wheel.moved = false; } }, true);
@@ -613,7 +625,7 @@ function finishPick() {
       orientation: reversed && randomBelow(2) === 1 ? 'reversed' : 'upright'}))});
   pk = null;
 }
-$('pickcancel').onclick = () => { pk = null; $('pick').hidden = true; $('ask').hidden = false; };
+$('pickcancel').onclick = leave;
 function unpick(i) {   // put a picked card back; the other cards keep their positions
   const k = pk.picks[i]; pk.picks[i] = null;
   $('fan').querySelector(`.fc[data-k="${k}"]`)?.classList.remove('picked');
