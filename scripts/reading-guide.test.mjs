@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {POSITIONS, PAIRS, elementOf, relation, frameFor, pairReadings} from './reading-guide.mjs';
+import {POSITIONS, PAIRS, elementOf, relation, frameFor, pairReadings, bridgeFor, ASK} from './reading-guide.mjs';
 const read = f => JSON.parse(readFileSync(new URL(f, import.meta.url)));
 const cards = read('../data/cards.public.json').cards, {spreads} = read('../data/spreads.json');
 
@@ -35,4 +35,17 @@ assert.ok(out.every(x => !/[{}]/.test(x.text)), 'unfilled slot');
 assert.ok(out[0].text.endsWith(PAIRS.three[0].mixed), 'mixed orientation note');
 assert.equal(pairReadings('three', drawn, d => d.i !== 1).length, 0, 'closed cards must not be read');
 assert.ok(frameFor('three', 'p1', 'upright').length > 10 && frameFor('three', 'p1', 'reversed') !== frameFor('three', 'p1', 'upright'));
+// card-aware bridge: every card x position x orientation
+assert.deepEqual(Object.keys(ASK).sort(), [...keys].sort());
+const seen = new Set();
+for (const s of spreads) for (const p of s.positions) for (const c of cards) for (const o of ['upright', 'reversed']) {
+  const t = bridgeFor(s.id, p.id, o, c), where = `${s.id}:${p.id} ${c.id} ${o}`;
+  assert.ok(typeof t === 'string' && t.length >= 20 && t.length <= 160, `length ${where}: ${t}`);
+  assert.ok(!/[{}]|undefined/.test(t), `bad token ${where}: ${t}`);
+  assert.ok(t.includes(c.name_en) && t.includes(c.keywords_th[0]), `card-aware ${where}: ${t}`);
+  assert.equal(bridgeFor(s.id, p.id, o, c), t, 'deterministic');
+  if (s.id === 'three' && p.id === 'p1' && o === 'upright') seen.add(t);
+}
+assert.ok(seen.size >= 20, `only ${seen.size} distinct bridges`);
+assert.notEqual(bridgeFor('three', 'p1', 'upright', pick('major-18')), bridgeFor('three', 'p1', 'reversed', pick('major-18')));
 console.log(`PASS: ${keys.length} position frames, ${Object.values(PAIRS).flat().length} pair roles, ${all.length} unique sentences`);

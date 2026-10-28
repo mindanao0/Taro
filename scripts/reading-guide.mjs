@@ -138,6 +138,52 @@ export function frameFor(spreadId, positionId, orientation) {
   return p ? (orientation === 'reversed' ? p.rev : p.up) : '';
 }
 
+/** What each position asks about, as a noun phrase that works after "ใน", "ว่า" and "ลองดูว่า". Keys match POSITIONS. */
+const ASK = {
+  'single:p1': 'เรื่องที่ควรใส่ใจตอนนี้',
+  'three:p1': 'สถานการณ์ตอนนี้', 'three:p2': 'สิ่งที่ยังต้องทำความเข้าใจ', 'three:p3': 'ก้าวต่อไปของคุณ',
+  'relationship-five:p1': 'ความต้องการของคุณ', 'relationship-five:p2': 'สิ่งที่เห็นจากการกระทำระหว่างกัน',
+  'relationship-five:p3': 'จุดที่เชื่อมสองฝั่งเข้าหากัน', 'relationship-five:p4': 'เรื่องที่ควรคุยหรือวางขอบเขต',
+  'relationship-five:p5': 'ก้าวต่อไปของคุณเอง',
+  'celtic-cross:p1': 'หัวใจของเรื่องตอนนี้', 'celtic-cross:p2': 'สิ่งที่ขวางหรือท้าทาย', 'celtic-cross:p3': 'สิ่งที่คุณมุ่งหวัง',
+  'celtic-cross:p4': 'รากฐานเบื้องล่างของเรื่องนี้', 'celtic-cross:p5': 'สิ่งที่ส่งมาจากอดีต', 'celtic-cross:p6': 'ทิศทางในระยะใกล้',
+  'celtic-cross:p7': 'ท่าทีของคุณเอง', 'celtic-cross:p8': 'คนและสภาพแวดล้อมรอบตัว', 'celtic-cross:p9': 'ความหวังและความกลัวของคุณ',
+  'celtic-cross:p10': 'ปลายทางของเรื่องนี้'
+};
+export {ASK};
+
+// {n} = card name, {a} = position topic, {k} = keywords. Reversed = blocked / excessive / delayed / turned inward, never "bad".
+const BRIDGE = {
+  upright: [
+    '{n} ชี้ว่า{a}มีแนวโน้มเกี่ยวข้องกับ {k}',
+    'พอ {n} มาอยู่ตรงนี้ ลองดูว่า{a}มี {k} อยู่ตรงไหนบ้าง',
+    '{n} ชวนให้มอง{a}โดยมี {k} เป็นจุดสังเกต',
+    'สำหรับ{a} {n} มีแนวโน้มพูดถึง {k} ลองดูว่าคุณเห็นสิ่งนี้ในชีวิตจริงตรงไหน'
+  ],
+  reversed: [
+    '{n} กลับหัวอยู่ตรงนี้ จึงมีแนวโน้มว่า {k} ยังติดขัดหรือแสดงออกได้ไม่เต็มที่ใน{a}',
+    '{n} กลับหัวไม่ได้แปลว่าแย่ แค่อาจหมายถึงว่า {k} ใน{a}ถูกชะลอหรือแรงเกินไป',
+    'ลองดูว่า {k} ใน{a}กำลังหันเข้าข้างในหรือถูกกดไว้หรือเปล่า เพราะ {n} กลับหัวอยู่ตรงนี้',
+    'เมื่อ {n} กลับหัวตรงนี้ ลองสังเกตว่า {k} ใน{a}ติดอยู่ตรงไหน หรือแค่ต้องการเวลาอีกหน่อย'
+  ]
+};
+const hash = str => [...str].reduce((h, ch) => (h * 31 + ch.codePointAt(0)) >>> 0, 7);
+const joinKw = ks => ks.length < 2 ? ks.join('') : ks.slice(0, -1).join(' ') + ' และ ' + ks.at(-1);
+
+/** One natural Thai sentence tying a position to this card (card name + 1-3 of its keywords). Deterministic. */
+export function bridgeFor(spreadId, positionId, orientation, card) {
+  const key = `${spreadId}:${positionId}`, a = ASK[key];
+  if (!a || !card?.keywords_th?.length) return '';
+  const tpls = BRIDGE[orientation === 'reversed' ? 'reversed' : 'upright'];
+  const t = tpls[hash(card.id + key) % tpls.length];
+  let out;
+  for (let n = Math.min(3, card.keywords_th.length); n > 0; n--) {
+    out = fill(t, {n: card.name_en, a, k: joinKw(card.keywords_th.slice(0, n))});
+    if (out.length <= 140) break;
+  }
+  return out;
+}
+
 /** Readings for pairs of positions whose cards are both opened. drawn = [{position_id, card, orientation, i}] */
 export function pairReadings(spreadId, drawn, isOpen = () => true) {
   const at = id => drawn.find(d => d.position_id === id);
