@@ -116,6 +116,8 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 .slots li{display:grid;justify-items:center;gap:6px;width:92px;text-align:center;font-size:.78rem;line-height:1.3;color:var(--dim)}
 .sl{display:block;width:52px;aspect-ratio:937/1678;border:1px dashed #ffffff40}
 .slots li.on .sl{border:0;background:var(--back) center/100% 100%;box-shadow:0 8px 18px -8px #000}
+.slots li.on .sl{cursor:pointer;transition:transform .18s} .slots li.on .sl:hover,.slots li.on .sl:focus-visible{transform:translateY(-4px)}
+.pickacts{display:flex;gap:22px;align-items:baseline} .go{color:var(--gold);border-color:var(--gold)}
 .slots li.now{color:var(--gold)} .slots li.now .sl{border-color:var(--gold)}
 .fanwrap{overflow:hidden;padding:24px 0 8px;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
 .fanwrap.drag{cursor:grabbing}
@@ -124,7 +126,7 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
   transform:translate(var(--x),var(--y)) rotate(var(--a)) translateY(var(--l,0px));z-index:var(--z);transition:opacity .3s}
 .fc:hover,.fc:focus-visible{--l:-26px;z-index:400}
 .fc:focus-visible{outline:2px solid var(--gold)}
-.fc.picked{opacity:.12;--l:-26px;pointer-events:none}
+.fc.picked{--l:-26px;opacity:.5;outline:1px solid var(--gold);outline-offset:-1px}
 
 /* chapters */
 .chaps{margin-top:64px}
@@ -231,11 +233,11 @@ dialog::backdrop{background:#000c}
   <section id="pick" hidden>
     <div class="pickhead">
       <p class="pstep" id="pstep" aria-live="polite"></p>
-      <button class="link" type="button" id="pickcancel">ยกเลิก</button>
+      <span class="pickacts"><button class="link go" type="button" id="pickgo" hidden>เปิดไพ่เลย</button><button class="link" type="button" id="pickcancel">ยกเลิก</button></span>
     </div>
     <ol class="slots" id="slots"></ol>
     <div class="fanwrap" id="fanwrap"><div class="fanbox" id="fanbox"><div class="fan" id="fan"></div></div></div>
-    <p class="note" style="text-align:center">ลากซ้ายขวาเพื่อหมุนวงไพ่ แล้วแตะใบที่ต้องการ ไพ่ทุกใบถูกสับไว้แล้วและจะยังไม่เปิดจนกว่าจะเลือกครบ</p>
+    <p class="note" style="text-align:center">ลากซ้ายขวาเพื่อหมุนวงไพ่ แล้วแตะใบที่ต้องการ ถ้าเลือกผิด แตะไพ่ใบนั้นอีกครั้ง (หรือแตะช่องด้านบน) เพื่อเอากลับเข้ากอง ไพ่ทุกใบถูกสับไว้แล้วและจะยังไม่เปิดจนกว่าคุณจะกดเปิด</p>
   </section>
 
   <div id="session" hidden>
@@ -521,9 +523,12 @@ $('all').onclick = () => {
 let pk = null;
 function renderPickHead() {
   const n = pk.picks.length, need = pk.sp.positions.length;
-  $('pstep').textContent = n < need ? `เลือกใบที่ ${n + 1} จาก ${need}: ${pk.sp.positions[n].label_th}` : 'ครบแล้ว กำลังเปิดโต๊ะ';
+  $('pstep').textContent = n < need ? `เลือกใบที่ ${n + 1} จาก ${need}: ${pk.sp.positions[n].label_th}` : 'เลือกครบแล้ว';
+  $('pickgo').hidden = n < need;
   $('slots').innerHTML = pk.sp.positions.map((p, i) =>
-    `<li class="${i < n ? 'on' : i === n ? 'now' : ''}"><span class="sl"></span>${esc(p.label_th)}</li>`).join('');
+    `<li class="${i < n ? 'on' : i === n ? 'now' : ''}">${i < n
+      ? `<button type="button" class="sl" data-i="${i}" aria-label="เอาไพ่ใบที่ ${i + 1} (${esc(p.label_th)}) กลับเข้ากอง"></button>`
+      : '<span class="sl"></span>'}${esc(p.label_th)}</li>`).join('');
 }
 // The deck is a wheel: drag or swipe sideways to spin it, tap a card to pick it.
 const wheel = {th: 0, v: 0, raf: 0, last: 0, moved: false};
@@ -608,13 +613,22 @@ function finishPick() {
   pk = null;
 }
 $('pickcancel').onclick = () => { pk = null; $('pick').hidden = true; $('ask').hidden = false; };
+function unpick(i) {   // put a picked card back; later picks move up one position
+  const [k] = pk.picks.splice(i, 1);
+  $('fan').querySelector(`.fc[data-k="${k}"]`)?.classList.remove('picked');
+  renderPickHead();
+}
 $('fan').onclick = e => {
   const b = e.target.closest('.fc');
-  if (!b || !pk || pk.picks.length >= pk.sp.positions.length) return;
-  pk.picks.push(+b.dataset.k); b.classList.add('picked'); b.disabled = true;
+  if (!b || !pk) return;
+  const k = +b.dataset.k, i = pk.picks.indexOf(k);
+  if (i >= 0) return unpick(i);
+  if (pk.picks.length >= pk.sp.positions.length) return;
+  pk.picks.push(k); b.classList.add('picked');
   renderPickHead();
-  if (pk.picks.length === pk.sp.positions.length) setTimeout(finishPick, 700);
 };
+$('slots').onclick = e => { const b = e.target.closest('button[data-i]'); if (b && pk) unpick(+b.dataset.i); };
+$('pickgo').onclick = () => { if (pk && pk.picks.length === pk.sp.positions.length) finishPick(); };
 let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (pk) fitFan(); else if (reading && !$('session').hidden) renderTable(false); }, 150); });
 
 /* ---------- catalog ---------- */
