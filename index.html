@@ -175,14 +175,6 @@ dialog::backdrop{background:#000c}
 .x{position:absolute;top:10px;right:14px;font-size:1.2rem;line-height:1;padding:8px;color:var(--dim)}
 .x:hover{color:var(--text)}
 
-/* history */
-.log{list-style:none;margin:24px 0 0;padding:0;max-width:760px}
-.log li{padding:26px 0;border-bottom:1px solid var(--line)}
-.log .q2{font:400 1.8rem/1.3 var(--display);margin:0}
-.log .meta{color:var(--dim);font-size:.9rem;margin:2px 0 14px}
-.strip{display:flex;flex-wrap:wrap;gap:8px 12px;margin-bottom:12px}
-.strip img{height:96px;display:block}
-.strip img.rev{transform:rotate(180deg)}
 .foot{margin-top:72px}
 
 @media(max-width:860px){
@@ -206,7 +198,6 @@ dialog::backdrop{background:#000c}
   <nav aria-label="เมนูหลัก">
     <button id="n-read" aria-current="page">เลือกไพ่</button>
     <button id="n-cat">ไพ่ทั้งสำรับ</button>
-    <button id="n-hist">บันทึกของฉัน</button>
   </nav>
 </header>
 <main>
@@ -240,7 +231,6 @@ dialog::backdrop{background:#000c}
     <div class="acts">
       <a class="link" id="toread" href="#chapters" hidden>ไปอ่านความหมาย</a>
       <button class="link" id="all" type="button">เปิดทั้งหมด</button>
-      <button class="link" id="save" type="button">บันทึกผลนี้</button>
     </div>
     <div class="chaps" id="chapters"></div>
     <section class="pairs" id="pairs" hidden></section>
@@ -258,14 +248,6 @@ dialog::backdrop{background:#000c}
   <div class="grid" id="grid"></div>
 </section>
 
-<section id="hist" hidden>
-  <h2>บันทึกของฉัน</h2>
-  <div class="acts" style="justify-content:flex-start;margin:0">
-    <button class="link" id="exp" type="button">ส่งออกเป็น JSON</button>
-    <button class="link" id="clr" type="button">ลบทั้งหมด</button>
-  </div>
-  <ul class="log" id="list"></ul>
-</section>
 </main>
 
 <dialog id="dlg"><button class="x" id="dx" aria-label="ปิด">✕</button><div id="dbody"></div></dialog>
@@ -276,7 +258,6 @@ import {frameFor, pairReadings, POSITIONS} from './scripts/reading-guide.mjs';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const KEY = 'taro-readings';
 const CATS = [['', 'ทั้งหมด'], ['major', 'ไพ่ใหญ่'], ['wands', 'ไม้เท้า'], ['cups', 'ถ้วย'], ['swords', 'ดาบ'], ['pentacles', 'เหรียญ']];
 let cards, byId, spreads, reading, shown = new Set(), cat = '';
 
@@ -290,19 +271,16 @@ try {
   throw e;
 }
 const spreadOf = id => spreads.find(s => s.id === id);
-const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } };
-const store = v => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch {} };
 const oriTh = o => o === 'reversed' ? 'กลับหัว' : 'ตั้งตรง';
 const nameOf = c => `${c.name_en} ${c.name_th}`;
 
 /* ---------- views ---------- */
-const views = {read: 'n-read', cat: 'n-cat', hist: 'n-hist'};
+const views = {read: 'n-read', cat: 'n-cat'};
 function show(name) {
   for (const [k, b] of Object.entries(views)) {
     $(k).hidden = k !== name;
     k === name ? $(b).setAttribute('aria-current', 'page') : $(b).removeAttribute('aria-current');
   }
-  if (name === 'hist') renderHist();
 }
 for (const [k, b] of Object.entries(views)) $(b).onclick = () => show(k);
 $('home').onclick = () => {
@@ -487,10 +465,6 @@ $('all').onclick = () => {
   todo.forEach((i, k) => setTimeout(() => { if (rd === reading) flip(i); }, k * 250));
   setTimeout(() => { if (rd !== reading) return; renderChapters(); $('chapters').scrollIntoView(); }, todo.length * 250 + 450);
 };
-$('save').onclick = () => {
-  store([...load(), reading]); $('save').textContent = 'บันทึกผลนี้แล้ว';
-  setTimeout(() => $('save').textContent = 'บันทึกผลนี้', 1800);
-};
 
 /* ---------- pick your own cards ---------- */
 // The deck is shuffled (Web Crypto) before it is fanned out, so the card behind each back is already random.
@@ -565,23 +539,6 @@ $('cats').onclick = e => { if (e.target.dataset.k != null) { cat = e.target.data
 $('grid').onclick = e => { const b = e.target.closest('.tile'); if (b) detail(byId[b.dataset.id]); };
 $('s').oninput = renderCat;
 renderCat();
-
-/* ---------- history ---------- */
-function renderHist() {
-  $('list').innerHTML = load().map((r, i) => `<li>
-    <p class="q2">${esc(r.question) || esc(spreadOf(r.spread_id)?.name_th)}</p>
-    <p class="meta">${esc(spreadOf(r.spread_id)?.name_th)} เมื่อ ${new Date(r.created_at).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'})}</p>
-    <div class="strip">${r.cards.map(x => byId[x.card_id] ? `<img class="${x.orientation === 'reversed' ? 'rev' : ''}" src="${byId[x.card_id].image_web}" alt="${esc(nameOf(byId[x.card_id]))} ${oriTh(x.orientation)}">` : '').join('')}</div>
-    <button class="link" data-d="${i}">ลบบันทึกนี้</button></li>`).join('')
-    || '<li class="empty">ยังไม่มีบันทึก เลือกไพ่แล้วกด “บันทึกผลนี้” เพื่อเก็บไว้ในเครื่อง</li>';
-}
-$('list').onclick = e => { const d = e.target.dataset.d; if (d != null) { store(load().filter((_, i) => i != d)); renderHist(); } };
-$('clr').onclick = () => { if (confirm('ลบบันทึกทั้งหมดในเครื่องนี้?')) { store([]); renderHist(); } };
-$('exp').onclick = () => {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([JSON.stringify(load(), null, 2)], {type: 'application/json'}));
-  a.download = 'taro-readings.json'; a.click();
-};
 </script>
 </body>
 </html>
