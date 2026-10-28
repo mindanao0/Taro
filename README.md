@@ -44,6 +44,23 @@ python3 -m http.server 8000
 
 โค้ด (`index.html` และ `scripts/`) ใช้สัญญาอนุญาต MIT ตามไฟล์ `LICENSE` ส่วนภาพไพ่ซึ่งสร้างด้วย AI ทั้งหมด และข้อความความหมายใน `data/` กับ `docs/` ไม่รวมอยู่ในสัญญานี้ ไม่มีการอ้างหรือรับรองสิทธิผูกขาดในภาพ และไม่ได้อนุญาตให้นำภาพหรือข้อความไปใช้ซ้ำ
 
+## เก็บคำถามของผู้ใช้ (ไม่บังคับ)
+
+เว็บเป็นไฟล์ static จึงต้องมีที่รับข้อมูลเพิ่ม โฟลเดอร์ `worker/` คือ Cloudflare Worker ที่เก็บเฉพาะข้อความคำถามกับรูปแบบการวางไพ่ลง D1 ไม่เก็บ IP ชื่อ หรืออีเมล ตั้งค่าครั้งเดียว:
+
+```
+npm i -g wrangler && wrangler login
+wrangler d1 create taro-log                 # คัดลอก database_id ไปใส่ใน wrangler.toml
+wrangler d1 execute taro-log --remote --file worker/schema.sql
+wrangler deploy                             # ได้ URL แบบ https://taro-log.<ชื่อ>.workers.dev
+```
+
+จากนั้นใส่ URL นั้นที่ `const LOG_URL = ''` ใน `index.html` แล้ว push ข้อความท้ายหน้าเว็บจะเปลี่ยนเองให้บอกผู้ใช้ว่าเก็บคำถาม ตราบใดที่ `LOG_URL` ยังว่าง เว็บไม่ส่งอะไรออกไปเลย ดูคำถามที่เก็บ:
+
+```
+wrangler d1 execute taro-log --remote --command "SELECT at, spread, q FROM questions ORDER BY id DESC LIMIT 50"
+```
+
 ## ตรวจข้อมูลอีกครั้ง
 
 จากโฟลเดอร์นี้ รัน `python3 scripts/package_deck.py --check-only` เพื่อตรวจจำนวน ID ไฟล์ภาพ ขนาด และ checksum หรือ `node scripts/reading-core.test.mjs` เพื่อตรวจตรรกะการสุ่มแบบไม่ซ้ำ

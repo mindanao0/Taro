@@ -246,7 +246,7 @@ dialog::backdrop{background:#000c}
     <section class="pairs" id="pairs" hidden></section>
     <section class="overview" id="overview" hidden></section>
   </div>
-  <p class="note foot">ไพ่ถูกสับแบบสุ่มก่อนวางให้เลือก คุณเป็นคนเลือกเองทุกใบ คำถามและผลอ่านอยู่ในเครื่องของคุณเท่านั้น ไม่ถูกส่งไปที่ไหน เว็บนี้ไว้ช่วยให้คุณทบทวนเรื่องราวของตัวเอง ไม่ใช่คำทำนาย วิธีอ่านสรุปมาจากตำราไพ่ทั่วไป ไม่ใช่กฎตายตัว</p>
+  <p class="note foot">ไพ่ถูกสับแบบสุ่มก่อนวางให้เลือก คุณเป็นคนเลือกเองทุกใบ <span id="logsay">คำถามและผลอ่านอยู่ในเครื่องของคุณเท่านั้น ไม่ถูกส่งไปที่ไหน</span> เว็บนี้ไว้ช่วยให้คุณทบทวนเรื่องราวของตัวเอง ไม่ใช่คำทำนาย วิธีอ่านสรุปมาจากตำราไพ่ทั่วไป ไม่ใช่กฎตายตัว</p>
 </section>
 
 <section id="cat" hidden>
@@ -505,8 +505,16 @@ function fitFan() {
   $('fan').style.transform = `scale(${s})`;
   w.scrollLeft = (w.scrollWidth - w.clientWidth) / 2;
 }
+// Set after deploying worker/ (see README). While empty, nothing is sent anywhere.
+const LOG_URL = '';
+if (LOG_URL) $('logsay').textContent = 'ผลอ่านอยู่ในเครื่องของคุณ ส่วนข้อความคำถามที่พิมพ์จะถูกเก็บไว้โดยไม่มีชื่อ อีเมล หรือข้อมูลที่ระบุตัวคุณ เพื่อใช้ปรับปรุงเว็บ จึงไม่ควรพิมพ์ข้อมูลส่วนตัวลงในคำถาม';
+function logQuestion(q, spread) {
+  q = String(q).trim();
+  if (LOG_URL && q) fetch(LOG_URL, {method: 'POST', mode: 'no-cors', keepalive: true, body: JSON.stringify({q, spread})}).catch(() => {});
+}
 function finishPick() {
   const {order, picks, sp, question, reversed} = pk;
+  logQuestion(question, sp.id);
   begin({schema_version: '1.0.0', deck_id: 'gothic-ivory-rose', spread_id: sp.id, question: String(question),
     created_at: new Date().toISOString(), reversed_enabled: Boolean(reversed),
     cards: picks.map((k, i) => ({card_id: order[k], position_id: sp.positions[i].id,
