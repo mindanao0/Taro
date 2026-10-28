@@ -70,14 +70,10 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 .switch{display:inline-flex;gap:10px;align-items:center;color:var(--dim);cursor:pointer}
 .switch input{accent-color:var(--gold);width:18px;height:18px}
 .deck-btn{display:flex;flex-direction:column;align-items:center;gap:22px;margin-top:10px}
-.deck{position:relative;display:block;width:min(560px,88vw);height:clamp(190px,28vh,320px)}
-.dc{position:absolute;left:0;top:0;width:var(--w);aspect-ratio:937/1678;background:var(--back) center/100% 100%;box-shadow:0 14px 28px -12px #000;
+.deck{position:relative;display:block;width:min(560px,88vw);height:260px}
+.dc{position:absolute;left:0;top:0;width:var(--w);aspect-ratio:937/1678;background:var(--back) center/100% 100%;box-shadow:0 12px 20px -10px #000;will-change:transform;backface-visibility:hidden;
   transform:translate(var(--x),calc(var(--y) + var(--l,0px))) rotate(var(--r));transition:transform .65s cubic-bezier(.2,.9,.2,1) var(--d,0ms),opacity .3s}
 .dc.gather{transition:transform .3s ease-in,opacity .3s}
-.dc.stack{box-shadow:0 20px 40px -16px #000}
-.dc em{position:absolute;left:50%;top:50%;width:calc(var(--w)*.4);aspect-ratio:1;translate:-50% -50%;border-radius:50%;display:grid;place-items:center;background:#0b0908e6;border:1px solid var(--gold);
-  font:italic 400 calc(var(--w)*.26)/1 var(--display);color:var(--gold);opacity:0;transition:opacity .4s .55s}
-.dc:not(.stack) em{opacity:.95}
 .deck-btn:hover .dc:not(.stack){--l:-7px}
 .deck-btn span.t{color:var(--gold);font-weight:500}
 
@@ -339,12 +335,14 @@ const chosen = () => spreadOf(document.querySelector('input[name=spread]:checked
 
 /* ---------- the deck on the home page: gathers into a stack, then deals out the chosen spread ---------- */
 const stage = $('deckstage');
-stage.innerHTML = Array.from({length: Math.max(...spreads.map(x => x.positions.length))}, (_, k) => `<i class="dc stack"><em>${k + 1}</em></i>`).join('');
+stage.innerHTML = Array.from({length: Math.max(...spreads.map(x => x.positions.length))}, (_, k) => `<i class="dc stack"></i>`).join('');
 let dealT = 0;
 function dealDeck(animate) {
-  const W = stage.clientWidth, H = stage.clientHeight; if (!W || !H) return;
+  const W = stage.clientWidth; if (!W) return;
   const P = chosen().positions, L = layout(chosen(), 60), h0 = L.H - L.lbl;
-  const s = Math.min(W / L.W, H / h0, 1.6), cw = 60 * s, ch = cw * 1.79;
+  const s = Math.min(W / L.W, Math.max(220, Math.min(innerHeight * 0.45, 480)) / h0, 1.6), cw = 60 * s, ch = cw * 1.79;
+  const H = Math.max(h0 * s, ch) + 24;
+  stage.style.height = H + 'px';
   const ox = (W - L.W * s) / 2, oy = (H - h0 * s) / 2, sx = (W - cw) / 2, sy = (H - ch) / 2;
   const put = (el, x, y, r, d) => { el.style.setProperty('--x', x + 'px'); el.style.setProperty('--y', y + 'px'); el.style.setProperty('--r', r + 'deg'); el.style.setProperty('--d', d + 'ms'); };
   const els = [...stage.children], stack = k => put(els[k], sx + (k % 3 - 1) * 3, sy + (k % 3 - 1) * 2, (k % 3 - 1) * 2.5, 0);
@@ -361,7 +359,7 @@ function dealDeck(animate) {
   dealT = setTimeout(deal, 340);
 }
 $('spreads').addEventListener('change', () => dealDeck(true));
-{ let first = true; new ResizeObserver(() => { dealDeck(first); first = false; }).observe(stage); }
+{ let first = true, lastW = 0; new ResizeObserver(() => { if (stage.clientWidth === lastW) return; lastW = stage.clientWidth; dealDeck(first); first = false; }).observe(stage); }
 
 /* ---------- table ---------- */
 const posOf = r => spreadOf(reading.spread_id).positions.find(q => q.id === r.position_id);
