@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gothic Ivory Rose Tarot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap">
+<style>
+:root{
+  --bg:#0b0908; --text:#ece4d3; --dim:#9a8f7e; --line:#ffffff1c; --gold:#c8a25a;
+  --display:"Instrument Serif","IBM Plex Sans Thai",Georgia,serif;
+  --sans:"IBM Plex Sans Thai","Noto Sans Thai",system-ui,sans-serif;
+  --back:url("assets/card-back.webp");
+}
+*{box-sizing:border-box}
+html{color-scheme:dark;scroll-behavior:smooth}
+body{margin:0;min-height:100vh;color:var(--text);font:400 17px/1.75 var(--sans);
+  background:radial-gradient(900px 520px at 50% -120px,#241a11 0,transparent 70%) no-repeat,var(--bg)}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.link{color:var(--text);border-bottom:1px solid var(--dim);padding-bottom:1px}
+.link:hover{color:var(--gold);border-color:var(--gold)}
+.note{font-size:.85rem;color:var(--dim);line-height:1.7;margin:0}
+.empty{margin:0;color:var(--dim)}
+
+/* top */
+.top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 32px;
+  max-width:1180px;margin:0 auto;padding:24px 28px 0}
+.mark{font:italic 400 1.7rem/1 var(--display);margin:0}
+.top nav{display:flex;gap:28px}
+.top nav button{padding:4px 0;color:var(--dim);border-bottom:1px solid transparent}
+.top nav button:hover{color:var(--text)}
+.top nav button[aria-current=page]{color:var(--text);border-bottom-color:var(--gold)}
+main{max-width:1180px;margin:0 auto;padding:0 28px 100px}
+h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
+
+/* ask */
+.ask{display:grid;justify-items:center;gap:30px;padding:64px 0 20px;text-align:center}
+.q{width:min(820px,100%);background:transparent;border:0;border-bottom:1px solid var(--line);padding:12px 4px;
+  font:400 clamp(1.7rem,4.2vw,3rem)/1.25 var(--display);text-align:center;color:var(--text)}
+.q::placeholder{color:#9a8f7e99;font-style:italic}
+.q:focus{outline:0;border-bottom-color:var(--gold)}
+.picks{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;border:0;margin:0;padding:0;position:relative}
+.pick{display:inline-flex;align-items:center;gap:10px;padding:8px 20px 8px 14px;border:1px solid var(--line);border-radius:999px;color:var(--dim);cursor:pointer;line-height:1.4}
+.pick:hover{color:var(--text);border-color:#ffffff40}
+.pick input{position:absolute;opacity:0}
+.pick svg{width:22px;height:22px;flex:none}
+.pick rect{fill:currentColor} .pick rect.x{fill:var(--gold)}
+.pick small{color:inherit;opacity:.7;margin-left:6px}
+.pick:has(input:checked){background:var(--text);border-color:var(--text);color:var(--bg)}
+.pick:has(input:checked) rect.x{fill:#8e2a2c}
+.pick:has(input:focus-visible){outline:2px solid var(--gold);outline-offset:3px}
+.switch{display:inline-flex;gap:10px;align-items:center;color:var(--dim);cursor:pointer}
+.switch input{accent-color:var(--gold);width:18px;height:18px}
+.deck-btn{display:flex;flex-direction:column;align-items:center;gap:22px;margin-top:10px}
+.deck{position:relative;display:block;width:190px;aspect-ratio:937/1678}
+.deck i,.deck b{position:absolute;inset:0;background:var(--back) center/100% 100%;box-shadow:0 24px 50px -18px #000;transition:transform .25s}
+.deck i:nth-child(1){transform:translate(-8px,8px) rotate(-3deg)}
+.deck i:nth-child(2){transform:translate(-4px,4px) rotate(-1deg)}
+.deck-btn:hover .deck b{transform:translateY(-8px)}
+.deck-btn span.t{color:var(--gold);font-weight:500}
+
+/* session */
+.recap{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 28px;padding:32px 0 20px;border-bottom:1px solid var(--line)}
+.rq{margin:0;font:400 clamp(1.5rem,3vw,2.2rem)/1.3 var(--display)}
+.rm{margin:0;color:var(--dim);display:flex;gap:22px;align-items:baseline}
+.stage{display:grid;place-items:center;padding:44px 0 10px}
+.table{position:relative}
+.slot{position:absolute}
+.slot.deal{animation:deal .7s cubic-bezier(.2,.7,.2,1) backwards;animation-delay:var(--d)}
+@keyframes deal{from{transform:translate(var(--fx),var(--fy));opacity:0}to{transform:none;opacity:1}}
+.turn{perspective:900px}
+.card{display:block;position:relative;width:100%;aspect-ratio:937/1678;transform-style:preserve-3d;transition:transform .6s}
+.card[aria-pressed=true]{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden;box-shadow:0 22px 44px -16px #000}
+.back{background:var(--back) center/100% 100%}
+.front{transform:rotateY(180deg);background:#14110f}
+.front img{width:100%;height:100%;object-fit:contain;display:block}
+.front img.rev{transform:rotate(180deg)}
+.card:hover .back{outline:1px solid var(--gold);outline-offset:4px}
+.num{position:absolute;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;
+  border:1px solid var(--gold);background:#0b0908d9;color:var(--gold);font-size:.78rem;line-height:1;pointer-events:none}
+.lbl{text-align:center;font-size:.85rem;line-height:1.4;color:var(--dim);margin-top:10px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 26px;justify-content:center;margin:26px auto 0;max-width:900px;color:var(--dim);font-size:.9rem}
+.legend b{color:var(--gold);font-weight:500;margin-right:6px}
+.acts{display:flex;gap:28px;justify-content:center;margin-top:34px}
+
+/* chapters */
+.chaps{margin-top:64px}
+.chap{display:grid;grid-template-columns:minmax(190px,300px) minmax(0,1fr);gap:56px;padding:64px 0;border-top:1px solid var(--line);scroll-margin-top:12px}
+.chap img{width:100%;display:block;box-shadow:0 28px 60px -22px #000}
+.chap img.rev{transform:rotate(180deg)}
+.where{margin:0 0 10px;color:var(--gold)}
+.name{margin:0;font:400 clamp(2.6rem,5.2vw,4.4rem)/1 var(--display)}
+.th{margin:12px 0 0;font-weight:500;font-size:1.15rem}
+.ori{color:var(--dim);font-weight:400;margin-left:12px}
+.lead{margin:30px 0 0;font-size:1.4rem;line-height:1.6;max-width:30em}
+.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:26px;margin:36px 0 0}
+.trio dt{color:var(--dim);font-size:.85rem;margin:0 0 4px}
+.trio dd{margin:0;font-size:.98rem;line-height:1.7}
+.qq{margin:36px 0 0;padding-top:22px;border-top:1px solid var(--line);color:var(--gold);font-size:1.2rem;line-height:1.6;max-width:32em}
+.up{display:inline-block;margin-top:22px;font-size:.88rem;color:var(--dim)}
+
+.overview{margin-top:40px;padding-top:56px;border-top:1px solid var(--line);max-width:760px}
+.ov{list-style:none;margin:0 0 44px;padding:0}
+.ov li{margin:0 0 16px}
+
+/* catalog */
+.finder{display:flex;flex-wrap:wrap;gap:16px 40px;align-items:end;margin:18px 0 38px}
+.finder input{width:min(380px,100%);background:transparent;border:0;border-bottom:1px solid var(--line);padding:8px 2px;color:var(--text)}
+.finder input::placeholder{color:#9a8f7e99}
+.finder input:focus{outline:0;border-bottom-color:var(--gold)}
+.cats{display:flex;flex-wrap:wrap;gap:6px 24px}
+.cats button{color:var(--dim);padding:2px 0;border-bottom:1px solid transparent}
+.cats button:hover{color:var(--text)}
+.cats button[aria-pressed=true]{color:var(--text);border-bottom-color:var(--gold)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:40px 26px}
+.tile{text-align:left;display:block;width:100%}
+.tile img{display:block;width:100%;aspect-ratio:937/1678;object-fit:contain;background:#14110f;box-shadow:0 22px 44px -18px #000}
+.tile:hover img{outline:1px solid var(--gold);outline-offset:4px}
+.tile span{display:block;margin-top:14px;font:400 1.4rem/1.2 var(--display)}
+.tile b{display:block;font-weight:400;color:var(--dim);font-size:.9rem;line-height:1.5}
+
+/* dialog */
+dialog{padding:0;border:1px solid var(--line);background:#12100e;color:var(--text);max-width:min(900px,94vw);width:100%;max-height:92vh;overflow:auto}
+dialog::backdrop{background:#000c}
+.det{display:grid;grid-template-columns:minmax(0,300px) 1fr;gap:40px;padding:36px}
+.det img{width:100%;display:block}
+.det .en{font:400 2.6rem/1.1 var(--display);margin:0}
+.det h2{font:500 1.1rem/1.5 var(--sans);margin:6px 0 0}
+.det .kw{margin:6px 0 0;color:var(--dim);font-size:.9rem}
+.det dl{margin:24px 0 0}
+.det dt{color:var(--dim);font-size:.85rem;margin-top:14px}
+.det dd{margin:0}
+.det .qq{margin-top:26px}
+.x{position:absolute;top:10px;right:14px;font-size:1.2rem;line-height:1;padding:8px;color:var(--dim)}
+.x:hover{color:var(--text)}
+
+/* history */
+.log{list-style:none;margin:24px 0 0;padding:0;max-width:760px}
+.log li{padding:26px 0;border-bottom:1px solid var(--line)}
+.log .q2{font:400 1.8rem/1.3 var(--display);margin:0}
+.log .meta{color:var(--dim);font-size:.9rem;margin:2px 0 14px}
+.strip{display:flex;flex-wrap:wrap;gap:8px 12px;margin-bottom:12px}
+.strip img{height:96px;display:block}
+.strip img.rev{transform:rotate(180deg)}
+.foot{margin-top:72px}
+
+@media(max-width:860px){
+  main,.top{padding-left:18px;padding-right:18px}
+  .ask{padding-top:40px}
+  .chap{grid-template-columns:1fr;gap:26px;padding:44px 0}
+  .chap figure{margin:0;max-width:200px}
+  .trio{grid-template-columns:1fr;gap:18px}
+  .det{grid-template-columns:1fr;padding:24px 18px;gap:24px}
+  .det img{max-width:220px}
+}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .slot.deal{animation:none}.card,.deck i,.deck b{transition:none}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1 class="mark">Gothic Ivory Rose</h1>
+  <nav aria-label="เมนูหลัก">
+    <button id="n-read" aria-current="page">จั่วไพ่</button>
+    <button id="n-cat">ไพ่ทั้งสำรับ</button>
+    <button id="n-hist">บันทึกของฉัน</button>
+  </nav>
+</header>
+<main>
+<p id="err" class="note" hidden></p>
+
+<section id="read">
+  <form class="ask" id="ask">
+    <input class="q" id="q" type="text" aria-label="คำถามของฉัน" placeholder="คุณอยากถามอะไรกับไพ่" autocomplete="off">
+    <fieldset class="picks" id="spreads"><legend class="sr">รูปแบบการวาง</legend></fieldset>
+    <label class="switch"><input type="checkbox" id="rev"> ให้มีไพ่กลับหัว</label>
+    <button class="deck-btn" type="submit" id="deckbtn">
+      <span class="deck" aria-hidden="true"><i></i><i></i><b></b></span>
+      <span class="t">จั่วไพ่</span>
+    </button>
+  </form>
+
+  <div id="session" hidden>
+    <div class="recap" id="recap"></div>
+    <div class="stage" id="stage"><div class="table" id="table"></div></div>
+    <div class="legend" id="legend" hidden></div>
+    <div class="acts">
+      <a class="link" id="toread" href="#chapters" hidden>ไปอ่านความหมาย</a>
+      <button class="link" id="all" type="button">เปิดทั้งหมด</button>
+      <button class="link" id="save" type="button">บันทึกผลนี้</button>
+    </div>
+    <div class="chaps" id="chapters"></div>
+    <section class="overview" id="overview" hidden></section>
+  </div>
+  <p class="note foot">ไพ่ถูกสุ่มครั้งเดียวตอนจั่ว คำถามและผลอยู่ในเครื่องคุณเท่านั้น ใช้เพื่อสำรวจสถานการณ์ ไม่ใช่คำทำนาย วิธีอ่านภาพรวมสรุปจากคู่มือทั่วไป (รายการอ้างอิงอยู่ใน docs/05) และไม่ใช่กฎตายตัว</p>
+</section>
+
+<section id="cat" hidden>
+  <h2>ไพ่ทั้งสำรับ</h2>
+  <div class="finder">
+    <input id="s" type="search" placeholder="ค้นหาชื่อไทย อังกฤษ หรือคำสำคัญ" aria-label="ค้นหาไพ่">
+    <div class="cats" id="cats"></div>
+  </div>
+  <div class="grid" id="grid"></div>
+</section>
+
+<section id="hist" hidden>
+  <h2>บันทึกของฉัน</h2>
+  <div class="acts" style="justify-content:flex-start;margin:0">
+    <button class="link" id="exp" type="button">ส่งออกเป็น JSON</button>
+    <button class="link" id="clr" type="button">ลบทั้งหมด</button>
+  </div>
+  <ul class="log" id="list"></ul>
+</section>
+</main>
+
+<dialog id="dlg"><button class="x" id="dx" aria-label="ปิด">✕</button><div id="dbody"></div></dialog>
+
+<script type="module">
+import {createReading, meaningFor} from './scripts/reading-core.mjs';
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const KEY = 'taro-readings';
+const CATS = [['', 'ทั้งหมด'], ['major', 'ไพ่ใหญ่'], ['wands', 'ไม้เท้า'], ['cups', 'ถ้วย'], ['swords', 'ดาบ'], ['pentacles', 'เหรียญ']];
+let cards, byId, spreads, reading, shown = new Set(), cat = '';
+
+try {
+  const [c, s] = await Promise.all(['data/cards.public.json', 'data/spreads.json'].map(u => fetch(u).then(r => r.json())));
+  cards = c.cards; spreads = s.spreads; byId = Object.fromEntries(cards.map(x => [x.id, x]));
+  $('rev').checked = s.default_reversed;
+} catch (e) {
+  $('err').hidden = false;
+  $('err').textContent = 'โหลดข้อมูลไม่ได้ ให้เปิดผ่านเซิร์ฟเวอร์ด้วยคำสั่ง python3 -m http.server แล้วเข้าที่ localhost';
+  throw e;
+}
+const spreadOf = id => spreads.find(s => s.id === id);
+const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } };
+const store = v => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch {} };
+const oriTh = o => o === 'reversed' ? 'กลับหัว' : 'ตั้งตรง';
+const nameOf = c => `${c.name_en} ${c.name_th}`;
+
+/* ---------- views ---------- */
+const views = {read: 'n-read', cat: 'n-cat', hist: 'n-hist'};
+function show(name) {
+  for (const [k, b] of Object.entries(views)) {
+    $(k).hidden = k !== name;
+    k === name ? $(b).setAttribute('aria-current', 'page') : $(b).removeAttribute('aria-current');
+  }
+  if (name === 'hist') renderHist();
+}
+for (const [k, b] of Object.entries(views)) $(b).onclick = () => show(k);
+
+/* ---------- layout shared by glyphs and the table ---------- */
+function layout(sp, w) {
+  const h = w * 1.79, ux = w * 1.15, P = sp.positions;
+  const lbl = P.every(p => p.y === 0) ? w * 0.5 : 0;   // labels fit only in single-row spreads
+  const uy = (h * 1.05) / 1.5;
+  const x0 = Math.min(...P.map(p => p.x)), y0 = Math.min(...P.map(p => p.y));
+  return {
+    w, h, lbl,
+    W: (Math.max(...P.map(p => p.x)) - x0) * ux + w,
+    H: (Math.max(...P.map(p => p.y)) - y0) * uy + h + lbl,
+    at: p => ({left: (p.x - x0) * ux, top: (p.y - y0) * uy})
+  };
+}
+
+/* ---------- spread chooser ---------- */
+function glyph(sp) {
+  const L = layout(sp, 10), H = L.H - L.lbl, s = Math.min(44 / L.W, 44 / H);
+  const ox = (44 - L.W * s) / 2, oy = (44 - H * s) / 2;
+  return `<svg viewBox="0 0 44 44" aria-hidden="true">${sp.positions.map(p => {
+    const {left, top} = L.at(p), cx = ox + (left + L.w / 2) * s, cy = oy + (top + L.h / 2) * s;
+    return `<rect class="${p.layout_rotation ? 'x' : ''}" x="${-L.w * s / 2}" y="${-L.h * s / 2}" width="${L.w * s}" height="${L.h * s}" transform="translate(${cx} ${cy}) rotate(${p.layout_rotation})"/>`;
+  }).join('')}</svg>`;
+}
+$('spreads').insertAdjacentHTML('beforeend', spreads.map(s => `<label class="pick">
+  <input type="radio" name="spread" value="${s.id}" ${s.id === 'three' ? 'checked' : ''}>${glyph(s)}
+  <span>${esc(s.name_th)}<small>${s.positions.length} ใบ</small></span></label>`).join(''));
+const chosen = () => spreadOf(document.querySelector('input[name=spread]:checked').value);
+
+/* ---------- table ---------- */
+const posOf = r => spreadOf(reading.spread_id).positions.find(q => q.id === r.position_id);
+
+function renderTable(animate) {
+  const sp = spreadOf(reading.spread_id), xs = sp.positions.map(p => p.x);
+  const span = (Math.max(...xs) - Math.min(...xs)) * 1.15 + 1;
+  const hPerW = layout(sp, 100).H / 100;
+  const w = Math.max(54, Math.min(230, Math.floor(($('stage').clientWidth - 8) / span), Math.floor(820 / hPerW)));
+  const L = layout(sp, w), t = $('table');
+  t.style.cssText = `width:${L.W}px;height:${L.H}px`;
+  t.innerHTML = reading.cards.map((r, i) => {
+    const p = posOf(r), c = byId[r.card_id], pos = L.at(p), open = shown.has(i);
+    const nx = p.layout_rotation ? (L.w - L.h) / 2 : 0, ny = p.layout_rotation ? (L.h - L.w) / 2 : 0;
+    return `<div class="slot ${animate ? 'deal' : ''}" style="left:${pos.left}px;top:${pos.top}px;width:${L.w}px;--fx:${L.W / 2 - L.w / 2 - pos.left}px;--fy:${(L.H - L.lbl) / 2 - L.h / 2 - pos.top}px;--d:${i * 90}ms">
+      <div class="turn" style="transform:rotate(${p.layout_rotation}deg)">
+        <button class="card" data-i="${i}" aria-pressed="${open}" aria-label="${i + 1} ${esc(p.label_th)}: ${open ? esc(nameOf(c)) + ' ' + oriTh(r.orientation) + ' แตะเพื่ออ่านความหมาย' : 'ยังไม่เปิด แตะเพื่อเปิด'}">
+          <span class="face back"></span>
+          <span class="face front"><img class="${r.orientation === 'reversed' ? 'rev' : ''}" src="${c.image_web}" alt=""></span>
+        </button>
+      </div>
+      <span class="num" style="left:${nx + 8}px;top:${ny + 8}px">${i + 1}</span>
+      ${L.lbl ? `<div class="lbl">${esc(p.label_th)}</div>` : ''}
+    </div>`;
+  }).join('');
+  const lg = $('legend');
+  lg.hidden = !!L.lbl;
+  lg.innerHTML = L.lbl ? '' : reading.cards.map((r, i) => `<span><b>${i + 1}</b>${esc(posOf(r).label_th)}</span>`).join('');
+}
+
+/* ---------- chapters: one per opened card ---------- */
+function renderChapters() {
+  $('chapters').innerHTML = reading.cards.map((r, i) => {
+    if (!shown.has(i)) return '';
+    const c = byId[r.card_id];
+    return `<article class="chap" id="c${i}">
+      <figure><img class="${r.orientation === 'reversed' ? 'rev' : ''}" src="${c.image_web}" alt="${esc(c.alt_th)}"></figure>
+      <div>
+        <p class="where">${i + 1}. ${esc(posOf(r).label_th)}</p>
+        <h3 class="name">${esc(c.name_en)}</h3>
+        <p class="th">${esc(c.name_th)}<span class="ori">${oriTh(r.orientation)}</span></p>
+        <p class="lead">${esc(meaningFor(c, r.orientation))}</p>
+        <dl class="trio"><div><dt>ความรัก</dt><dd>${esc(c.love_th)}</dd></div>
+          <div><dt>การงาน</dt><dd>${esc(c.work_th)}</dd></div>
+          <div><dt>คำแนะนำ</dt><dd>${esc(c.advice_th)}</dd></div></dl>
+        <p class="qq">${esc(c.reflection_th)}</p>
+        <a class="up" href="#table">กลับไปที่โต๊ะ</a>
+      </div></article>`;
+  }).join('');
+  $('toread').hidden = !shown.size;
+  renderOverview();
+}
+
+const ELEM = {wands: ['ไม้เท้า', 'ไฟ คือการลงมือและแรงบันดาลใจ'], cups: ['ถ้วย', 'น้ำ คือความรู้สึกและความสัมพันธ์'],
+  swords: ['ดาบ', 'ลม คือความคิด การสื่อสาร และความขัดแย้ง'], pentacles: ['เหรียญ', 'ดิน คือเงิน งาน ร่างกาย และชีวิตประจำวัน']};
+const RANK = {ace: ['เอซ', 'การเริ่มต้น'], two: ['เลข 2', 'ทางเลือกและความสมดุล'], three: ['เลข 3', 'การร่วมสร้าง'],
+  four: ['เลข 4', 'ความมั่นคง หรือการนิ่งค้าง'], five: ['เลข 5', 'ความขัดแย้งและการเปลี่ยนแปลง'], six: ['เลข 6', 'การปรับสมดุลและการผ่านพ้น'],
+  seven: ['เลข 7', 'การประเมินและการถูกท้าทาย'], eight: ['เลข 8', 'การเคลื่อนไหวและการฝึกฝน'], nine: ['เลข 9', 'ใกล้เส้นชัยและการทดสอบรอบสุดท้าย'],
+  ten: ['เลข 10', 'การจบวงจรและความเต็มที่'], page: ['มหาดเล็ก', 'ข่าวสารและการเรียนรู้'], knight: ['อัศวิน', 'การเคลื่อนไหวและการลงมือ'],
+  queen: ['ราชินี', 'การดูแลและพลังภายใน'], king: ['ราชา', 'การนำและการควบคุม']};
+const COURT = ['page', 'knight', 'queen', 'king'];
+const HOW = {
+  single: 'ไพ่ใบเดียวอ่านเป็นคำถามสะท้อนใจ ไม่ใช่คำตอบสำเร็จรูป ลองอ่านทั้งด้านที่ปรากฏและด้านตรงข้าม แล้วดูว่าด้านไหนตรงกับสถานการณ์มากกว่า',
+  three: 'อ่านสามใบเป็นประโยคเดียว คือสถานการณ์ส่งต่อไปยังสิ่งที่ต้องเข้าใจ แล้วนำไปสู่ก้าวถัดไป ไพ่ที่ฟังดูหนักในใบแรกมักเป็นแผลที่กำลังเยียวยา ไม่ใช่คำพิพากษา',
+  'relationship-five': 'ไพ่ 1 และ 5 เป็นฝั่งของคุณ คือความต้องการและก้าวถัดไป ไพ่ 2 และ 4 คือสิ่งที่เกิดระหว่างกันและเรื่องที่ควรคุย ไพ่ 3 ตรงกลางคือจุดเชื่อม ลองอ่านจากซ้ายไปขวาเป็นเรื่องเดียว แล้วดูว่าไพ่ 3 เชื่อมต้นเรื่องกับปลายเรื่องอย่างไร',
+  'celtic-cross': 'อ่านแกนกลางก่อน ไพ่ 1 กับ 2 คือหัวใจของเรื่อง จากนั้นอ่านแกนตั้งจากรากฐาน (4) ไปสิ่งที่มุ่งหวัง (3) แล้วแกนเวลาจากอิทธิพลที่ผ่านมา (5) ไปแนวโน้มใกล้ (6) ปิดด้วยคอลัมน์ขวา 7 ถึง 10 ซึ่งบอกท่าทีของคุณ สภาพแวดล้อม ความหวังและความกลัว และแนวโน้มหากปัจจัยเดิมดำเนินต่อ'
+};
+
+function renderOverview() {
+  const rc = reading.cards.map(r => ({c: byId[r.card_id], rev: r.orientation === 'reversed'})), n = rc.length;
+  const done = rc.every((_, i) => shown.has(i)), items = [];
+  const names = list => list.map(x => x.c.name_en).join(', ');
+  if (done && n >= 3) {
+    const maj = rc.filter(x => x.c.arcana === 'major'), min = rc.filter(x => x.c.arcana === 'minor');
+    if (!maj.length) items.push('ไม่มีไพ่ใหญ่เลย เรื่องนี้อยู่ในระดับชีวิตประจำวัน การลงมือและการพูดคุยก็เปลี่ยนสถานการณ์ได้');
+    else if (maj.length * 2 >= n) items.push(`ไพ่ใหญ่ ${maj.length} จาก ${n} ใบ (${names(maj)}) เรื่องนี้มีน้ำหนักเกินกว่าเรื่องรายวัน เกี่ยวกับบทเรียนหรือจุดเปลี่ยนของชีวิต`);
+    else items.push(`มีไพ่ใหญ่ ${maj.length} ใบ (${names(maj)}) ใส่ใจใบเหล่านี้เป็นพิเศษ เพราะมักถือแก่นของเรื่อง`);
+    for (const [suit, [th, el]] of Object.entries(ELEM)) {
+      const k = min.filter(x => x.c.suit === suit).length;
+      if (k >= 2 && k * 2 >= min.length) items.push(`หมวด${th}เด่น (${k} ใบ) ธาตุ${el} เป็นแกนของเรื่องนี้`);
+    }
+    if (n >= 5) {
+      const gone = Object.entries(ELEM).filter(([suit]) => !min.some(x => x.c.suit === suit));
+      if (gone.length) items.push(`ไม่มีหมวด${gone.map(([, [th]]) => th).join(' และ ')}เลย ด้านนี้อาจยังไม่ได้ถูกพูดถึงในเรื่องนี้`);
+    }
+    for (const [rk, [th, mean]] of Object.entries(RANK)) {
+      const same = min.filter(x => x.c.rank === rk);
+      if (same.length >= 2) items.push(`${th} ปรากฏซ้ำ ${same.length} ใบ (${names(same)}) ธีม${mean}ถูกย้ำหลายครั้ง`);
+    }
+    const courts = min.filter(x => COURT.includes(x.c.rank));
+    if (courts.length >= 2) items.push(`มีไพ่บุคคล ${courts.length} ใบ (${names(courts)}) เรื่องนี้เกี่ยวพันกับคนหรือบทบาทหลายแบบ ลองถามว่าแต่ละใบแทนใคร หรือแทนด้านไหนของตัวคุณเอง`);
+    const rev = rc.filter(x => x.rev).length;
+    if (reading.reversed_enabled && rev * 2 >= n) items.push(`ไพ่กลับหัว ${rev} จาก ${n} ใบ พลังเหล่านี้อาจติดขัด ล้นเกิน ช้ากว่าที่คิด หรืออยู่ภายในใจมากกว่าเกิดขึ้นภายนอก อ่านเป็นจุดที่ยังไม่ลื่นไหล ไม่ใช่ลางร้าย`);
+    if (!items.length) items.push('ไพ่กระจายหลายหมวดและไม่มีธีมซ้ำที่เด่น อ่านทีละตำแหน่งเป็นเรื่องเล่าตามลำดับได้เลย');
+  }
+  const tips = [HOW[reading.spread_id],
+    'ตำแหน่งเปลี่ยนความหมายของไพ่ ไพ่ที่ฟังดูหนักในตำแหน่งอดีตอาจเป็นแผลที่กำลังเยียวยา ไม่ใช่เรื่องที่รออยู่ข้างหน้า',
+    'ไพ่ที่อยู่ติดกันขยายหรือเบาความหมายของกันและกัน ลองอ่านเป็นคู่ แล้วถามว่าใบหนึ่งกำลังเสริมหรือถ่วงอีกใบ',
+    reading.reversed_enabled && 'ไพ่กลับหัวอาจหมายถึงพลังที่ล้นเกิน ติดขัด ชะลอ หรือเป็นเรื่องภายใน ไม่จำเป็นต้องเป็นด้านลบ'].filter(Boolean);
+  $('overview').hidden = !shown.size;
+  $('overview').innerHTML = `<h2>ภาพรวมของการจั่วนี้</h2>
+    ${items.length ? `<ul class="ov">${items.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : '<p class="empty" style="margin-bottom:44px">เปิดไพ่ครบทุกใบเพื่อดูภาพรวมจากหมวดและเลขที่ปรากฏ</p>'}
+    <h2>วิธีอ่านให้เป็นเรื่องเดียว</h2><ul class="ov">${tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>`;
+}
+
+/* ---------- actions ---------- */
+function openCard(i) {
+  if (shown.has(i)) { $('c' + i)?.scrollIntoView(); return; }   // second tap on an open card jumps to its reading
+  const r = reading.cards[i], b = document.querySelector(`.card[data-i="${i}"]`);
+  shown.add(i);
+  b.setAttribute('aria-pressed', 'true');
+  b.setAttribute('aria-label', `${i + 1} ${nameOf(byId[r.card_id])} ${oriTh(r.orientation)} แตะเพื่ออ่านความหมาย`);
+  renderChapters();
+}
+
+function draw() {
+  try { reading = createReading(cards, chosen(), {question: $('q').value, reversed: $('rev').checked}); }
+  catch (e) { alert(e.message); return; }
+  shown = new Set();
+  $('ask').hidden = true; $('session').hidden = false;
+  $('recap').innerHTML = `<p class="rq">${esc(reading.question) || 'ไม่ได้ตั้งคำถาม'}</p>
+    <p class="rm"><span>${esc(chosen().name_th)}</span><button class="link" id="again" type="button">จั่วใหม่</button></p>`;
+  renderTable(true); renderChapters();
+  scrollTo(0, 0);
+}
+$('ask').onsubmit = e => { e.preventDefault(); draw(); };
+$('recap').onclick = e => { if (e.target.id === 'again') { $('session').hidden = true; $('ask').hidden = false; scrollTo(0, 0); $('q').focus(); } };
+$('table').onclick = e => { const b = e.target.closest('.card'); if (b) openCard(+b.dataset.i); };
+$('all').onclick = () => { reading.cards.forEach((_, i) => shown.add(i)); renderTable(false); renderChapters(); $('chapters').scrollIntoView(); };
+$('save').onclick = () => {
+  store([...load(), reading]); $('save').textContent = 'บันทึกผลนี้แล้ว';
+  setTimeout(() => $('save').textContent = 'บันทึกผลนี้', 1800);
+};
+let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => reading && !$('session').hidden && renderTable(false), 150); });
+
+/* ---------- catalog ---------- */
+function detail(c) {
+  const rows = [['ตั้งตรง', c.upright_th], ['กลับหัว', c.reversed_th], ['ความรัก', c.love_th], ['การงาน', c.work_th], ['คำแนะนำ', c.advice_th]];
+  $('dbody').innerHTML = `<div class="det"><img src="${c.image_web}" alt="${esc(c.alt_th)}"><div>
+    <p class="en">${esc(c.name_en)}</p><h2>${esc(c.name_th)}</h2>
+    <p class="kw">${esc(c.keywords_th.join(', '))}</p>
+    <dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
+    <p class="qq">${esc(c.reflection_th)}</p></div></div>`;
+  $('dlg').showModal();
+}
+$('dx').onclick = () => $('dlg').close();
+$('dlg').onclick = e => { if (e.target === $('dlg')) $('dlg').close(); };
+
+function renderCat() {
+  const q = $('s').value.trim().toLowerCase();
+  const list = cards.filter(c => (!cat || c.arcana === cat || c.suit === cat) &&
+    (!q || [c.name_th, c.name_en, ...c.keywords_th].some(t => t.toLowerCase().includes(q))));
+  $('cats').innerHTML = CATS.map(([k, n]) => `<button data-k="${k}" aria-pressed="${k === cat}">${n}</button>`).join('');
+  $('grid').innerHTML = list.map(c => `<button class="tile" data-id="${c.id}">
+    <img loading="lazy" src="${c.image_web}" alt="${esc(c.alt_th)}"><span>${esc(c.name_en)}</span><b>${esc(c.name_th)}</b></button>`).join('')
+    || '<p class="empty">ไม่พบไพ่ที่ตรงกับคำค้น ลองใช้ชื่อสั้นลงหรือเลือกหมวดทั้งหมด</p>';
+}
+$('cats').onclick = e => { if (e.target.dataset.k != null) { cat = e.target.dataset.k; renderCat(); } };
+$('grid').onclick = e => { const b = e.target.closest('.tile'); if (b) detail(byId[b.dataset.id]); };
+$('s').oninput = renderCat;
+renderCat();
+
+/* ---------- history ---------- */
+function renderHist() {
+  $('list').innerHTML = load().map((r, i) => `<li>
+    <p class="q2">${esc(r.question) || esc(spreadOf(r.spread_id)?.name_th)}</p>
+    <p class="meta">${esc(spreadOf(r.spread_id)?.name_th)} เมื่อ ${new Date(r.created_at).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'})}</p>
+    <div class="strip">${r.cards.map(x => byId[x.card_id] ? `<img class="${x.orientation === 'reversed' ? 'rev' : ''}" src="${byId[x.card_id].image_web}" alt="${esc(nameOf(byId[x.card_id]))} ${oriTh(x.orientation)}">` : '').join('')}</div>
+    <button class="link" data-d="${i}">ลบบันทึกนี้</button></li>`).join('')
+    || '<li class="empty">ยังไม่มีบันทึก จั่วไพ่แล้วกด “บันทึกผลนี้” เพื่อเก็บไว้ในเครื่อง</li>';
+}
+$('list').onclick = e => { const d = e.target.dataset.d; if (d != null) { store(load().filter((_, i) => i != d)); renderHist(); } };
+$('clr').onclick = () => { if (confirm('ลบบันทึกทั้งหมดในเครื่องนี้?')) { store([]); renderHist(); } };
+$('exp').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(load(), null, 2)], {type: 'application/json'}));
+  a.download = 'taro-readings.json'; a.click();
+};
+</script>
+</body>
+</html>

@@ -25,3 +25,15 @@ Waite มีคำอ่านหลายแนวและบางส่ว�
 ภาพเป็น AI-generated original reinterpretations สร้างด้วย imagegen โดยใช้ The Moon ที่ผู้ใช้เลือกเป็น style reference ร่วมและกำหนดฉากใหม่รายใบ ผู้ใช้แนบตัวอย่างสไตล์สามภาพ แต่ไฟล์อ้างอิงเหล่านั้นไม่รวมใน ZIP และไม่อ้างว่าเป็นทรัพย์สินของสำรับนี้
 
 ไม่ได้คัดลอกงานภาพ RWS สแกนมาระบายสีใหม่ และไม่ได้รับรองว่างาน AI มีสิทธิผูกขาดหรือทะเบียนลิขสิทธิ์ในทุกประเทศ เอกสารนี้ไม่กำหนดสัญญาอนุญาตขายแทนเจ้าของโปรเจกต์ และไม่ให้สิทธิในภาพอ้างอิงของบุคคลอื่น
+
+## แนวทางการอ่านภาพรวมและไพ่กลับหัว (เพิ่ม 28 ตุลาคม 2026)
+
+ส่วน “ภาพรวมของการจั่วนี้” และ “วิธีอ่านให้เป็นเรื่องเดียว” ในเว็บ รวมถึงการปรับถ้อยคำไพ่กลับหัวเป็นความติดขัด ล้นเกิน ช้ากว่าที่คิด หรือเรื่องภายใน สรุปจากคู่มือทั่วไปเหล่านี้ ไม่ใช่กฎมาตรฐานเดียวและไม่ได้คัดลอกข้อความต้นฉบับ
+
+- Labyrinthos, how to interpret reversed tarot cards: https://labyrinthos.co/blogs/learn-tarot-with-labyrinthos-academy/how-to-interpret-reversed-tarot-cards
+- Biddy Tarot, how to interpret reversed tarot cards without the doom and gloom: https://biddytarot.com/blog/how-to-interpret-reversed-tarot-cards/
+- Incandescent Tarot, 4 ways to interpret reversed tarot cards: https://incandescenttarot.com/blog/2016/10/5/4-ways-to-interpret-reversed-tarot-cards
+- Carrie Mallon, the most elegant way to read reversals: https://carriemallon.substack.com/p/the-most-elegant-way-to-read-reversals
+- Jobcannon, three-card spread (อ่านสามใบเป็นเรื่องเดียว ตำแหน่งเปลี่ยนความหมาย): https://jobcannon.io/tarot/spreads/three-card
+
+ความหมายตั้งตรง กลับหัว ความรัก การงาน และคำถามสะท้อนใจรายใบถูกเขียนใหม่ให้เป็นประโยคอ่านลื่นและเฉพาะใบ แทนแม่แบบเดิมที่ใช้ซ้ำทุกใบ เป็นการเรียบเรียงของผู้จัดทำบนฐานความหมายสาย RWS
