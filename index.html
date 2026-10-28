@@ -315,7 +315,12 @@ function toHome() {
 const leave = () => history.state?.v ? history.back() : toHome();
 const enter = () => history.state?.v || history.pushState({v: 1}, '');
 $('home').onclick = leave;
-addEventListener('popstate', () => { if (pk || !$('session').hidden) toHome(); });
+addEventListener('popstate', e => { if (!e.state?.v && !location.hash && (pk || !$('session').hidden)) toHome(); });
+// In-page links scroll without adding history entries (a hash step would otherwise look like "Back" to the handler above).
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#"]'), t = a && document.getElementById(a.getAttribute('href').slice(1));
+  if (t) { e.preventDefault(); t.scrollIntoView(); }
+});
 
 /* ---------- layout shared by glyphs and the table ---------- */
 function layout(sp, w) {
