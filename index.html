@@ -118,10 +118,9 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 .slots li.on .sl{border:0;background:var(--back) center/100% 100%;box-shadow:0 8px 18px -8px #000}
 .slots li.on .sl{cursor:pointer;transition:transform .18s} .slots li.on .sl:hover,.slots li.on .sl:focus-visible{transform:translateY(-4px)}
 .pickhead{position:relative}
-.pickhead.closing::after{content:'';position:absolute;left:0;bottom:-1px;height:2px;background:var(--gold);animation:fill 2.5s linear forwards}
+.pickhead.closing::after{content:'';position:absolute;left:0;bottom:-1px;height:2px;background:var(--gold);animation:fill 1s linear forwards}
 @keyframes fill{from{width:0}to{width:100%}}
-.pickacts{display:flex;gap:22px;align-items:baseline} .go{background:var(--gold);color:#120d06;border:0;border-radius:999px;padding:8px 20px;font-weight:500}
-.go:hover{color:#120d06;filter:brightness(1.1)}
+.pickacts{display:flex;gap:22px;align-items:baseline}
 .slots.many{gap:8px 6px}.slots.many li{width:18%;max-width:64px;font-size:0}.slots.many .sl{width:30px}
 .slots li.now{color:var(--gold)} .slots li.now .sl{border-color:var(--gold)}
 .fanwrap{overflow:hidden;padding:24px 0 8px;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
@@ -238,7 +237,7 @@ dialog::backdrop{background:#000c}
   <section id="pick" hidden>
     <div class="pickhead">
       <p class="pstep" id="pstep" aria-live="polite"></p>
-      <span class="pickacts"><button class="link go" type="button" id="pickgo" hidden>เปิดไพ่เลย</button><button class="link" type="button" id="pickcancel">ยกเลิก</button></span>
+      <span class="pickacts"><button class="link" type="button" id="pickcancel">ยกเลิก</button></span>
     </div>
     <ol class="slots" id="slots"></ol>
     <div class="fanwrap" id="fanwrap"><div class="fanbox" id="fanbox"><div class="fan" id="fan"></div></div></div>
@@ -535,8 +534,7 @@ $('all').onclick = () => {
 let pk = null;
 function renderPickHead() {
   const need = pk.sp.positions.length, next = pk.picks.indexOf(null);   // a cancelled card leaves its slot empty; nothing shifts
-  $('pstep').textContent = next >= 0 ? `เลือกไพ่ตำแหน่งที่ ${next + 1} จาก ${need}: ${pk.sp.positions[next].label_th}` : 'เลือกครบแล้ว กำลังเปิดไพ่ ถ้าเลือกผิด แตะไพ่ใบนั้นเพื่อเอากลับ';
-  $('pickgo').hidden = next >= 0;
+  $('pstep').textContent = next >= 0 ? `เลือกไพ่ตำแหน่งที่ ${next + 1} จาก ${need}: ${pk.sp.positions[next].label_th}` : 'เลือกครบแล้ว กำลังเปิดไพ่...';
   document.querySelector('.pickhead').classList.toggle('closing', next < 0);
   $('slots').classList.toggle('many', need > 5);
   $('slots').innerHTML = pk.sp.positions.map((p, i) =>
@@ -647,11 +645,10 @@ $('fan').onclick = e => {
   renderPickHead();
   if (!pk.picks.includes(null)) {   // all picked: open automatically after a moment, long enough to undo a mis-tap
     const mine = pk;
-    pk.timer = setTimeout(() => { if (pk === mine && !pk.picks.includes(null)) finishPick(); }, 2500);
+    pk.timer = setTimeout(() => { if (pk === mine && !pk.picks.includes(null)) finishPick(); }, 1000);
   }
 };
 $('slots').onclick = e => { const b = e.target.closest('button[data-i]'); if (b && pk) unpick(+b.dataset.i); };
-$('pickgo').onclick = () => { if (pk && !pk.picks.includes(null)) finishPick(); };
 let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (pk) fitFan(); else if (reading && !$('session').hidden) renderTable(false); }, 150); });
 
 /* ---------- catalog ---------- */
