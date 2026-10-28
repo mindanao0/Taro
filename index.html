@@ -117,6 +117,9 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 .sl{display:block;width:52px;aspect-ratio:937/1678;border:1px dashed #ffffff40}
 .slots li.on .sl{border:0;background:var(--back) center/100% 100%;box-shadow:0 8px 18px -8px #000}
 .slots li.on .sl{cursor:pointer;transition:transform .18s} .slots li.on .sl:hover,.slots li.on .sl:focus-visible{transform:translateY(-4px)}
+.pickhead{position:relative}
+.pickhead.closing::after{content:'';position:absolute;left:0;bottom:-1px;height:2px;background:var(--gold);animation:fill 2.5s linear forwards}
+@keyframes fill{from{width:0}to{width:100%}}
 .pickacts{display:flex;gap:22px;align-items:baseline} .go{background:var(--gold);color:#120d06;border:0;border-radius:999px;padding:8px 20px;font-weight:500}
 .go:hover{color:#120d06;filter:brightness(1.1)}
 .slots.many{gap:8px 6px}.slots.many li{width:18%;max-width:64px;font-size:0}.slots.many .sl{width:30px}
@@ -206,7 +209,7 @@ dialog::backdrop{background:#000c}
 }
 @media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
-  .slot.deal,.slot.pop,.card.just .front,.card.just .front::after{animation:none}.card,.dc,.fc{transition:none}
+  .slot.deal,.slot.pop,.card.just .front,.card.just .front::after{animation:none}.card,.dc,.fc{transition:none}.pickhead.closing::after{animation:none;width:100%}
 }
 </style>
 </head>
@@ -532,8 +535,9 @@ $('all').onclick = () => {
 let pk = null;
 function renderPickHead() {
   const need = pk.sp.positions.length, next = pk.picks.indexOf(null);   // a cancelled card leaves its slot empty; nothing shifts
-  $('pstep').textContent = next >= 0 ? `เลือกไพ่ตำแหน่งที่ ${next + 1} จาก ${need}: ${pk.sp.positions[next].label_th}` : 'เลือกครบแล้ว';
+  $('pstep').textContent = next >= 0 ? `เลือกไพ่ตำแหน่งที่ ${next + 1} จาก ${need}: ${pk.sp.positions[next].label_th}` : 'เลือกครบแล้ว กำลังเปิดไพ่ ถ้าเลือกผิด แตะไพ่ใบนั้นเพื่อเอากลับ';
   $('pickgo').hidden = next >= 0;
+  document.querySelector('.pickhead').classList.toggle('closing', next < 0);
   $('slots').classList.toggle('many', need > 5);
   $('slots').innerHTML = pk.sp.positions.map((p, i) =>
     `<li class="${pk.picks[i] !== null ? 'on' : i === next ? 'now' : ''}">${pk.picks[i] !== null
@@ -617,6 +621,7 @@ function logQuestion(q, spread) {
   if (LOG_URL && q) fetch(LOG_URL, {method: 'POST', mode: 'no-cors', keepalive: true, body: JSON.stringify({q, spread})}).catch(() => {});
 }
 function finishPick() {
+  clearTimeout(pk.timer);
   const {order, picks, sp, question, reversed} = pk;
   logQuestion(question, sp.id);
   begin({schema_version: '1.0.0', deck_id: 'gothic-ivory-rose', spread_id: sp.id, question: String(question),
@@ -627,7 +632,7 @@ function finishPick() {
 }
 $('pickcancel').onclick = leave;
 function unpick(i) {   // put a picked card back; the other cards keep their positions
-  const k = pk.picks[i]; pk.picks[i] = null;
+  const k = pk.picks[i]; pk.picks[i] = null; clearTimeout(pk.timer);
   $('fan').querySelector(`.fc[data-k="${k}"]`)?.classList.remove('picked');
   renderPickHead();
 }
@@ -640,6 +645,10 @@ $('fan').onclick = e => {
   if (slot < 0) return;
   pk.picks[slot] = k; b.classList.add('picked');
   renderPickHead();
+  if (!pk.picks.includes(null)) {   // all picked: open automatically after a moment, long enough to undo a mis-tap
+    const mine = pk;
+    pk.timer = setTimeout(() => { if (pk === mine && !pk.picks.includes(null)) finishPick(); }, 2500);
+  }
 };
 $('slots').onclick = e => { const b = e.target.closest('button[data-i]'); if (b && pk) unpick(+b.dataset.i); };
 $('pickgo').onclick = () => { if (pk && !pk.picks.includes(null)) finishPick(); };
