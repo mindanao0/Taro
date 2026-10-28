@@ -1,0 +1,167 @@
+{
+  "schema_version": "1.0.0",
+  "default_reversed": false,
+  "spreads": [
+    {
+      "id": "single",
+      "name_th": "จุดสนใจหนึ่งใบ",
+      "origin": "editorial",
+      "positions": [
+        {
+          "id": "p1",
+          "label_th": "เรื่องที่ควรใส่ใจ",
+          "x": 0,
+          "y": 0,
+          "layout_rotation": 0
+        }
+      ]
+    },
+    {
+      "id": "three",
+      "name_th": "สถานการณ์และก้าวถัดไป",
+      "origin": "editorial",
+      "positions": [
+        {
+          "id": "p1",
+          "label_th": "สถานการณ์",
+          "x": -1,
+          "y": 0,
+          "layout_rotation": 0
+        },
+        {
+          "id": "p2",
+          "label_th": "สิ่งที่ต้องเข้าใจ",
+          "x": 0,
+          "y": 0,
+          "layout_rotation": 0
+        },
+        {
+          "id": "p3",
+          "label_th": "ก้าวถัดไป",
+          "x": 1,
+          "y": 0,
+          "layout_rotation": 0
+        }
+      ]
+    },
+    {
+      "id": "relationship-five",
+      "name_th": "สำรวจความสัมพันธ์",
+      "origin": "editorial",
+      "positions": [
+        {
+          "id": "p1",
+          "label_th": "ตัวฉันและความต้องการ",
+          "x": -2,
+          "y": 0,
+          "layout_rotation": 0
+        },
+        {
+          "id": "p2",
+          "label_th": "สิ่งที่สังเกตได้จากปฏิสัมพันธ์",
+          "x": -1,
+          "y": 0,
+          "layout_rotation": 0
+        },
+        {
+          "id": "p3",
+          "label_th": "จุดเชื่อมโยง",
+          "x": 0,
+          "y": 0,
+          "layout_rotation": 0
+        },
+        {
+          "id": "p4",
+          "label_th": "เรื่องที่ควรคุยหรือขอบเขต",
+          "x": 1,
+          "y": 0,
+          "layout_rotation": 0
+        },
+        {
+          "id": "p5",
+          "label_th": "ก้าวถัดไปของฉัน",
+          "x": 2,
+          "y": 0,
+          "layout_rotation": 0
+        }
+      ]
+    },
+    {
+      "id": "celtic-cross",
+      "name_th": "Celtic Cross ฉบับปรับใช้",
+      "origin": "adapted_from_waite_part_iii_7",
+      "positions": [
+        {
+          "id": "p1",
+          "label_th": "สถานการณ์ปัจจุบัน",
+          "x": 0,
+          "y": 0,
+          "layout_rotation": 0
+        },
+        {
+          "id": "p2",
+          "label_th": "ปัจจัยท้าทาย",
+          "x": 0,
+          "y": 0,
+          "layout_rotation": 90
+        },
+        {
+          "id": "p3",
+          "label_th": "สิ่งที่มุ่งหวัง",
+          "x": 0,
+          "y": -1.5,
+          "layout_rotation": 0
+        },
+        {
+          "id": "p4",
+          "label_th": "รากฐาน",
+          "x": 0,
+          "y": 1.5,
+          "layout_rotation": 0
+        },
+        {
+          "id": "p5",
+          "label_th": "อิทธิพลที่ผ่านมา",
+          "x": -1.2,
+          "y": 0,
+          "layout_rotation": 0
+        },
+        {
+          "id": "p6",
+          "label_th": "แนวโน้มใกล้",
+          "x": 1.2,
+          "y": 0,
+          "layout_rotation": 0
+        },
+        {
+          "id": "p7",
+          "label_th": "ท่าทีของผู้ถาม",
+          "x": 2.5,
+          "y": 2.25,
+          "layout_rotation": 0
+        },
+        {
+          "id": "p8",
+          "label_th": "สภาพแวดล้อม",
+          "x": 2.5,
+          "y": 0.75,
+          "layout_rotation": 0
+        },
+        {
+          "id": "p9",
+          "label_th": "ความหวังและความกลัว",
+          "x": 2.5,
+          "y": -0.75,
+          "layout_rotation": 0
+        },
+        {
+          "id": "p10",
+          "label_th": "แนวโน้มตามปัจจัยเดิม",
+          "x": 2.5,
+          "y": -2.25,
+          "layout_rotation": 0
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,631 @@
+{
+  "schema_version": "1.0.0",
+  "count": 78,
+  "edition": "digital-review",
+  "cards": [
+    {
+      "id": "major-00",
+      "image": "assets/cards/major-00.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3939905,
+      "sha256": "875aab534defe7f1854bf656412e07441e4fb4a38f02cd373fef0d349e801a84"
+    },
+    {
+      "id": "major-01",
+      "image": "assets/cards/major-01.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3747556,
+      "sha256": "19949c38e49a2d05c29ccbebd57b1fc0b71f009c5f30234142ed3f2f5e9e67c6"
+    },
+    {
+      "id": "major-02",
+      "image": "assets/cards/major-02.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3914055,
+      "sha256": "1323fc83a58e84e0d60e0c6d2fab83719a503480dbe4a11a47bb4c2b6f49fd79"
+    },
+    {
+      "id": "major-03",
+      "image": "assets/cards/major-03.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3986871,
+      "sha256": "5e360641aa59b48dea8b4c34fcb0f8dc117e0a543782e2af904f26a8050666a7"
+    },
+    {
+      "id": "major-04",
+      "image": "assets/cards/major-04.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3921944,
+      "sha256": "2154db89c83c982b5dbf566e221a455b16d3fe98b8468cf61e8a8a42eb067a55"
+    },
+    {
+      "id": "major-05",
+      "image": "assets/cards/major-05.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3882154,
+      "sha256": "2ef75aef7e1c69f5778c7a91451fe8995031ba672ea501a1b42e3885e64f0047"
+    },
+    {
+      "id": "major-06",
+      "image": "assets/cards/major-06.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 4027733,
+      "sha256": "f688a5de9a40d3d48fb88b4653625b5a98c25ef610852131c8588f844d4e20cf"
+    },
+    {
+      "id": "major-07",
+      "image": "assets/cards/major-07.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3917265,
+      "sha256": "b80ba6d536624caaab5f68e7656a6759165bda7833cd41ffab5043a5f655a2f9"
+    },
+    {
+      "id": "major-08",
+      "image": "assets/cards/major-08.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3929142,
+      "sha256": "f37fdce72eea429706f215dd5c536764b18d7513ea800aed232c5cdd4d4778fd"
+    },
+    {
+      "id": "major-09",
+      "image": "assets/cards/major-09.png",
+      "width": 937,
+      "height": 1679,
+      "bytes": 3822278,
+      "sha256": "b20e452feab82ad2b3d41a8eb7bb47b468536c5c7cfca36250783caea0224faa"
+    },
+    {
+      "id": "major-10",
+      "image": "assets/cards/major-10.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3965495,
+      "sha256": "be93c363505a00d73f223a18d799ea6a5353226c182879eb9fe2ba43afaacb9a"
+    },
+    {
+      "id": "major-11",
+      "image": "assets/cards/major-11.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3810265,
+      "sha256": "1566dc8aa5f3b1275bf14732ba04945c817aad3e294394b74a2d4bea090f0616"
+    },
+    {
+      "id": "major-12",
+      "image": "assets/cards/major-12.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3852948,
+      "sha256": "9dc51fcf0be5526495dcbd09294bfc1c1f00638813b0402762c5068cd915e1fe"
+    },
+    {
+      "id": "major-13",
+      "image": "assets/cards/major-13.png",
+      "width": 937,
+      "height": 1679,
+      "bytes": 4012567,
+      "sha256": "c5d76f8a3146c4bfeeeacda863dd08b53d378ed8d36386c3bb7b4996db6c32de"
+    },
+    {
+      "id": "major-14",
+      "image": "assets/cards/major-14.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3886213,
+      "sha256": "845a3e6db313a24a656cb4dc8e6afd64b84d589bf0304e3e0a78208af52596e3"
+    },
+    {
+      "id": "major-15",
+      "image": "assets/cards/major-15.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3821611,
+      "sha256": "1990f06a9b819a71b16a7f7c0ee3a4f987449e7c0a1b8579a15da5057befba29"
+    },
+    {
+      "id": "major-16",
+      "image": "assets/cards/major-16.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3945804,
+      "sha256": "02b9cd607590fc9f95a9f54178feb18ecf6050979c33c33d5afaad83e9d5d3ba"
+    },
+    {
+      "id": "major-17",
+      "image": "assets/cards/major-17.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3739853,
+      "sha256": "f893d0530ac096625e284a367fe721bdbd806fcc2ae1f8d2e9ff46926d2d98c8"
+    },
+    {
+      "id": "major-18",
+      "image": "assets/cards/major-18.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3908541,
+      "sha256": "2c38995f0eb91dcf09b9c290614a022899614134d86b1341bf1054a5531265e7"
+    },
+    {
+      "id": "major-19",
+      "image": "assets/cards/major-19.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3965309,
+      "sha256": "2e0d5897c1096bd5d161d08cc85fedbe751d1dbc6343fd3324464437a05b3c28"
+    },
+    {
+      "id": "major-20",
+      "image": "assets/cards/major-20.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3949620,
+      "sha256": "4e919fd00a5546a4c8b4b1142a78b953f19dc0d7c780929cb71bbce28a0d183a"
+    },
+    {
+      "id": "major-21",
+      "image": "assets/cards/major-21.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3976749,
+      "sha256": "d5eef8817e6594198b5bdb4db23985191ffb713ec1b95e274f98f830f0fa06d6"
+    },
+    {
+      "id": "wands-ace",
+      "image": "assets/cards/wands-ace.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3941493,
+      "sha256": "e9cab14cc8f35ee4c78b976c0643aba99804ee65d0a02cf41d8ad411d669d8f8"
+    },
+    {
+      "id": "wands-two",
+      "image": "assets/cards/wands-two.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3831426,
+      "sha256": "5321ee739f1743b41ed3533f19ff3e6ecadef71800bba9b20fb8d415ccd60613"
+    },
+    {
+      "id": "wands-three",
+      "image": "assets/cards/wands-three.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3766953,
+      "sha256": "7a2c1a1e2ee1c9e1bc1a158173e2894005e317e9073e611ff10488818c8918e4"
+    },
+    {
+      "id": "wands-four",
+      "image": "assets/cards/wands-four.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3903645,
+      "sha256": "6490d1ca43367c16364dc37b553b27dfbec7375b711410cc5a451b3e0976eb97"
+    },
+    {
+      "id": "wands-five",
+      "image": "assets/cards/wands-five.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 4023453,
+      "sha256": "1375fcacd8f26751298011599ef198b4ea432691ce45d9c89024faf9f57273d0"
+    },
+    {
+      "id": "wands-six",
+      "image": "assets/cards/wands-six.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3763294,
+      "sha256": "bcb2906c89deef32a9796a7f8c83ec0697fa1dd19606b2d33751762d78096795"
+    },
+    {
+      "id": "wands-seven",
+      "image": "assets/cards/wands-seven.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3932764,
+      "sha256": "b82a685c7adf0ae225253c8125098be95086b9c0bea5e3657bbd2d9ba4600a4e"
+    },
+    {
+      "id": "wands-eight",
+      "image": "assets/cards/wands-eight.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3339537,
+      "sha256": "ffc561c414753039481efe15aa0d5cb453614f55d953fbb331f2a3758bef8088"
+    },
+    {
+      "id": "wands-nine",
+      "image": "assets/cards/wands-nine.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3624038,
+      "sha256": "ae5bfa41647944f3e602a7943222a5c93625a62f01ecc7c37938f1e72b70a2e5"
+    },
+    {
+      "id": "wands-ten",
+      "image": "assets/cards/wands-ten.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3741496,
+      "sha256": "ddd17f454ce9a36c20fc4beb1166c76b3651b285559ebc89b031d10aed783998"
+    },
+    {
+      "id": "wands-page",
+      "image": "assets/cards/wands-page.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3936397,
+      "sha256": "1c6190e30264d78e29b907da4a87c91324c6edd9167b313020482db6da13eefe"
+    },
+    {
+      "id": "wands-knight",
+      "image": "assets/cards/wands-knight.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 4078483,
+      "sha256": "0e71d1ef3450116456a4809f812e4e65754e69544fc61360c8a1ca0f82958450"
+    },
+    {
+      "id": "wands-queen",
+      "image": "assets/cards/wands-queen.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3991176,
+      "sha256": "5309f08b6fa680d8141272d177e03f1c1c654cf4253d25099a4e2b81fa061cb5"
+    },
+    {
+      "id": "wands-king",
+      "image": "assets/cards/wands-king.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3896993,
+      "sha256": "b34d825610ffa87752ac843529c0f96d028e5e47e356213d9efcae39ce5f9358"
+    },
+    {
+      "id": "cups-ace",
+      "image": "assets/cards/cups-ace.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3813890,
+      "sha256": "6ff9d5c7fcba4278e4f73ab074d4eb89baf302e7f519976ca4c9c4425f65a0c2"
+    },
+    {
+      "id": "cups-two",
+      "image": "assets/cards/cups-two.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3880608,
+      "sha256": "7cd7eb7b49023259318d7ee81845b99909cc558ddcdb10cf0918b1224e15535f"
+    },
+    {
+      "id": "cups-three",
+      "image": "assets/cards/cups-three.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3911309,
+      "sha256": "8689c44039e7d237d7052009be6353b269fb59a3f8d962982bfa3e376fa7b195"
+    },
+    {
+      "id": "cups-four",
+      "image": "assets/cards/cups-four.png",
+      "width": 938,
+      "height": 1677,
+      "bytes": 3957402,
+      "sha256": "dde6df32b1e505c05723f6ae64b272b61e60a0ce173931c121000a41f39b3a18"
+    },
+    {
+      "id": "cups-five",
+      "image": "assets/cards/cups-five.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3868228,
+      "sha256": "1354950f53599cad0b35c286b115694e5a72f9201a6ed4e7711d93f20a91fe8e"
+    },
+    {
+      "id": "cups-six",
+      "image": "assets/cards/cups-six.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3901526,
+      "sha256": "e5712c1be615127a5e21a742f3cd61303b4e39d3148f11652ecaf4a29f99cbe2"
+    },
+    {
+      "id": "cups-seven",
+      "image": "assets/cards/cups-seven.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3882177,
+      "sha256": "55714f34a2fa8a68b395896db4ee2ed695e9888a2017729d6ce0d6dd7d894824"
+    },
+    {
+      "id": "cups-eight",
+      "image": "assets/cards/cups-eight.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3786583,
+      "sha256": "cefecbb4e6a95343025b327b800d710b4067b5934ef852ad9d50c169932ce484"
+    },
+    {
+      "id": "cups-nine",
+      "image": "assets/cards/cups-nine.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3834738,
+      "sha256": "bc607a719f7eea78afc3b255507e3816dc02d24fe951acd95f3a01d3ffc18c84"
+    },
+    {
+      "id": "cups-ten",
+      "image": "assets/cards/cups-ten.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3940246,
+      "sha256": "b73556c3b21a8c79152b479776af91ca77ab0e3076247b9914b7461cb95c6a5f"
+    },
+    {
+      "id": "cups-page",
+      "image": "assets/cards/cups-page.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3897300,
+      "sha256": "9d290ebb3f31ea4708fc79617e98209ae07ba2f82ff4c8cc8cfe56404ee6016f"
+    },
+    {
+      "id": "cups-knight",
+      "image": "assets/cards/cups-knight.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3916778,
+      "sha256": "2f2b091547967d6bbc05002ced0563e223d880797f8c8f8ab7c04bb3d9222eb7"
+    },
+    {
+      "id": "cups-queen",
+      "image": "assets/cards/cups-queen.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3837211,
+      "sha256": "0c3023076adf5a9eabab9dfbc93c235f9b0676230ade798d0004276ed68aad28"
+    },
+    {
+      "id": "cups-king",
+      "image": "assets/cards/cups-king.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3973802,
+      "sha256": "d7232b38812a8ae8ad3d01852c6518c70bb7dc110f10bd76399d00c8a20336a8"
+    },
+    {
+      "id": "swords-ace",
+      "image": "assets/cards/swords-ace.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3869959,
+      "sha256": "525b61439ecb04b48be8e0f6e310de79e21da4baab40336013ab4abd098c4dda"
+    },
+    {
+      "id": "swords-two",
+      "image": "assets/cards/swords-two.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3843760,
+      "sha256": "9ad5b628ead0f6e7f7d4bbdba7efd4c336e4a64821e75414de6c62eab8c7d6e8"
+    },
+    {
+      "id": "swords-three",
+      "image": "assets/cards/swords-three.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3936567,
+      "sha256": "f4a1bbdd5786011b69ec9124fd9e4a0eddca1169cf19a5a888694e098fa8d859"
+    },
+    {
+      "id": "swords-four",
+      "image": "assets/cards/swords-four.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3797897,
+      "sha256": "ac9d1c4699675d130b215545c3bd375deefc53b28b33353e135caa6470cd5670"
+    },
+    {
+      "id": "swords-five",
+      "image": "assets/cards/swords-five.png",
+      "width": 937,
+      "height": 1679,
+      "bytes": 3909260,
+      "sha256": "c3392e507f28b5a87a0161a6fa89eef292983aa2f7c6d20fcfedb90a26f8098e"
+    },
+    {
+      "id": "swords-six",
+      "image": "assets/cards/swords-six.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3811149,
+      "sha256": "02814c85c88f8d55cec5682b180258000f3b78387a96097faf79c193b1a8a106"
+    },
+    {
+      "id": "swords-seven",
+      "image": "assets/cards/swords-seven.png",
+      "width": 937,
+      "height": 1679,
+      "bytes": 3911448,
+      "sha256": "0bd8a361534ae7272256f6a44112567eebdc67ff2ac6135386393cee7e1113f9"
+    },
+    {
+      "id": "swords-eight",
+      "image": "assets/cards/swords-eight.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3879590,
+      "sha256": "655168dd233544c0186649298a63f6cc2d82f29d0b2de3fe037261084af781d0"
+    },
+    {
+      "id": "swords-nine",
+      "image": "assets/cards/swords-nine.png",
+      "width": 938,
+      "height": 1677,
+      "bytes": 3745373,
+      "sha256": "e73e787f35b6e7137c38a11ea8a3a0d82205fdf8c25be0c397d134a360e6319f"
+    },
+    {
+      "id": "swords-ten",
+      "image": "assets/cards/swords-ten.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3698218,
+      "sha256": "43499b7cdbcb926c03e49cf38200fe131c22cb690ac3c8f9eba99f5c715a3b5c"
+    },
+    {
+      "id": "swords-page",
+      "image": "assets/cards/swords-page.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 4003995,
+      "sha256": "36e5acde943398863ec1569e1eab07568c90a2e235edeb2d74d69fd7fe73af61"
+    },
+    {
+      "id": "swords-knight",
+      "image": "assets/cards/swords-knight.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 4004145,
+      "sha256": "dbea39aac3a477ca325f0fc0058da72f98c2b133da6c9bc4936c817e3518b4fd"
+    },
+    {
+      "id": "swords-queen",
+      "image": "assets/cards/swords-queen.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3951560,
+      "sha256": "d8f939a53e25338ee3571e4c585e70ef2221b42fe4d7916ee9d74b3a302df3fe"
+    },
+    {
+      "id": "swords-king",
+      "image": "assets/cards/swords-king.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3921643,
+      "sha256": "ba22e2b32c6dd170ddd8c018d287a227d04c1c2540cde3f12d9b0e048b9edfc6"
+    },
+    {
+      "id": "pentacles-ace",
+      "image": "assets/cards/pentacles-ace.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3913121,
+      "sha256": "28e21df499ad356c2a5c6dde788f9c3f5e6acce72c5c0c601e107014a4fd19a9"
+    },
+    {
+      "id": "pentacles-two",
+      "image": "assets/cards/pentacles-two.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3952008,
+      "sha256": "632a25d047fc6b2fd6a8a715d5641ffee8b7e22006c76903cfa7616854c39bd2"
+    },
+    {
+      "id": "pentacles-three",
+      "image": "assets/cards/pentacles-three.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3873153,
+      "sha256": "e081f58e07ab6a317fe5e677b6160d0afad9c856763a8f94337a7b2a0f0d5ea7"
+    },
+    {
+      "id": "pentacles-four",
+      "image": "assets/cards/pentacles-four.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3845684,
+      "sha256": "5e1b110a3450d235ab86025346e3d271e47388cce2da953c5f3aa5002ae6476a"
+    },
+    {
+      "id": "pentacles-five",
+      "image": "assets/cards/pentacles-five.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3890124,
+      "sha256": "af4e8d78c2ed28b3e853a9fd342fffdaca542a87e6dee6da1715be7c324a6883"
+    },
+    {
+      "id": "pentacles-six",
+      "image": "assets/cards/pentacles-six.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3835467,
+      "sha256": "599d5f9309e3c084b2074a9ee2318d3eac8929a83adfdc3ec405891e233b9dac"
+    },
+    {
+      "id": "pentacles-seven",
+      "image": "assets/cards/pentacles-seven.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3496488,
+      "sha256": "bf208f72de89b8c3aaece2cbb69cd09b6103d3cafb803c5c13da20c40a25e113"
+    },
+    {
+      "id": "pentacles-eight",
+      "image": "assets/cards/pentacles-eight.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3917329,
+      "sha256": "7789871c0ff6c83034b3b6d9174ba13d3eb2202c1a96181225dd8c9e8d49de09"
+    },
+    {
+      "id": "pentacles-nine",
+      "image": "assets/cards/pentacles-nine.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3955900,
+      "sha256": "ce2bd1dd1ef545e9a71d41d34e9b66834c015ca7f92e1a0833a29d436deda268"
+    },
+    {
+      "id": "pentacles-ten",
+      "image": "assets/cards/pentacles-ten.png",
+      "width": 938,
+      "height": 1677,
+      "bytes": 4068181,
+      "sha256": "cd9ca87a4d8b1f2fe83a6b6c2d1aa0f8a976601992dcc780d92a462a2ada3ede"
+    },
+    {
+      "id": "pentacles-page",
+      "image": "assets/cards/pentacles-page.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 4000491,
+      "sha256": "4f732553e70106a87e236b34931fc3c0c2259a2eed7b6445eb30403eea4358cc"
+    },
+    {
+      "id": "pentacles-knight",
+      "image": "assets/cards/pentacles-knight.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 3912197,
+      "sha256": "a69806500a7ea9a189db7d2483b95fde6673b3542b84f9748722d5b8945b3dda"
+    },
+    {
+      "id": "pentacles-queen",
+      "image": "assets/cards/pentacles-queen.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 4002697,
+      "sha256": "4445ecee6cd933be7d6944ae68b080db574194167528fa192528f5de6f4e8ac2"
+    },
+    {
+      "id": "pentacles-king",
+      "image": "assets/cards/pentacles-king.png",
+      "width": 937,
+      "height": 1678,
+      "bytes": 4014069,
+      "sha256": "b55de685630e7cb691598338db83adae139a08b9042d027f145330b0506ed6ba"
+    }
+  ]
+}

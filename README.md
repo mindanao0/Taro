@@ -1,6 +1,6 @@
-# Taro
+# Taro — Gothic Ivory Rose Tarot
 
-# สำรับกอทิกงาช้างและกุหลาบ — Digital Review Edition
+สำรับกอทิกงาช้างและกุหลาบ · Digital Review Edition
 
 สำรับ 78 ใบที่ออกแบบใหม่ในภาษาภาพพิมพ์กอทิก: หมึกดำ กระดาษงาช้างเก่า สีแดงหม่น กรอบกุหลาบและเถาหนาม อ้างอิงโครงสร้าง Rider–Waite–Smith (RWS) ใช้เพื่อสะสม อ่านไพ่ และเป็นชุดข้อมูลเริ่มต้นสำหรับพัฒนาเว็บไซต์
 
@@ -33,3 +33,15 @@
 ## ตรวจข้อมูลอีกครั้ง
 
 จากโฟลเดอร์นี้ รัน `python3 scripts/package_deck.py --check-only` เพื่อตรวจจำนวน ID ไฟล์ภาพ ขนาด และ checksum หรือ `node scripts/reading-core.test.mjs` เพื่อตรวจตรรกะการสุ่มแบบไม่ซ้ำ
+
+## ดาวน์โหลดจาก GitHub
+
+เลือก **Code → Download ZIP** แล้วแตกไฟล์ เปิด `START_HERE.html` เพื่ออ่านคู่มือ หรือ `previews/catalog.html` เพื่อดูภาพครบ 78 ใบ
+
+## ตัวอย่างภาพ
+
+<img src="assets/cards/major-18.png" width="230" alt="The Moon XVIII"> <img src="assets/cards/major-13.png" width="230" alt="Death XIII">
+
+## ตรวจไฟล์และข้อมูล
+
+ใช้ Python 3 พร้อม Pillow สำหรับ `python3 scripts/package_deck.py --check-only` และ Node.js สำหรับ `node scripts/reading-core.test.mjs` โค้ดอ่านไพ่ไม่ต้องเรียก API ภายนอก

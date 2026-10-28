@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {createReading, shuffled, randomBelow, meaningFor} from './reading-core.mjs';
+const deck = JSON.parse(readFileSync(new URL('../data/cards.json', import.meta.url))).cards;
+assert.equal(deck.length, 78);
+assert.equal(new Set(deck.map(c => c.id)).size, 78);
+const positions = Array.from({length:78}, (_,i) => ({id:String(i)}));
+const reading = createReading(deck, {id:'all',positions}, {reversed:true, randomInt:n=>n-1, now:()=> 'fixed'});
+assert.equal(new Set(reading.cards.map(c=>c.card_id)).size, 78);
+assert.ok(reading.cards.every(c=>c.orientation==='reversed'));
+const normal = createReading(deck, {id:'one',positions:[{id:'focus'}]}, {randomInt:()=>0});
+assert.equal(normal.cards[0].orientation,'upright');
+assert.equal(normal.cards[0].position_id,'focus');
+const input = [1,2,3]; shuffled(input,()=>0); assert.deepEqual(input,[1,2,3]);
+assert.throws(()=>createReading([deck[0],deck[0]],{positions:[{id:'a'}]}));
+assert.throws(()=>createReading(deck,{positions:Array.from({length:79},(_,i)=>({id:String(i)}))}));
+assert.throws(()=>meaningFor(deck[0],'sideways'));
+assert.throws(()=>randomBelow(0));
+// Rejection sample rejects 2^32 - 1 for bound 3, then accepts 5.
+let samples=[0xffffffff,5];
+assert.equal(randomBelow(3,{getRandomValues:a=>{a[0]=samples.shift();return a;}}),2);
+assert.equal(samples.length,0);
+assert.equal(meaningFor(deck[0],'upright'),deck[0].upright_th);
+console.log('PASS: 78 IDs, no duplicate draws, reversals, input immutability, bounds and rejection sampling');

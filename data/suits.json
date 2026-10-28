@@ -1,0 +1,22 @@
+{
+  "wands": {
+    "name_th": "ไม้เท้า",
+    "element": "fire",
+    "theme_th": "แรงปรารถนา การลงมือ ความสร้างสรรค์"
+  },
+  "cups": {
+    "name_th": "ถ้วย",
+    "element": "water",
+    "theme_th": "อารมณ์ ความสัมพันธ์ ความผูกพัน"
+  },
+  "swords": {
+    "name_th": "ดาบ",
+    "element": "air",
+    "theme_th": "ความคิด การสื่อสาร ความขัดแย้ง"
+  },
+  "pentacles": {
+    "name_th": "เหรียญ",
+    "element": "earth",
+    "theme_th": "ทรัพยากร งาน ร่างกาย ความมั่นคง"
+  }
+}
