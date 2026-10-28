@@ -83,6 +83,13 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 .front img{width:100%;height:100%;object-fit:contain;display:block}
 .front img.rev{transform:rotate(180deg)}
 .card:hover .back{outline:1px solid var(--gold);outline-offset:4px}
+.slot.pop{animation:pop .6s ease-out}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.07)}100%{transform:scale(1)}}
+.front::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(105deg,transparent 38%,#ffffff55 50%,transparent 62%);transform:translateX(-130%)}
+.card.just .front::after{animation:sheen .8s .3s ease-out}
+@keyframes sheen{to{transform:translateX(130%)}}
+.card.just .front{animation:flash 1s .25s ease-out}
+@keyframes flash{0%{box-shadow:0 0 0 0 #c8a25a00}35%{box-shadow:0 0 38px 6px #c8a25a77}100%{box-shadow:0 22px 44px -16px #000}}
 .num{position:absolute;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;
   border:1px solid var(--gold);background:#0b0908d9;color:var(--gold);font-size:.78rem;line-height:1;pointer-events:none}
 .lbl{text-align:center;font-size:.85rem;line-height:1.4;color:var(--dim);margin-top:10px}
@@ -90,22 +97,46 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 .legend b{color:var(--gold);font-weight:500;margin-right:6px}
 .acts{display:flex;gap:28px;justify-content:center;margin-top:34px}
 
+/* pick scene */
+.pickhead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 28px;padding:36px 0 6px;border-bottom:1px solid var(--line)}
+.pstep{margin:0;font:400 clamp(1.5rem,3vw,2.2rem)/1.3 var(--display)}
+.slots{list-style:none;display:flex;flex-wrap:wrap;justify-content:center;gap:10px 16px;margin:26px 0 0;padding:0}
+.slots li{display:grid;justify-items:center;gap:6px;width:92px;text-align:center;font-size:.78rem;line-height:1.3;color:var(--dim)}
+.sl{display:block;width:52px;aspect-ratio:937/1678;border:1px dashed #ffffff40}
+.slots li.on .sl{border:0;background:var(--back) center/100% 100%;box-shadow:0 8px 18px -8px #000}
+.slots li.now{color:var(--gold)} .slots li.now .sl{border-color:var(--gold)}
+.fanwrap{overflow-x:auto;padding:24px 0 8px;scrollbar-width:thin;scrollbar-color:#ffffff33 transparent}
+.fanbox{margin:0 auto;overflow:hidden}
+.fan{position:relative;width:1240px;height:480px;transform-origin:0 0}
+.fc{position:absolute;width:92px;aspect-ratio:937/1678;background:var(--back) center/100% 100%;box-shadow:0 10px 24px -8px #000;transform:rotate(var(--a));transition:transform .18s,opacity .3s}
+.fc:hover,.fc:focus-visible{transform:rotate(var(--a)) translateY(-30px);z-index:3}
+.fc:focus-visible{outline:2px solid var(--gold)}
+.fc.picked{opacity:.12;transform:rotate(var(--a)) translateY(-30px);pointer-events:none}
+
 /* chapters */
 .chaps{margin-top:64px}
 .chap{display:grid;grid-template-columns:minmax(190px,300px) minmax(0,1fr);gap:56px;padding:64px 0;border-top:1px solid var(--line);scroll-margin-top:12px}
 .chap img{width:100%;display:block;box-shadow:0 28px 60px -22px #000}
 .chap img.rev{transform:rotate(180deg)}
 .where{margin:0 0 10px;color:var(--gold)}
+.posq{margin:0 0 14px;color:var(--dim);font-size:.92rem;max-width:36em}
 .name{margin:0;font:400 clamp(2.6rem,5.2vw,4.4rem)/1 var(--display)}
 .th{margin:12px 0 0;font-weight:500;font-size:1.15rem}
 .ori{color:var(--dim);font-weight:400;margin-left:12px}
 .lead{margin:30px 0 0;font-size:1.4rem;line-height:1.6;max-width:30em}
 .trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:26px;margin:36px 0 0}
 .trio dt{color:var(--dim);font-size:.85rem;margin:0 0 4px}
+.trio .em dt{color:var(--gold)}
+.trio .em dd{font-weight:500}
 .trio dd{margin:0;font-size:.98rem;line-height:1.7}
 .qq{margin:36px 0 0;padding-top:22px;border-top:1px solid var(--line);color:var(--gold);font-size:1.2rem;line-height:1.6;max-width:32em}
 .up{display:inline-block;margin-top:22px;font-size:.88rem;color:var(--dim)}
 
+.pairs{margin-top:20px;padding-top:56px;border-top:1px solid var(--line);max-width:760px}
+.pair{margin:0 0 34px}
+.pt{margin:0;color:var(--gold)}
+.pn{margin:2px 0 8px;font:400 1.6rem/1.25 var(--display)}
+.pair p:last-child{margin:0}
 .overview{margin-top:40px;padding-top:56px;border-top:1px solid var(--line);max-width:760px}
 .ov{list-style:none;margin:0 0 44px;padding:0}
 .ov li{margin:0 0 16px}
@@ -162,7 +193,7 @@ dialog::backdrop{background:#000c}
 }
 @media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
-  .slot.deal{animation:none}.card,.deck i,.deck b{transition:none}
+  .slot.deal,.slot.pop,.card.just .front,.card.just .front::after{animation:none}.card,.deck i,.deck b,.fc{transition:none}
 }
 </style>
 </head>
@@ -187,7 +218,18 @@ dialog::backdrop{background:#000c}
       <span class="deck" aria-hidden="true"><i></i><i></i><b></b></span>
       <span class="t">จั่วไพ่</span>
     </button>
+    <button class="link" type="button" id="pickbtn">หรือเลือกไพ่เองจากกอง</button>
   </form>
+
+  <section id="pick" hidden>
+    <div class="pickhead">
+      <p class="pstep" id="pstep" aria-live="polite"></p>
+      <button class="link" type="button" id="pickcancel">ยกเลิก</button>
+    </div>
+    <ol class="slots" id="slots"></ol>
+    <div class="fanwrap" id="fanwrap"><div class="fanbox" id="fanbox"><div class="fan" id="fan"></div></div></div>
+    <p class="note" style="text-align:center">แตะใบที่ต้องการ (บนมือถือเลื่อนซ้ายขวาเพื่อดูทั้งกอง) ไพ่ทุกใบถูกสับไว้แล้วและจะยังไม่เปิดจนกว่าจะเลือกครบ</p>
+  </section>
 
   <div id="session" hidden>
     <div class="recap" id="recap"></div>
@@ -199,6 +241,7 @@ dialog::backdrop{background:#000c}
       <button class="link" id="save" type="button">บันทึกผลนี้</button>
     </div>
     <div class="chaps" id="chapters"></div>
+    <section class="pairs" id="pairs" hidden></section>
     <section class="overview" id="overview" hidden></section>
   </div>
   <p class="note foot">ไพ่ถูกสุ่มครั้งเดียวตอนจั่ว คำถามและผลอยู่ในเครื่องคุณเท่านั้น ใช้เพื่อสำรวจสถานการณ์ ไม่ใช่คำทำนาย วิธีอ่านภาพรวมสรุปจากคู่มือทั่วไป (รายการอ้างอิงอยู่ใน docs/05) และไม่ใช่กฎตายตัว</p>
@@ -226,7 +269,8 @@ dialog::backdrop{background:#000c}
 <dialog id="dlg"><button class="x" id="dx" aria-label="ปิด">✕</button><div id="dbody"></div></dialog>
 
 <script type="module">
-import {createReading, meaningFor} from './scripts/reading-core.mjs';
+import {createReading, meaningFor, randomBelow, shuffled} from './scripts/reading-core.mjs';
+import {frameFor, pairReadings, POSITIONS} from './scripts/reading-guide.mjs';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -321,23 +365,34 @@ function renderTable(animate) {
 function renderChapters() {
   $('chapters').innerHTML = reading.cards.map((r, i) => {
     if (!shown.has(i)) return '';
-    const c = byId[r.card_id];
+    const c = byId[r.card_id], pos = POSITIONS[`${reading.spread_id}:${r.position_id}`] || {};
+    const items = [['love', 'ความรัก', c.love_th], ['work', 'การงาน', c.work_th], ['advice', 'คำแนะนำ', c.advice_th]];
+    if (pos.use) items.sort((x, y) => (y[0] === pos.use) - (x[0] === pos.use));
     return `<article class="chap" id="c${i}">
       <figure><img class="${r.orientation === 'reversed' ? 'rev' : ''}" src="${c.image_web}" alt="${esc(c.alt_th)}"></figure>
       <div>
         <p class="where">${i + 1}. ${esc(posOf(r).label_th)}</p>
+        ${pos.read ? `<p class="posq">${esc(pos.read)}</p>` : ''}
         <h3 class="name">${esc(c.name_en)}</h3>
         <p class="th">${esc(c.name_th)}<span class="ori">${oriTh(r.orientation)}</span></p>
-        <p class="lead">${esc(meaningFor(c, r.orientation))}</p>
-        <dl class="trio"><div><dt>ความรัก</dt><dd>${esc(c.love_th)}</dd></div>
-          <div><dt>การงาน</dt><dd>${esc(c.work_th)}</dd></div>
-          <div><dt>คำแนะนำ</dt><dd>${esc(c.advice_th)}</dd></div></dl>
+        <p class="lead">${esc(frameFor(reading.spread_id, r.position_id, c, r.orientation, meaningFor(c, r.orientation)))}</p>
+        <dl class="trio">${items.map(([k, label, text]) => `<div class="${pos.use === k ? 'em' : ''}"><dt>${label}</dt><dd>${esc(text)}</dd></div>`).join('')}</dl>
         <p class="qq">${esc(c.reflection_th)}</p>
         <a class="up" href="#table">กลับไปที่โต๊ะ</a>
       </div></article>`;
   }).join('');
   $('toread').hidden = !shown.size;
+  renderPairs();
   renderOverview();
+}
+
+function renderPairs() {
+  const drawn = reading.cards.map((r, i) => ({position_id: r.position_id, card: byId[r.card_id], orientation: r.orientation, i}));
+  const list = pairReadings(reading.spread_id, drawn, d => shown.has(d.i));
+  $('pairs').hidden = !list.length;
+  $('pairs').innerHTML = list.length ? `<h2>อ่านรวมกัน</h2>` + list.map(x => `<div class="pair"><p class="pt">${esc(x.title)}</p>
+    <p class="pn">${esc(x.a.card.name_en)} และ ${esc(x.b.card.name_en)}</p><p>${esc(x.text)}</p></div>`).join('') +
+    `<p class="note">การอ่านคู่ใช้ธาตุของไพ่ (ไฟ น้ำ ลม ดิน) ตามแนว Elemental Dignities ของ Golden Dawn ธาตุของไพ่ใหญ่ผู้เขียนแต่ละคนกำหนดไม่เหมือนกัน จึงใช้เป็นเครื่องช่วยอ่าน ไม่ใช่คำตัดสิน</p>` : '';
 }
 
 const ELEM = {wands: ['ไม้เท้า', 'ไฟ คือการลงมือและแรงบันดาลใจ'], cups: ['ถ้วย', 'น้ำ คือความรู้สึกและความสัมพันธ์'],
@@ -393,34 +448,94 @@ function renderOverview() {
 }
 
 /* ---------- actions ---------- */
+function flip(i) {
+  const r = reading.cards[i], b = document.querySelector(`.card[data-i="${i}"]`), slot = b.closest('.slot');
+  shown.add(i);
+  b.setAttribute('aria-pressed', 'true'); b.classList.add('just');
+  b.setAttribute('aria-label', `${i + 1} ${nameOf(byId[r.card_id])} ${oriTh(r.orientation)} แตะเพื่ออ่านความหมาย`);
+  slot.classList.remove('deal'); slot.classList.add('pop');
+  slot.addEventListener('animationend', () => slot.classList.remove('pop'), {once: true});
+}
 function openCard(i) {
   if (shown.has(i)) { $('c' + i)?.scrollIntoView(); return; }   // second tap on an open card jumps to its reading
-  const r = reading.cards[i], b = document.querySelector(`.card[data-i="${i}"]`);
-  shown.add(i);
-  b.setAttribute('aria-pressed', 'true');
-  b.setAttribute('aria-label', `${i + 1} ${nameOf(byId[r.card_id])} ${oriTh(r.orientation)} แตะเพื่ออ่านความหมาย`);
-  renderChapters();
+  flip(i); renderChapters();
 }
 
-function draw() {
-  try { reading = createReading(cards, chosen(), {question: $('q').value, reversed: $('rev').checked}); }
-  catch (e) { alert(e.message); return; }
-  shown = new Set();
-  $('ask').hidden = true; $('session').hidden = false;
-  $('recap').innerHTML = `<p class="rq">${esc(reading.question) || 'ไม่ได้ตั้งคำถาม'}</p>
-    <p class="rm"><span>${esc(chosen().name_th)}</span><button class="link" id="again" type="button">จั่วใหม่</button></p>`;
+function begin(rd) {
+  reading = rd; shown = new Set();
+  $('ask').hidden = true; $('pick').hidden = true; $('session').hidden = false;
+  $('recap').innerHTML = `<p class="rq">${esc(rd.question) || 'ไม่ได้ตั้งคำถาม'}</p>
+    <p class="rm"><span>${esc(spreadOf(rd.spread_id).name_th)}</span><button class="link" id="again" type="button">จั่วใหม่</button></p>`;
   renderTable(true); renderChapters();
   scrollTo(0, 0);
 }
+function draw() {
+  try { begin(createReading(cards, chosen(), {question: $('q').value, reversed: $('rev').checked})); }
+  catch (e) { alert(e.message); }
+}
 $('ask').onsubmit = e => { e.preventDefault(); draw(); };
-$('recap').onclick = e => { if (e.target.id === 'again') { $('session').hidden = true; $('ask').hidden = false; scrollTo(0, 0); $('q').focus(); } };
+$('recap').onclick = e => {
+  if (e.target.id !== 'again') return;
+  $('session').hidden = true; $('ask').hidden = false; scrollTo(0, 0); $('q').focus();
+};
 $('table').onclick = e => { const b = e.target.closest('.card'); if (b) openCard(+b.dataset.i); };
-$('all').onclick = () => { reading.cards.forEach((_, i) => shown.add(i)); renderTable(false); renderChapters(); $('chapters').scrollIntoView(); };
+$('all').onclick = () => {
+  const rd = reading, todo = rd.cards.map((_, i) => i).filter(i => !shown.has(i));
+  todo.forEach((i, k) => setTimeout(() => { if (rd === reading) flip(i); }, k * 250));
+  setTimeout(() => { if (rd !== reading) return; renderChapters(); $('chapters').scrollIntoView(); }, todo.length * 250 + 450);
+};
 $('save').onclick = () => {
   store([...load(), reading]); $('save').textContent = 'บันทึกผลนี้แล้ว';
   setTimeout(() => $('save').textContent = 'บันทึกผลนี้', 1800);
 };
-let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => reading && !$('session').hidden && renderTable(false), 150); });
+
+/* ---------- pick your own cards ---------- */
+// The deck is shuffled (Web Crypto) before it is fanned out, so the card behind each back is already random.
+let pk = null;
+function renderPickHead() {
+  const n = pk.picks.length, need = pk.sp.positions.length;
+  $('pstep').textContent = n < need ? `เลือกใบที่ ${n + 1} จาก ${need}: ${pk.sp.positions[n].label_th}` : 'ครบแล้ว กำลังเปิดโต๊ะ';
+  $('slots').innerHTML = pk.sp.positions.map((p, i) =>
+    `<li class="${i < n ? 'on' : i === n ? 'now' : ''}"><span class="sl"></span>${esc(p.label_th)}</li>`).join('');
+}
+function startPick() {
+  pk = {order: shuffled(cards.map(c => c.id)), picks: [], sp: chosen(), question: $('q').value, reversed: $('rev').checked};
+  $('ask').hidden = true; $('pick').hidden = false;
+  const span = 100 * Math.PI / 180, step = span / (cards.length - 1), R = 15 / step, W = 1240, cw = 92;
+  $('fan').innerHTML = cards.map((_, k) => {
+    const a = -span / 2 + k * step;
+    return `<button type="button" class="fc" data-k="${k}" aria-label="ไพ่คว่ำใบที่ ${k + 1} จาก ${cards.length}"
+      style="left:${W / 2 + R * Math.sin(a) - cw / 2}px;top:${36 + R * (1 - Math.cos(a))}px;--a:${a}rad"></button>`;
+  }).join('');
+  renderPickHead();
+  fitFan();
+  scrollTo(0, 0);
+}
+// Scale the fan to the screen so the whole deck is visible; on phones it stops at 0.62 (smaller is too fine to tap) and scrolls instead.
+function fitFan() {
+  const w = $('fanwrap'), s = Math.max(0.62, Math.min(1, w.clientWidth / 1240));
+  $('fanbox').style.cssText = `width:${1240 * s}px;height:${480 * s}px`;
+  $('fan').style.transform = `scale(${s})`;
+  w.scrollLeft = (w.scrollWidth - w.clientWidth) / 2;
+}
+function finishPick() {
+  const {order, picks, sp, question, reversed} = pk;
+  begin({schema_version: '1.0.0', deck_id: 'gothic-ivory-rose', spread_id: sp.id, question: String(question),
+    created_at: new Date().toISOString(), reversed_enabled: Boolean(reversed),
+    cards: picks.map((k, i) => ({card_id: order[k], position_id: sp.positions[i].id,
+      orientation: reversed && randomBelow(2) === 1 ? 'reversed' : 'upright'}))});
+  pk = null;
+}
+$('pickbtn').onclick = startPick;
+$('pickcancel').onclick = () => { pk = null; $('pick').hidden = true; $('ask').hidden = false; };
+$('fan').onclick = e => {
+  const b = e.target.closest('.fc');
+  if (!b || !pk || pk.picks.length >= pk.sp.positions.length) return;
+  pk.picks.push(+b.dataset.k); b.classList.add('picked'); b.disabled = true;
+  renderPickHead();
+  if (pk.picks.length === pk.sp.positions.length) setTimeout(finishPick, 700);
+};
+let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (pk) fitFan(); else if (reading && !$('session').hidden) renderTable(false); }, 150); });
 
 /* ---------- catalog ---------- */
 function detail(c) {
