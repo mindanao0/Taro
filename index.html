@@ -126,11 +126,15 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 .fanwrap{overflow:hidden;padding:24px 0 8px;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
 .fanwrap.drag{cursor:grabbing}
 .fan{position:relative;margin:0 auto}
-.fc{position:absolute;left:0;top:0;width:var(--cw);aspect-ratio:937/1678;background:var(--back) center/100% 100%;box-shadow:0 10px 24px -8px #000;
-  transform:translate(var(--x),var(--y)) rotate(var(--a)) translateY(var(--l,0px));z-index:var(--z);transition:opacity .3s}
+/* The button keeps a fixed hit area; only its face (::before) lifts, so the card never slips away from the pointer. */
+.fc{position:absolute;left:0;top:0;width:var(--cw);aspect-ratio:937/1678;background:none;
+  transform:translate(var(--x),var(--y)) rotate(var(--a));z-index:var(--z);transition:opacity .3s}
+.fc::before{content:'';position:absolute;inset:0;background:var(--back) center/100% 100%;box-shadow:0 10px 24px -8px #000;transform:translateY(var(--l,0px));transition:transform .15s}
 .fc:hover,.fc:focus-visible{--l:-26px;z-index:400}
 .fc:focus-visible{outline:2px solid var(--gold)}
-.fc.picked{--l:-26px;opacity:.5;outline:1px solid var(--gold);outline-offset:-1px}
+.fc.picked{opacity:.5}
+.fc.picked:hover,.fc.picked:focus-visible{--l:0px;z-index:var(--z)}   /* a picked card must not pop up over the cards you are reaching for */   /* stays in place (no lift) so it never covers the neighbour you tap next */
+.fc.picked::before{outline:1px solid var(--gold);outline-offset:-1px}
 
 /* chapters */
 .chaps{margin-top:64px}
@@ -208,7 +212,7 @@ dialog::backdrop{background:#000c}
 }
 @media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
-  .slot.deal,.slot.pop,.card.just .front,.card.just .front::after{animation:none}.card,.dc,.fc{transition:none}.pickhead.closing::after{animation:none;width:100%}
+  .slot.deal,.slot.pop,.card.just .front,.card.just .front::after{animation:none}.card,.dc,.fc,.fc::before{transition:none}.pickhead.closing::after{animation:none;width:100%}
 }
 </style>
 </head>
@@ -611,9 +615,9 @@ function spin() {   // momentum after a flick
     if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
     e.preventDefault(); wheel.th -= e.deltaX / wheel.R; drawWheel();
   }, {passive: false});
-  wrap.addEventListener('keydown', e => {
+  addEventListener('keydown', e => {   // arrow keys spin the wheel while picking, wherever the focus is
     const d = {ArrowLeft: 1, ArrowRight: -1}[e.key];
-    if (d) { e.preventDefault(); wheel.v = d * 0.0012; spin(); }
+    if (d && pk && !$('pick').hidden && !e.target.closest?.('input,textarea,dialog')) { e.preventDefault(); wheel.v = d * 0.0012; spin(); }
   });
 }
 // Set after deploying worker/ (see README). While empty, nothing is sent anywhere.
