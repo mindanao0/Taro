@@ -2,5 +2,6 @@
 {
   "name": "taro-uat",
   "compatibility_date": "2026-10-01",
-  "assets": { "directory": "." }
+  "assets": { "directory": "." },
+  "routes": [{ "pattern": "uat.ivoryrosetarot.online", "custom_domain": true }]
 }

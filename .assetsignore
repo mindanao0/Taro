@@ -6,3 +6,10 @@ CLAUDE.md
 assets/cards
 previews
 docs
+.git
+.gitignore
+LICENSE
+SHA256SUMS.txt
+README.md
+requirements.txt
+CNAME
