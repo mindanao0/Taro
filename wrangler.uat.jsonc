@@ -1,0 +1,6 @@
+// UAT: static site on Workers Static Assets. Deploy command: npx wrangler deploy --config wrangler.uat.jsonc
+{
+  "name": "taro-uat",
+  "compatibility_date": "2026-10-01",
+  "assets": { "directory": "." }
+}

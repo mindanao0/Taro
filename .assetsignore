@@ -1,0 +1,8 @@
+worker
+wrangler.toml
+wrangler.uat.jsonc
+.assetsignore
+CLAUDE.md
+assets/cards
+previews
+docs
