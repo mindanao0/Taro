@@ -174,14 +174,10 @@ const joinKw = ks => ks.length < 2 ? ks.join('') : ks.slice(0, -1).join(' ') + '
 export function bridgeFor(spreadId, positionId, orientation, card) {
   const key = `${spreadId}:${positionId}`, a = ASK[key];
   if (!a || !card?.keywords_th?.length) return '';
-  const tpls = BRIDGE[orientation === 'reversed' ? 'reversed' : 'upright'];
-  const t = tpls[hash(card.id + key) % tpls.length];
-  let out;
-  for (let n = Math.min(3, card.keywords_th.length); n > 0; n--) {
-    out = fill(t, {n: card.name_en, a, k: joinKw(card.keywords_th.slice(0, n))});
-    if (out.length <= 140) break;
-  }
-  return out;
+  const keywords = joinKw(card.keywords_th.slice(0, 2));
+  return orientation === 'reversed'
+    ? `เมื่อ ${card.name_en} กลับหัวในตำแหน่งนี้ ลองพิจารณาว่าเรื่อง ${keywords} มีส่วนไหนที่ติดขัดหรือยังต้องใช้เวลา`
+    : `${card.name_en} ในตำแหน่งนี้ชวนให้สังเกตเรื่อง ${keywords} แล้วดูว่าเกี่ยวข้องกับ${a}อย่างไร`;
 }
 
 /** Readings for pairs of positions whose cards are both opened. drawn = [{position_id, card, orientation, i}] */
@@ -196,3 +192,4 @@ export function pairReadings(spreadId, drawn, isOpen = () => true) {
     return [{title: role.title, a, b, text}];
   });
 }
+
