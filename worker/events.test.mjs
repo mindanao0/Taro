@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import worker from './events.js';
+const calls=[]; const env={DB:{prepare:sql=>({bind:(...args)=>({run:async()=>calls.push([sql,args])})})}};
+const req=(data,origin='https://ivoryrosetarot.online')=>new Request('https://example.test/',{method:'POST',headers:{origin},body:JSON.stringify(data)});
+assert.equal((await worker.fetch(req({event:'reading_complete'}),env)).status,204);
+assert.equal((await worker.fetch(req({event:'reading_complete',question:'private'}),env)).status,400);
+assert.equal((await worker.fetch(req({event:'unknown'}),env)).status,400);
+assert.equal((await worker.fetch(req({event:'share'},'https://evil.test'),env)).status,403);
+assert.equal(calls.length,1); assert.equal(calls[0][1][1],'reading_complete');
+console.log('PASS: events allowlist and data minimization');

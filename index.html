@@ -259,8 +259,10 @@ dialog::backdrop{background:#000c}
     <div class="chaps" id="chapters"></div>
     <section class="pairs" id="pairs" hidden></section>
     <section class="overview" id="overview" hidden></section>
+    <section class="overview" id="sharing" hidden><h2>เก็บผลอ่าน</h2><p class="note">ข้อความที่แชร์จะไม่รวมคำถามส่วนตัว</p><div class="acts"><button class="link" id="share-reading" type="button">แชร์ผลอ่าน</button><button class="link" id="save-reading" type="button">ดาวน์โหลดผลอ่าน</button></div><p id="share-status" class="note" aria-live="polite"></p></section>
+    <section class="overview" id="offers" hidden><h2>สิ่งที่กำลังเตรียม</h2><p>เรากำลังออกแบบคำอ่านเชิงลึกและ Ivory Rose Club ราคาเสนอ 29 บาทต่อ 30 วัน เพื่อช่วยให้คุณทบทวนคำถามและกลับมาอ่านต่อได้</p><p class="note">ยังไม่เปิดขายหรือรับชำระเงิน รายละเอียดและราคาอาจเปลี่ยนแปลง</p><button class="link" id="interest-deep" type="button">สนใจคำอ่านเชิงลึก</button> · <button class="link" id="interest-club" type="button">สนใจ Club</button><p id="offer-status" class="note" aria-live="polite"></p></section>
   </div>
-  <p class="note foot">ไพ่ถูกสับแบบสุ่มก่อนวางให้เลือก คุณเป็นคนเลือกเองทุกใบ <span id="logsay">คำถามและผลอ่านอยู่ในเครื่องของคุณเท่านั้น ไม่ถูกส่งไปที่ไหน</span> เว็บนี้ไว้ช่วยให้คุณทบทวนเรื่องราวของตัวเอง ไม่ใช่คำทำนาย วิธีอ่านสรุปมาจากตำราไพ่ทั่วไป ไม่ใช่กฎตายตัว</p>
+  <p class="note foot">ไพ่ถูกสับแบบสุ่มก่อนวางให้เลือก คุณเป็นคนเลือกเองทุกใบ <span id="logsay">คำถามและผลอ่านไม่ถูกส่งเพื่อสร้างคำอ่าน เว็บใช้ Cloudflare Web Analytics เพื่อวัดการเข้าชม</span> เว็บนี้ไว้ช่วยให้คุณทบทวนเรื่องราวของตัวเอง ไม่ใช่คำทำนาย วิธีอ่านสรุปมาจากตำราไพ่ทั่วไป ไม่ใช่กฎตายตัว</p>
 </section>
 
 <section id="cat" hidden>
@@ -441,6 +443,8 @@ function renderChapters() {
   $('toread').hidden = !shown.size;
   renderPairs();
   renderOverview();
+  const done = shown.size === reading.cards.length; $('sharing').hidden = $('offers').hidden = !done;
+  if (done && !reading.completed) { reading.completed = true; track('reading_complete'); }
 }
 
 function renderPairs() {
@@ -519,7 +523,7 @@ function openCard(i) {
 }
 
 function begin(rd) {
-  reading = rd; shown = new Set();
+  reading = rd; shown = new Set(); track('reading_start');
   $('ask').hidden = true; $('pick').hidden = true; $('session').hidden = false;
   $('recap').innerHTML = `<p class="rq">${esc(rd.question) || 'ไม่ได้ตั้งคำถาม'}</p>
     <p class="rm"><span>${esc(spreadOf(rd.spread_id).name_th)}</span><button class="link" id="again" type="button">เลือกใหม่</button></p>`;
@@ -627,6 +631,24 @@ function logQuestion(q, spread) {
   q = String(q).trim();
   if (LOG_URL && q) fetch(LOG_URL, {method: 'POST', mode: 'no-cors', keepalive: true, body: JSON.stringify({q, spread})}).catch(() => {});
 }
+// Optional anonymous event endpoint. Never sends a question, card, identifier or URL.
+const EVENT_URL = '';
+function track(event) {
+  if (EVENT_URL) fetch(EVENT_URL, {method:'POST', mode:'no-cors', keepalive:true, body:JSON.stringify({event})}).catch(() => {});
+}
+function shareText() {
+  return 'Ivory Rose Tarot\n' + spreadOf(reading.spread_id).name_th + '\n' + reading.cards.map((r,i) => `${posOf(r).label_th}: ${nameOf(byId[r.card_id])} (${oriTh(r.orientation)})`).join('\n') + '\nhttps://ivoryrosetarot.online/';
+}
+$('share-reading').onclick = async () => {
+  const text = shareText();
+  try { if (navigator.share) await navigator.share({title:'Ivory Rose Tarot', text}); else if (navigator.clipboard) { await navigator.clipboard.writeText(text); $('share-status').textContent = 'คัดลอกผลอ่านแล้ว'; } else { $('share-status').textContent = 'อุปกรณ์นี้แชร์ไม่ได้ ลองดาวน์โหลดผลอ่านแทน'; return; } track('share'); }
+  catch (e) { if (e.name !== 'AbortError') $('share-status').textContent = 'แชร์ไม่สำเร็จ ลองดาวน์โหลดผลอ่านแทน'; }
+};
+$('save-reading').onclick = () => {
+  const blob = new Blob([shareText()], {type:'text/plain;charset=utf-8'}), url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = 'ivory-rose-reading.txt'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); track('download');
+};
+for (const [id,event] of [['interest-deep','interest_deep'],['interest-club','interest_club']]) $(id).onclick = () => { track(event); $('offer-status').textContent = EVENT_URL ? 'ขอบคุณที่สนใจ ยังไม่มีการสมัครหรือรับชำระเงิน' : 'ขอบคุณที่สนใจ ขณะนี้ยังไม่เปิดรับสมัคร'; };
 function finishPick() {
   clearTimeout(pk.timer);
   const {order, picks, sp, question, reversed} = pk;
@@ -697,3 +719,4 @@ document.head.append(el);
 </script>
 </body>
 </html>
+
