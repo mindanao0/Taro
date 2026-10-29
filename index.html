@@ -626,6 +626,7 @@ function spin() {   // momentum after a flick
 }
 // Set after deploying worker/ (see README). While empty, nothing is sent anywhere.
 const LOG_URL = '';
+if (!/^(www\.)?ivoryrosetarot\.online$/.test(location.hostname)) $('logsay').textContent = 'เว็บทดสอบนี้ไม่ส่งคำถามหรือผลอ่าน และไม่นับสถิติรวมกับเว็บจริง';
 if (LOG_URL) $('logsay').textContent = 'ผลอ่านอยู่ในเครื่องของคุณ ส่วนข้อความคำถามที่พิมพ์จะถูกเก็บไว้โดยไม่มีชื่อ อีเมล หรือข้อมูลที่ระบุตัวคุณ เพื่อใช้ปรับปรุงเว็บ จึงไม่ควรพิมพ์ข้อมูลส่วนตัวลงในคำถาม';
 function logQuestion(q, spread) {
   q = String(q).trim();
