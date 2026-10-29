@@ -687,6 +687,13 @@ $('grid').onclick = e => { const b = e.target.closest('.tile'); if (b) detail(by
 $('s').oninput = renderCat;
 renderCat();
 </script>
-<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "3dc834ed9fbf42e991ac307ddb9ada79"}'></script><!-- End Cloudflare Web Analytics -->
+<script>
+/* ทุกโดเมนที่ไม่ใช่ production (uat.*, *.pages.dev, localhost): ไม่ให้ search engine เก็บ และไม่นับสถิติปนกับ production */
+const uat = !/^(www\.)?ivoryrosetarot\.online$/.test(location.hostname);
+const el = document.createElement(uat ? 'meta' : 'script');
+if (uat) { el.name = 'robots'; el.content = 'noindex,nofollow'; }
+else { el.type = 'module'; el.src = 'https://static.cloudflareinsights.com/beacon.min.js'; el.dataset.cfBeacon = '{"token": "3dc834ed9fbf42e991ac307ddb9ada79"}'; }
+document.head.append(el);
+</script>
 </body>
 </html>
