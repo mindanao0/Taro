@@ -1,5 +1,5 @@
 // Optional anonymous aggregate counts; never accepts personal data.
-const allowed = new Set(['reading_start', 'reading_complete', 'share', 'download', 'interest_deep', 'interest_club']);
+const allowed = new Set(['reading_start', 'reading_complete', 'share', 'download', 'interest_deep', 'interest_club', 'return_visit']);
 const origins = new Set(['https://ivoryrosetarot.online', 'https://www.ivoryrosetarot.online']);
 export default { async fetch(req, env) {
   if (req.method !== 'POST') return new Response(null, {status:405});

@@ -1,0 +1,11 @@
+// Anonymous event counters. One-time setup, then deploy:
+//   npx wrangler d1 create taro-events            # put the database_id below
+//   npx wrangler d1 execute taro-events --remote --file worker/events-schema.sql --config wrangler.events.jsonc
+//   npx wrangler deploy --config wrangler.events.jsonc
+// Then set EVENT_URL in index.html to the workers.dev URL it prints.
+{
+  "name": "taro-events",
+  "main": "worker/events.js",
+  "compatibility_date": "2026-10-01",
+  "d1_databases": [{ "binding": "DB", "database_name": "taro-events", "database_id": "REPLACE_WITH_ID_FROM_wrangler_d1_create" }]
+}

@@ -3,3 +3,4 @@ __pycache__/
 *.zip
 assets/source/
 data/completed.txt
+.wrangler/

@@ -13,3 +13,4 @@ SHA256SUMS.txt
 README.md
 requirements.txt
 CNAME
+wrangler.events.jsonc

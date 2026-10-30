@@ -637,6 +637,12 @@ const EVENT_URL = '';
 function track(event) {
   if (EVENT_URL) fetch(EVENT_URL, {method:'POST', mode:'no-cors', keepalive:true, body:JSON.stringify({event})}).catch(() => {});
 }
+// A browser that opens the site on a later day counts once as a return visit; only the last-visit date stays on this device.
+try {
+  const today = new Date().toISOString().slice(0, 10), last = localStorage.getItem('irt-last');
+  if (last && last !== today) track('return_visit');
+  localStorage.setItem('irt-last', today);
+} catch {}
 function shareText() {
   return 'Ivory Rose Tarot\n' + spreadOf(reading.spread_id).name_th + '\n' + reading.cards.map((r,i) => `${posOf(r).label_th}: ${nameOf(byId[r.card_id])} (${oriTh(r.orientation)})`).join('\n') + '\nhttps://ivoryrosetarot.online/';
 }
