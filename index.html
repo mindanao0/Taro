@@ -280,7 +280,7 @@ dialog::backdrop{background:#000c}
 
 <script type="module">
 import {meaningFor, randomBelow, shuffled} from './scripts/reading-core.mjs';
-import {frameFor, bridgeFor, pairReadings, POSITIONS} from './scripts/reading-guide.mjs';
+import {frameFor, bridgeFor, pairReadings, topicOf, useFor, TOPICS, POSITIONS} from './scripts/reading-guide.mjs';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -418,9 +418,9 @@ function renderTable(animate) {
 function renderChapters() {
   $('chapters').innerHTML = reading.cards.map((r, i) => {
     if (!shown.has(i)) return '';
-    const c = byId[r.card_id], pos = POSITIONS[`${reading.spread_id}:${r.position_id}`] || {};
+    const c = byId[r.card_id], pos = POSITIONS[`${reading.spread_id}:${r.position_id}`] || {}, use = useFor(reading.topic, pos.use);
     const items = [['love', 'ความรัก', c.love_th], ['work', 'การงาน', c.work_th], ['advice', 'คำแนะนำ', c.advice_th]];
-    if (pos.use) items.sort((x, y) => (y[0] === pos.use) - (x[0] === pos.use));
+    if (use) items.sort((x, y) => (y[0] === use) - (x[0] === use));
     const role = PM?.roles[`${reading.spread_id}:${r.position_id}`];
     const here = role && PM.cards[c.id]?.[role]?.[r.orientation === 'reversed' ? 'rev' : 'up'];
     return `<article class="chap" id="c${i}">
@@ -435,7 +435,7 @@ function renderChapters() {
         <p class="more"><span>ความหมายทั่วไปของไพ่ใบนี้</span>${esc(meaningFor(c, r.orientation))}</p>`
           : `<p class="bridge">${esc(bridgeFor(reading.spread_id, r.position_id, r.orientation, c))}</p>
         <p class="lead">${esc(meaningFor(c, r.orientation))}</p>`}
-        <dl class="trio">${items.map(([k, label, text]) => `<div class="${pos.use === k ? 'em' : ''}"><dt>${label}</dt><dd>${esc(text)}</dd></div>`).join('')}</dl>
+        <dl class="trio">${items.map(([k, label, text]) => `<div class="${use === k ? 'em' : ''}"><dt>${label}</dt><dd>${esc(text)}</dd></div>`).join('')}</dl>
         <p class="qq">${esc(c.reflection_th)}</p>
         <a class="up" href="#table">กลับไปที่โต๊ะ</a>
       </div></article>`;
@@ -523,10 +523,11 @@ function openCard(i) {
 }
 
 function begin(rd) {
-  reading = rd; shown = new Set(); track('reading_start');
+  reading = rd; reading.topic = topicOf(rd.question); shown = new Set(); track('reading_start'); track('topic_' + reading.topic);
   $('ask').hidden = true; $('pick').hidden = true; $('session').hidden = false;
   $('recap').innerHTML = `<p class="rq">${esc(rd.question) || 'ไม่ได้ตั้งคำถาม'}</p>
-    <p class="rm"><span>${esc(spreadOf(rd.spread_id).name_th)}</span><button class="link" id="again" type="button">เลือกใหม่</button></p>`;
+    <p class="rm"><span>${esc(spreadOf(rd.spread_id).name_th)}</span><button class="link" id="again" type="button">เลือกใหม่</button></p>
+    ${TOPICS[reading.topic] ? `<p class="note">คำถามนี้ดูเกี่ยวกับ${esc(TOPICS[reading.topic].th)} จึงวางมุมนั้นไว้ก่อนในแต่ละใบ</p>` : ''}`;
   renderTable(true); renderChapters();
   scrollTo(0, 0);
 }

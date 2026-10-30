@@ -7,5 +7,6 @@ assert.equal((await worker.fetch(req({event:'reading_complete',question:'private
 assert.equal((await worker.fetch(req({event:'unknown'}),env)).status,400);
 assert.equal((await worker.fetch(req({event:'share'},'https://evil.test'),env)).status,403);
 assert.equal((await worker.fetch(req({event:'return_visit'}),env)).status,204);
-assert.equal(calls.length,2); assert.equal(calls[0][1][1],'reading_complete'); assert.equal(calls[1][1][1],'return_visit');
+assert.equal((await worker.fetch(req({event:'topic_love'}),env)).status,204);
+assert.equal(calls.length,3); assert.equal(calls[0][1][1],'reading_complete'); assert.equal(calls[1][1][1],'return_visit'); assert.equal(calls[2][1][1],'topic_love');
 console.log('PASS: events allowlist and data minimization');

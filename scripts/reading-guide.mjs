@@ -130,6 +130,23 @@ export const PAIRS = {
   ]
 };
 
+/** Rough topic of a free-text question, by Thai keywords. Highest count wins; no match or a tie = 'general'.
+ *  ponytail: substring match, so "เลิก" also hits "เลิกงาน"; swap for a classifier only if real questions show it matters. */
+export const TOPICS = {
+  love: {th: 'ความรัก', use: 'love', words: ['รัก', 'แฟน', 'คนคุย', 'เลิก', 'คืนดี', 'จีบ', 'หึง', 'คู่ครอง', 'คู่รัก', 'ความสัมพันธ์', 'แต่งงาน', 'เดต']},
+  work: {th: 'การงานและการเรียน', use: 'work', words: ['งาน', 'เงินเดือน', 'ลาออก', 'สัมภาษณ์', 'เลื่อนตำแหน่ง', 'หัวหน้า', 'ธุรกิจ', 'สอบ', 'เรียน', 'มหาวิทยาลัย', 'ทุน', 'เงิน', 'หนี้', 'รายได้', 'ฝึกงาน']},
+  self: {th: 'ตัวคุณเอง', use: 'advice', words: ['ตัวเอง', 'ชีวิต', 'เป้าหมาย', 'สุขภาพ', 'เครียด', 'กังวล', 'ท้อ', 'เหนื่อย', 'หมดไฟ', 'ตัดสินใจ', 'เส้นทาง', 'เติบโต']}
+};
+export function topicOf(question) {
+  // "รักษา" (heal/keep) is not love; "แต่งงาน" (marry) is love, not work
+  const q = String(question ?? '').replaceAll('รักษา', ''), count = (s, ws) => ws.reduce((n, w) => n + s.split(w).length - 1, 0);
+  const noMarry = q.replaceAll('แต่งงาน', '');
+  const score = Object.entries(TOPICS).map(([k, t]) => [k, count(k === 'work' ? noMarry : q, t.words)]).sort((a, b) => b[1] - a[1]);
+  return score[0][1] > 0 && score[0][1] > score[1][1] ? score[0][0] : 'general';
+}
+/** Which of love/work/advice leads in a card's reading: the question's topic if it has one, else the position's own default. */
+export const useFor = (topic, positionUse) => TOPICS[topic]?.use ?? positionUse;
+
 const fill = (t, v) => t.replace(/\{(\w+)\}/g, (_, k) => v[k]);
 
 /** Short line saying what this card stands for in its position. */

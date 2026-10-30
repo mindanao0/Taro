@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {POSITIONS, PAIRS, elementOf, relation, frameFor, pairReadings, bridgeFor, ASK} from './reading-guide.mjs';
+import {POSITIONS, PAIRS, elementOf, relation, frameFor, pairReadings, bridgeFor, ASK, topicOf, useFor} from './reading-guide.mjs';
 const read = f => JSON.parse(readFileSync(new URL(f, import.meta.url)));
 const cards = read('../data/cards.public.json').cards, {spreads} = read('../data/spreads.json');
 
@@ -48,4 +48,9 @@ for (const s of spreads) for (const p of s.positions) for (const c of cards) for
 }
 assert.ok(seen.size >= 20, `only ${seen.size} distinct bridges`);
 assert.notEqual(bridgeFor('three', 'p1', 'upright', pick('major-18')), bridgeFor('three', 'p1', 'reversed', pick('major-18')));
+// question topic: each topic, plus the traps (heal != love, marry = love not work), empty and tied input
+for (const [q, want] of [['เขาจะกลับมาคืนดีกับฉันไหม', 'love'], ['ควรลาออกไปสัมภาษณ์งานใหม่ไหม', 'work'], ['ปีนี้ฉันควรสอบเข้ามหาวิทยาลัยไหม', 'work'],
+  ['ช่วงนี้เครียดและท้อ ควรทำอย่างไร', 'self'], ['เราจะแต่งงานกันไหม', 'love'], ['ควรรักษาสุขภาพอย่างไร', 'self'],
+  ['', 'general'], [undefined, 'general'], ['ไพ่บอกอะไรฉันบ้าง', 'general'], ['แฟนกับงานอะไรสำคัญกว่า', 'general']]) assert.equal(topicOf(q), want, q);
+assert.equal(useFor('love', 'advice'), 'love'); assert.equal(useFor('self', 'work'), 'advice'); assert.equal(useFor('general', 'work'), 'work'); assert.equal(useFor('general', undefined), undefined);
 console.log(`PASS: ${keys.length} position frames, ${Object.values(PAIRS).flat().length} pair roles, ${all.length} unique sentences`);
