@@ -633,9 +633,9 @@ function logQuestion(q, spread) {
   if (LOG_URL && q) fetch(LOG_URL, {method: 'POST', mode: 'no-cors', keepalive: true, body: JSON.stringify({q, spread})}).catch(() => {});
 }
 // Optional anonymous event endpoint. Never sends a question, card, identifier or URL.
-const EVENT_URL = '';
+const EVENT_URL = 'https://taro-events.megamaster0412.workers.dev';
 function track(event) {
-  if (EVENT_URL) fetch(EVENT_URL, {method:'POST', mode:'no-cors', keepalive:true, body:JSON.stringify({event})}).catch(() => {});
+  if (EVENT_URL && /^(www\.)?ivoryrosetarot\.online$/.test(location.hostname)) fetch(EVENT_URL, {method:'POST', mode:'no-cors', keepalive:true, body:JSON.stringify({event})}).catch(() => {});
 }
 // A browser that opens the site on a later day counts once as a return visit; only the last-visit date stays on this device.
 try {

@@ -7,5 +7,5 @@
   "name": "taro-events",
   "main": "worker/events.js",
   "compatibility_date": "2026-10-01",
-  "d1_databases": [{ "binding": "DB", "database_name": "taro-events", "database_id": "REPLACE_WITH_ID_FROM_wrangler_d1_create" }]
+  "d1_databases": [{ "binding": "DB", "database_name": "taro-events", "database_id": "da251ed0-7dc5-47b0-9ef5-c2afceb04f49" }]
 }
