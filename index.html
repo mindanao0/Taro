@@ -280,17 +280,18 @@ dialog::backdrop{background:#000c}
 
 <script type="module">
 import {meaningFor, randomBelow, shuffled} from './scripts/reading-core.mjs';
-import {frameFor, bridgeFor, pairReadings, topicOf, useFor, TOPICS, POSITIONS} from './scripts/reading-guide.mjs';
+import {frameFor, bridgeFor, pairReadings, useFor, TOPICS, POSITIONS} from './scripts/reading-guide.mjs';
+import {topicFor} from './scripts/topic-model.mjs';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const CATS = [['', 'ทั้งหมด'], ['major', 'ไพ่ใหญ่'], ['wands', 'ไม้เท้า'], ['cups', 'ถ้วย'], ['swords', 'ดาบ'], ['pentacles', 'เหรียญ']];
-let cards, byId, spreads, PM, reading, shown = new Set(), cat = '';
+let cards, byId, spreads, PM, TM, reading, shown = new Set(), cat = '';
 
 try {
-  const [c, s, pm] = await Promise.all(['data/cards.public.json', 'data/spreads.json', 'data/position_meanings_major.json']
-    .map(u => fetch(u).then(r => r.json()).catch(e => { if (!u.includes('position_meanings')) throw e; })));
-  PM = pm;
+  const [c, s, pm, tm] = await Promise.all(['data/cards.public.json', 'data/spreads.json', 'data/position_meanings_major.json', 'data/topic_model.json']
+    .map(u => fetch(u).then(r => r.json()).catch(e => { if (!/position_meanings|topic_model/.test(u)) throw e; })));
+  PM = pm; TM = tm;   // both optional: without the topic model the keyword table decides
   cards = c.cards; spreads = s.spreads; byId = Object.fromEntries(cards.map(x => [x.id, x]));
   $('rev').checked = s.default_reversed;
 } catch (e) {
@@ -523,7 +524,7 @@ function openCard(i) {
 }
 
 function begin(rd) {
-  reading = rd; reading.topic = topicOf(rd.question); shown = new Set(); track('reading_start'); track('topic_' + reading.topic);
+  reading = rd; reading.topic = topicFor(TM, rd.question); shown = new Set(); track('reading_start'); track('topic_' + reading.topic);
   $('ask').hidden = true; $('pick').hidden = true; $('session').hidden = false;
   $('recap').innerHTML = `<p class="rq">${esc(rd.question) || 'ไม่ได้ตั้งคำถาม'}</p>
     <p class="rm"><span>${esc(spreadOf(rd.spread_id).name_th)}</span><button class="link" id="again" type="button">เลือกใหม่</button></p>
