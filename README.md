@@ -61,9 +61,11 @@ wrangler deploy                             # ได้ URL แบบ https://ta
 wrangler d1 execute taro-log --remote --command "SELECT at, spread, q FROM questions ORDER BY id DESC LIMIT 50"
 ```
 
+คู่มือฉบับเต็มพร้อมตารางการป้องกัน: `docs/DEPLOY_TH.md`
+
 ## ตรวจข้อมูลอีกครั้ง
 
-จากโฟลเดอร์นี้ รัน `python3 scripts/package_deck.py --check-only` เพื่อตรวจจำนวน ID ไฟล์ภาพ ขนาด และ checksum หรือ `node scripts/reading-core.test.mjs` เพื่อตรวจตรรกะการสุ่มแบบไม่ซ้ำ
+จากโฟลเดอร์นี้ รัน `python3 scripts/package_deck.py --check-only` เพื่อตรวจจำนวน ID ไฟล์ภาพ ขนาด และ checksum หรือ `node scripts/reading-core.test.mjs` เพื่อตรวจตรรกะการสุ่มแบบไม่ซ้ำ `python3 scripts/validate_data.py` ตรวจว่า `data/` กับ `docs/` ตรงกัน `node worker/index.test.mjs` ตรวจ Worker และ `node tests/e2e.mjs` เปิดเว็บจริงด้วย Playwright ทั้งมือถือและเดสก์ท็อป (ต้องมี `playwright`)
 
 ## ดาวน์โหลดจาก GitHub
 
