@@ -260,6 +260,7 @@ dialog::backdrop{background:#000c}
     <section class="pairs" id="pairs" hidden></section>
     <section class="overview" id="overview" hidden></section>
   </div>
+  <label class="note switch" id="trackrow" hidden><input type="checkbox" id="trackopt"> ช่วยปรับปรุงเว็บ: บันทึกลำดับการกดและตำแหน่งที่กด (ไม่เก็บข้อความที่พิมพ์ ไม่ระบุตัวตน) ปิดได้ทุกเมื่อ</label>
   <p class="note foot">ไพ่ถูกสับแบบสุ่มก่อนวางให้เลือก คุณเป็นคนเลือกเองทุกใบ <span id="logsay">คำถามและผลอ่านอยู่ในเครื่องของคุณเท่านั้น ไม่ถูกส่งไปที่ไหน</span> เว็บนี้ไว้ช่วยให้คุณทบทวนเรื่องราวของตัวเอง ไม่ใช่คำทำนาย วิธีอ่านสรุปมาจากตำราไพ่ทั่วไป ไม่ใช่กฎตายตัว</p>
 </section>
 
@@ -279,9 +280,24 @@ dialog::backdrop{background:#000c}
 <script type="module">
 import {meaningFor, randomBelow, shuffled} from './scripts/reading-core.mjs';
 import {frameFor, bridgeFor, pairReadings, POSITIONS} from './scripts/reading-guide.mjs';
+import {createTracker, pointOf} from './scripts/track.mjs';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* ---------- optional click-sequence log (docs/08 §4.2) ----------
+   Off until TRACK_URL is set AND the visitor ticks the box in the footer. Sends only event types, element ids,
+   click positions and timing; never typed text. The session id lives in sessionStorage (new for every tab). */
+const TRACK_URL = '';
+const store = {get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }};
+const sid = (() => { try { return sessionStorage.taroSid ||= crypto.randomUUID(); } catch { return crypto.randomUUID(); } })();
+const tracker = createTracker({
+  url: TRACK_URL, sid, consent: () => store.get('taro.analytics') === '1',
+  meta: {viewport_w: innerWidth, viewport_h: innerHeight, pointer: matchMedia('(pointer: coarse)').matches ? 'touch' : 'mouse', app_version: 'web-1', started_at: new Date().toISOString()},
+  send: (u, body) => { if (!(document.visibilityState === 'hidden' && navigator.sendBeacon?.(u, body))) fetch(u, {method: 'POST', mode: 'no-cors', keepalive: true, body}).catch(() => {}); }
+});
+const track = (type, o) => tracker.track(type, o);
+addEventListener('pagehide', () => tracker.flush());
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') tracker.flush(); });
 const CATS = [['', 'ทั้งหมด'], ['major', 'ไพ่ใหญ่'], ['wands', 'ไม้เท้า'], ['cups', 'ถ้วย'], ['swords', 'ดาบ'], ['pentacles', 'เหรียญ']];
 let cards, byId, spreads, PM, reading, shown = new Set(), cat = '';
 
@@ -310,7 +326,7 @@ function show(name) {
     k === name ? $(b).setAttribute('aria-current', 'page') : $(b).removeAttribute('aria-current');
   }
 }
-for (const [k, b] of Object.entries(views)) $(b).onclick = () => { show(k); if (k === 'read' && pk) fitFan(); };
+for (const [k, b] of Object.entries(views)) $(b).onclick = e => { track('view_enter', {view: k, target: 'nav:' + k, point: pointOf(e, $(b))}); show(k); if (k === 'read' && pk) fitFan(); };
 function toHome() {
   pk = null; show('read');
   $('pick').hidden = $('session').hidden = true; $('ask').hidden = false; scrollTo(0, 0);
@@ -318,12 +334,12 @@ function toHome() {
 // Picking and reading are one history step, so the phone's Back gesture returns to the start instead of leaving the site.
 const leave = () => history.state?.v ? history.back() : toHome();
 const enter = () => history.state?.v || history.pushState({v: 1}, '');
-$('home').onclick = leave;
+$('home').onclick = e => { track('home', {point: pointOf(e, $('home'))}); leave(); };
 addEventListener('popstate', e => { if (!e.state?.v && !location.hash && (pk || !$('session').hidden)) toHome(); });
 // In-page links scroll without adding history entries (a hash step would otherwise look like "Back" to the handler above).
 document.addEventListener('click', e => {
   const a = e.target.closest('a[href^="#"]'), t = a && document.getElementById(a.getAttribute('href').slice(1));
-  if (t) { e.preventDefault(); t.scrollIntoView(); }
+  if (t) { e.preventDefault(); t.scrollIntoView(); if (a.id === 'toread') track('jump_to_reading', {view: 'session', point: pointOf(e, a)}); }
 });
 
 /* ---------- layout shared by glyphs and the table ---------- */
@@ -380,7 +396,8 @@ function dealDeck(animate) {
   els.forEach((el, k) => { el.classList.add('gather', 'stack'); stack(k); });
   dealT = setTimeout(deal, 340);
 }
-$('spreads').addEventListener('change', () => dealDeck(true));
+$('spreads').addEventListener('change', e => { track('spread_select', {view: 'read', target: 'spread:' + chosen().id}); dealDeck(true); });
+$('rev').addEventListener('change', () => track('reversed_toggle', {view: 'read', data: {on: $('rev').checked}}));
 { let first = true, lastW = 0; new ResizeObserver(() => { if (stage.clientWidth === lastW) return; lastW = stage.clientWidth; dealDeck(first); first = false; }).observe(stage); }
 
 /* ---------- table ---------- */
@@ -531,8 +548,9 @@ $('recap').onclick = e => {
   if (e.target.id !== 'again') return;
   leave(); $('q').focus();
 };
-$('table').onclick = e => { const b = e.target.closest('.card'); if (b) openCard(+b.dataset.i); };
-$('all').onclick = () => {
+$('table').onclick = e => { const b = e.target.closest('.card'); if (b) { track('card_open', {view: 'session', target: 'pos:' + b.dataset.i, point: pointOf(e, b), data: {again: shown.has(+b.dataset.i)}}); openCard(+b.dataset.i); } };
+$('all').onclick = e => {
+  track('open_all', {view: 'session', point: pointOf(e, $('all'))});
   const rd = reading, todo = rd.cards.map((_, i) => i).filter(i => !shown.has(i));
   todo.forEach((i, k) => setTimeout(() => { if (rd === reading) flip(i); }, k * 250));
   setTimeout(() => { if (rd !== reading) return; renderChapters(); $('chapters').scrollIntoView(); }, todo.length * 250 + 450);
@@ -556,6 +574,7 @@ const wheel = {th: 0, v: 0, raf: 0, last: 0, moved: false};
 function startPick() {
   enter();
   const sp = chosen();
+  track('start_pick', {view: 'pick', target: 'spread:' + sp.id, data: {rev: $('rev').checked}});
   pk = {order: shuffled(cards.map(c => c.id)), picks: Array(sp.positions.length).fill(null), sp, question: $('q').value, reversed: $('rev').checked};
   $('ask').hidden = true; $('pick').hidden = false;
   $('fan').innerHTML = cards.map((_, k) => `<button type="button" class="fc" data-k="${k}" aria-label="ไพ่คว่ำใบที่ ${k + 1} จาก ${cards.length}"></button>`).join('');
@@ -609,8 +628,9 @@ function spin() {   // momentum after a flick
     wheel.th += dx / wheel.R; wheel.v = 0.6 * wheel.v + 0.4 * (dx / wheel.R / dt);
     down = {...down, x: e.clientX, t: e.timeStamp}; drawWheel();
   };
-  wrap.onpointerup = wrap.onpointercancel = () => { down = null; wrap.classList.remove('drag'); if (wheel.moved) spin(); };
+  wrap.onpointerup = wrap.onpointercancel = () => { down = null; wrap.classList.remove('drag'); if (wheel.moved) { track('wheel_spin', {view: 'pick', target: 'fan'}); spin(); } };
   wrap.addEventListener('click', e => { if (wheel.moved) { e.stopPropagation(); e.preventDefault(); wheel.moved = false; } }, true);
+  wrap.addEventListener('click', e => { if (pk && !e.target.closest('.fc')) track('miss_tap', {view: 'pick', target: 'fan', outcome: 'miss', point: pointOf(e, wrap)}); });
   wrap.addEventListener('wheel', e => {
     if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
     e.preventDefault(); wheel.th -= e.deltaX / wheel.R; drawWheel();
@@ -623,6 +643,11 @@ function spin() {   // momentum after a flick
 // Set after deploying worker/ (see README). While empty, nothing is sent anywhere.
 const LOG_URL = '';
 if (LOG_URL) $('logsay').textContent = 'ผลอ่านอยู่ในเครื่องของคุณ ส่วนข้อความคำถามที่พิมพ์จะถูกเก็บไว้โดยไม่มีชื่อ อีเมล หรือข้อมูลที่ระบุตัวคุณ เพื่อใช้ปรับปรุงเว็บ จึงไม่ควรพิมพ์ข้อมูลส่วนตัวลงในคำถาม';
+if (TRACK_URL) {
+  $('trackrow').hidden = false;
+  $('trackopt').checked = store.get('taro.analytics') === '1';
+  $('trackopt').onchange = () => { store.set('taro.analytics', $('trackopt').checked ? '1' : '0'); if (!$('trackopt').checked) tracker.stop(); };
+}
 function logQuestion(q, spread) {
   q = String(q).trim();
   if (LOG_URL && q) fetch(LOG_URL, {method: 'POST', mode: 'no-cors', keepalive: true, body: JSON.stringify({q, spread})}).catch(() => {});
@@ -630,6 +655,8 @@ function logQuestion(q, spread) {
 function finishPick() {
   clearTimeout(pk.timer);
   const {order, picks, sp, question, reversed} = pk;
+  picks.forEach((k, i) => track('pick_kept', {view: 'pick', target: 'fan:' + k, outcome: 'kept', data: {pos: i}}));
+  track('auto_open', {view: 'pick', data: {n: picks.length}});
   logQuestion(question, sp.id);
   begin({schema_version: '1.0.0', deck_id: 'gothic-ivory-rose', spread_id: sp.id, question: String(question),
     created_at: new Date().toISOString(), reversed_enabled: Boolean(reversed),
@@ -637,9 +664,10 @@ function finishPick() {
       orientation: reversed && randomBelow(2) === 1 ? 'reversed' : 'upright'}))});
   pk = null;
 }
-$('pickcancel').onclick = leave;
-function unpick(i) {   // put a picked card back; the other cards keep their positions
-  const k = pk.picks[i]; pk.picks[i] = null; clearTimeout(pk.timer);
+$('pickcancel').onclick = e => { track('pick_cancel', {view: 'pick', point: pointOf(e, $('pickcancel')), data: {picked: pk ? pk.picks.filter(k => k !== null).length : 0}}); leave(); };
+function unpick(i, how = 'slot', e) {   // put a picked card back; the other cards keep their positions
+  const k = pk.picks[i];
+  track('unpick', {view: 'pick', target: `${how}:${how === 'fan' ? k : i}`, outcome: 'undone', point: pointOf(e, e?.target?.closest?.('button')), data: {pos: i}}); pk.picks[i] = null; clearTimeout(pk.timer);
   $('fan').querySelector(`.fc[data-k="${k}"]`)?.classList.remove('picked');
   renderPickHead();
 }
@@ -647,9 +675,10 @@ $('fan').onclick = e => {
   const b = e.target.closest('.fc');
   if (!b || !pk) return;
   const k = +b.dataset.k, i = pk.picks.indexOf(k);
-  if (i >= 0) return unpick(i);
+  if (i >= 0) return unpick(i, 'fan', e);
   const slot = pk.picks.indexOf(null);
-  if (slot < 0) return;
+  if (slot < 0) { track('blocked_tap', {view: 'pick', target: 'fan:' + k, outcome: 'blocked', point: pointOf(e, b)}); return; }
+  track('pick', {view: 'pick', target: 'fan:' + k, point: pointOf(e, b), data: {pos: slot}});
   pk.picks[slot] = k; b.classList.add('picked');
   renderPickHead();
   if (!pk.picks.includes(null)) {   // all picked: open automatically after a moment, long enough to undo a mis-tap
@@ -657,7 +686,7 @@ $('fan').onclick = e => {
     pk.timer = setTimeout(() => { if (pk === mine && !pk.picks.includes(null)) finishPick(); }, 1000);
   }
 };
-$('slots').onclick = e => { const b = e.target.closest('button[data-i]'); if (b && pk) unpick(+b.dataset.i); };
+$('slots').onclick = e => { const b = e.target.closest('button[data-i]'); if (b && pk) unpick(+b.dataset.i, 'slot', e); };
 let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (pk) fitFan(); else if (reading && !$('session').hidden) renderTable(false); }, 150); });
 
 /* ---------- catalog ---------- */
@@ -668,10 +697,11 @@ function detail(c) {
     <p class="kw">${esc(c.keywords_th.join(', '))}</p>
     <dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
     <p class="qq">${esc(c.reflection_th)}</p></div></div>`;
+  track('dialog_open', {view: 'cat', target: 'card:' + c.id});
   $('dlg').showModal();
 }
-$('dx').onclick = () => $('dlg').close();
-$('dlg').onclick = e => { if (e.target === $('dlg')) $('dlg').close(); };
+$('dx').onclick = () => { track('dialog_close', {view: 'cat', target: 'x'}); $('dlg').close(); };
+$('dlg').onclick = e => { if (e.target === $('dlg')) { track('dialog_close', {view: 'cat', target: 'backdrop'}); $('dlg').close(); } };
 
 function renderCat() {
   const q = $('s').value.trim().toLowerCase();
@@ -682,9 +712,13 @@ function renderCat() {
     <img loading="lazy" src="${c.image_web}" alt="${esc(c.alt_th)}"><span>${esc(c.name_en)}</span><b>${esc(c.name_th)}</b></button>`).join('')
     || '<p class="empty">ไม่พบไพ่ที่ตรงกับคำค้น ลองใช้ชื่อสั้นลงหรือเลือกหมวดทั้งหมด</p>';
 }
-$('cats').onclick = e => { if (e.target.dataset.k != null) { cat = e.target.dataset.k; renderCat(); } };
+$('cats').onclick = e => { if (e.target.dataset.k != null) { cat = e.target.dataset.k; track('catalog_filter', {view: 'cat', target: 'cat:' + (cat || 'all'), point: pointOf(e, e.target)}); renderCat(); } };
 $('grid').onclick = e => { const b = e.target.closest('.tile'); if (b) detail(byId[b.dataset.id]); };
-$('s').oninput = renderCat;
+let searchTimer;
+$('s').oninput = () => {   // log only the length and result count, never the words typed
+  renderCat(); clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => track('catalog_search', {view: 'cat', data: {len: $('s').value.trim().length, n: $('grid').querySelectorAll('.tile').length}}), 800);
+};
 renderCat();
 </script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "3dc834ed9fbf42e991ac307ddb9ada79"}'></script><!-- End Cloudflare Web Analytics -->

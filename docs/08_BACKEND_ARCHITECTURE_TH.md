@@ -366,7 +366,7 @@ CREATE INDEX line_due ON line_subscriptions(enabled, schedule, hour) WHERE block
 |---|---|
 | นำทาง | `view_enter` (read/cat), `home` |
 | ตั้งค่า | `spread_select`, `reversed_toggle` |
-| เลือกไพ่ | `start_pick`, `wheel_spin` (ลากวงล้อ), `pick`, `unpick`, `miss_tap`, `blocked_tap`, `pick_cancel`, `auto_open` |
+| เลือกไพ่ | `start_pick`, `wheel_spin` (ลากวงล้อ), `pick`, `unpick`, `pick_kept` (สรุปไพ่ที่คงไว้ตอนเปิดคำอ่าน), `miss_tap`, `blocked_tap`, `pick_cancel`, `auto_open` |
 | อ่านผล | `card_open`, `open_all`, `jump_to_reading` |
 | แค็ตตาล็อก | `catalog_search` (เก็บแค่ความยาวคำค้นและจำนวนผลใน `data_json` ไม่เก็บข้อความ), `catalog_filter`, `dialog_open`, `dialog_close` |
 
@@ -392,7 +392,7 @@ SELECT rx/100 AS col, COUNT(*) n FROM ui_events
 WHERE type='miss_tap' AND target='fan' GROUP BY col;
 ```
 
-**ฝั่งเว็บ**
+**ฝั่งเว็บ (ทำแล้ว: `scripts/track.mjs` + การครอบ handler ใน `index.html`, เทสต์ใน `scripts/track.test.mjs` และ `tests/e2e.mjs`)** เปิดใช้โดยตั้ง `TRACK_URL` ใน `index.html` และผู้ใช้ติ๊กช่องในท้ายหน้า
 - เก็บใน memory แล้วส่งเป็นชุด (batch) ทุก 10 วินาทีและตอน `pagehide` ด้วย `navigator.sendBeacon` ไม่ให้หน่วงการใช้งาน
 - ครอบ handler เดิมด้วยฟังก์ชัน `track(type, target, outcome, e)` ไม่แก้ตรรกะเดิม
 - **ไม่เก็บ:** ข้อความที่พิมพ์ (คำถาม, ช่องค้นหา, บันทึก), การกดแป้นพิมพ์, ตำแหน่งเมาส์ที่ไม่ได้กด
