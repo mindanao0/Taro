@@ -30,7 +30,7 @@ flowchart TB
     D1[(D1<br/>ข้อมูลหลักแบบตาราง)]
     KV[(KV<br/>แคช เนื้อหาที่เผยแพร่แล้ว)]
     R2[(R2<br/>รูปไพ่, ไฟล์ export, backup)]
-    AE[(Analytics Engine<br/>เหตุการณ์ใช้งานแบบไม่ระบุตัวตน)]
+    AE[(Analytics Engine<br/>ทางเลือกเมื่อปริมาณเหตุการณ์โต)]
   end
   EXT[ผู้ให้บริการภายนอก<br/>Google, LINE Login, Facebook, อีเมล]
   LM[LINE Messaging API]
@@ -61,7 +61,7 @@ flowchart TB
 | ความยินยอม (consent) | D1 | ต้องพิสูจน์ได้ว่าใครยินยอมอะไร เมื่อไหร่ | ตามกฎหมาย แม้บัญชีถูกลบให้เก็บแบบไม่ระบุตัวตน |
 | คำถามแบบไม่ล็อกอิน (ตัวเก็บเดิม) | D1 ตาราง `questions` | มีอยู่แล้ว ไม่ผูกกับผู้ใช้ | 90 วัน แล้วลบอัตโนมัติ |
 | Feedback / รายงานปัญหา | D1 | admin ต้องจัดการสถานะ | 1 ปี |
-| เหตุการณ์ใช้งาน (เปิดหน้า, เลือก spread, อ่านจบ) | Analytics Engine | ปริมาณมาก ไม่ต้องผูกตัวตน ใช้ดูสถิติรวม | ตามที่บริการกำหนด ไม่ต้องจัดการเอง |
+| ลำดับการกด/คลิกของผู้ใช้ (ตำแหน่ง, ก่อน-หลัง, ถูก/พลาด) | D1 ตาราง `ui_sessions` + `ui_events` | ต้อง query ลำดับและรวมสถิติ (หัวข้อ 4.2) | ดิบ 30 วัน แล้วรวมเป็นสถิติรายวัน (`ui_daily_stats`) เก็บถาวร |
 | เนื้อหาไพ่/spread/ความหมาย (ต้นฉบับ) | Git (`data/*.json`) | ตรวจทานได้ มีประวัติ เป็นแหล่งจริง | ถาวร |
 | เนื้อหาที่เผยแพร่แล้ว (สำเนาให้เว็บอ่านเร็ว) | KV + JSON ใน static | อ่านบ่อย เขียนน้อย | แทนที่เมื่อเผยแพร่ใหม่ |
 | รูปไพ่ PNG ต้นฉบับ + WebP | R2 (เว็บยังใช้ไฟล์ใน repo ได้ระหว่างเปลี่ยนผ่าน) | ไฟล์ใหญ่ ไม่ควรอยู่ใน D1 | ถาวร |
@@ -88,6 +88,8 @@ erDiagram
   users ||--o{ consents : "ความยินยอม"
   users ||--o{ feedback : "ส่งความเห็น"
   users ||--o{ audit_log : "เหตุการณ์ความปลอดภัย/แอดมิน"
+  ui_sessions ||--o{ ui_events : "ลำดับการกด"
+  users ||--o{ ui_sessions : "ผูกเมื่อยินยอมเท่านั้น"
   deck_versions ||--o{ readings : "อ่านด้วยสำรับเวอร์ชันไหน"
   questions }o--|| deck_versions : "ไม่ผูกผู้ใช้"
 
@@ -132,7 +134,7 @@ erDiagram
   consents {
     INTEGER id PK
     TEXT user_id FK "nullable (ผู้ใช้ไม่ล็อกอินใช้ anon_id)"
-    TEXT kind "terms, privacy, save_history, log_questions, line_notify"
+    TEXT kind "terms, privacy, save_history, log_questions, line_notify, analytics"
     TEXT version "เวอร์ชันของข้อความที่ผู้ใช้เห็น"
     INTEGER granted "1 ให้, 0 ถอน"
     TEXT at
@@ -151,6 +153,30 @@ erDiagram
     TEXT published_at
     TEXT content_hash "sha256 ของ cards.json"
     TEXT note
+  }
+  ui_sessions {
+    TEXT id PK "สุ่มต่อแท็บ ไม่คงอยู่ข้ามวัน"
+    TEXT user_id FK "nullable ผูกเมื่อล็อกอิน + ยินยอม"
+    TEXT started_at
+    INTEGER viewport_w
+    INTEGER viewport_h
+    TEXT pointer "touch | mouse"
+    TEXT app_version
+  }
+  ui_events {
+    TEXT session_id PK,FK
+    INTEGER seq PK "ลำดับ 1,2,3..."
+    INTEGER t_ms "มิลลิวินาทีนับจากเริ่ม session"
+    TEXT type "pick, unpick, miss_tap, ..."
+    TEXT view "read, pick, session, cat"
+    TEXT target "fan:12, slot:1, spread:three"
+    INTEGER x
+    INTEGER y
+    INTEGER rx "0-1000 ภายใน target"
+    INTEGER ry
+    TEXT outcome "kept, undone, miss, blocked, ok"
+    TEXT reading_id "nullable"
+    TEXT data_json "ค่าเล็กๆ ไม่มีข้อความผู้ใช้"
   }
   questions {
     INTEGER id PK
@@ -204,12 +230,49 @@ CREATE TABLE consents (
   id INTEGER PRIMARY KEY,
   user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
   anon_id TEXT,                              -- สุ่มเก็บในเบราว์เซอร์ สำหรับคนไม่ล็อกอิน
-  kind TEXT NOT NULL CHECK (kind IN ('terms','privacy','save_history','log_questions','line_notify')),
+  kind TEXT NOT NULL CHECK (kind IN ('terms','privacy','save_history','log_questions','line_notify','analytics')),
   version TEXT NOT NULL,
   granted INTEGER NOT NULL,
   at TEXT NOT NULL
 );
 CREATE INDEX consents_user ON consents(user_id, kind, at DESC);
+
+CREATE TABLE ui_sessions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  started_at TEXT NOT NULL,
+  viewport_w INTEGER, viewport_h INTEGER,
+  pointer TEXT CHECK (pointer IN ('touch','mouse')),
+  app_version TEXT
+);
+CREATE INDEX ui_sessions_started ON ui_sessions(started_at);
+CREATE INDEX ui_sessions_user ON ui_sessions(user_id);
+
+CREATE TABLE ui_events (
+  session_id TEXT NOT NULL REFERENCES ui_sessions(id) ON DELETE CASCADE,
+  seq INTEGER NOT NULL,
+  t_ms INTEGER NOT NULL,
+  type TEXT NOT NULL,
+  view TEXT,
+  target TEXT,
+  x INTEGER, y INTEGER,
+  rx INTEGER, ry INTEGER,
+  outcome TEXT CHECK (outcome IN ('ok','kept','undone','miss','blocked')),
+  reading_id TEXT,
+  data_json TEXT,
+  PRIMARY KEY (session_id, seq)
+) WITHOUT ROWID;
+CREATE INDEX ui_events_type ON ui_events(type, outcome);
+
+CREATE TABLE ui_daily_stats (        -- สถิติรวมรายวัน เก็บถาวร ไม่มีตัวตน
+  day TEXT NOT NULL,
+  type TEXT NOT NULL,
+  view TEXT,
+  outcome TEXT,
+  pointer TEXT,
+  n INTEGER NOT NULL,
+  PRIMARY KEY (day, type, view, outcome, pointer)
+);
 
 CREATE TABLE feedback (
   id TEXT PRIMARY KEY,
@@ -251,7 +314,7 @@ CREATE INDEX line_due ON line_subscriptions(enabled, schedule, hour) WHERE block
 |---|---|---|---|
 | GET | `/content/deck` | เนื้อหาไพ่ที่เผยแพร่ล่าสุด + `deck_version` (แคชที่ KV) | ไม่ |
 | POST | `/log/question` | ตัวเก็บคำถามเดิม (ย้ายมารวมได้ภายหลัง) | ไม่ |
-| POST | `/events` | ส่งเหตุการณ์ใช้งานแบบไม่ระบุตัวตน | ไม่ |
+| POST | `/events` | ส่งลำดับการกดเป็นชุด (batch) ดูหัวข้อ 4.2 | ไม่ (ต้องมี consent `analytics`) |
 | POST | `/feedback` | ส่งความเห็น/แจ้งปัญหา | ไม่ (ล็อกอินแล้วผูกให้) |
 | POST | `/consents` | บันทึกการให้/ถอนความยินยอม | ไม่ (ใช้ `anon_id`) |
 | GET | `/me/readings?cursor=` | รายการประวัติ (แบ่งหน้า) | ใช่ |
@@ -283,6 +346,73 @@ CREATE INDEX line_due ON line_subscriptions(enabled, schedule, hour) WHERE block
 
 **ข้อตัดสินใจเรื่องการสุ่มไพ่:** ตอนนี้สุ่มที่เบราว์เซอร์ (rejection sampling ใน `scripts/reading-core.mjs` มีเทสต์แล้ว) ผู้ใช้เลือกไพ่เองทีละใบ จึงไม่มีเหตุให้ย้ายไปสุ่มที่เซิร์ฟเวอร์ เซิร์ฟเวอร์รับเฉพาะ "ผลที่ผู้ใช้เลือก" ไปเก็บ และตรวจความถูกต้องของโครงสร้างเท่านั้น ไม่ยืนยันว่าสุ่มจริง (ไม่จำเป็น เพราะไม่มีรางวัลหรือผลทางการเงิน)
 
+### 4.2 บันทึกลำดับการกดของผู้ใช้ (ก่อน-หลัง, ตำแหน่ง, ถูก/พลาด)
+
+**เป้าหมาย:** รู้ว่าผู้ใช้ทำอะไรตามลำดับ กดตรงไหน กดแล้วเป็นอย่างไร เพื่อแก้ UX (เช่น ไพ่ซ้อนกันบนมือถือทำให้กดพลาดไหม) ไม่ใช่เพื่อติดตามตัวบุคคล
+
+**นิยาม "ถูก/ผิด":** ทาโรต์ไม่มีไพ่ที่ "ถูก" จึงนิยามตามพฤติกรรมของ UI (ถ้าคุณหมายถึงอย่างอื่น บอกได้ ปรับ `outcome` ได้)
+
+| `outcome` | ความหมาย | ตรวจจับจากโค้ดเดิม |
+|---|---|---|
+| `kept` (ใช้จริง) | เลือกไพ่แล้วคงไว้จนเปิดคำอ่าน | ไพ่ที่ยังอยู่ใน `pk.picks` ตอน `finishPick` |
+| `undone` (เลือกแล้วยกเลิก) | เลือกแล้วเอากลับ ถือว่าเปลี่ยนใจหรือกดผิดใบ | `unpick()` เรียกจากการแตะไพ่ซ้ำหรือแตะช่อง |
+| `miss` (กดพลาด) | แตะในพื้นที่วงล้อแต่ไม่โดนไพ่ใบใด | `$('fan').onclick` ได้ `b == null` |
+| `blocked` | แตะไพ่ตอนช่องเต็มแล้ว ไม่มีผล | `slot < 0` ใน `$('fan').onclick` |
+| `ok` | การกดทั่วไปที่ไม่มีถูก/ผิด เช่น เปลี่ยนเมนู | ค่าเริ่มต้น |
+
+**เหตุการณ์ที่บันทึก (`type`)** ตามปุ่ม/ขั้นตอนที่มีอยู่ใน `index.html`
+
+| กลุ่ม | type |
+|---|---|
+| นำทาง | `view_enter` (read/cat), `home` |
+| ตั้งค่า | `spread_select`, `reversed_toggle` |
+| เลือกไพ่ | `start_pick`, `wheel_spin` (ลากวงล้อ), `pick`, `unpick`, `miss_tap`, `blocked_tap`, `pick_cancel`, `auto_open` |
+| อ่านผล | `card_open`, `open_all`, `jump_to_reading` |
+| แค็ตตาล็อก | `catalog_search` (เก็บแค่ความยาวคำค้นและจำนวนผลใน `data_json` ไม่เก็บข้อความ), `catalog_filter`, `dialog_open`, `dialog_close` |
+
+**ตำแหน่งที่กด:** `x`,`y` เป็นพิกเซลใน viewport (ใช้ร่วมกับ `viewport_w/h` วาดแผนที่ความร้อน) และ `rx`,`ry` เป็นสัดส่วนภายในองค์ประกอบที่กด 0–1000 (เช่นกดชายซ้ายของไพ่ใบที่ 12 ในวงล้อ) `target` ระบุชนิดและดัชนี เช่น `fan:12`, `slot:1`, `spread:three` ซึ่งบอกได้ว่าไพ่ใบไหนในวงล้อถูกกด ส่วนไพ่จริงที่อยู่ในช่องนั้นหาได้จากผลที่บันทึกใน `reading_cards`
+
+**ก่อน-หลัง:** `seq` เรียงต่อเนื่องในแต่ละ session และ `t_ms` เป็นเวลาที่ผ่านไป จึงรู้ทั้งลำดับและความหน่วง ไม่ต้องเก็บ "ก่อนหน้า/ถัดไป" แยก ใช้ window function ของ SQLite ได้
+
+```sql
+-- หลังกดพลาด ผู้ใช้ทำอะไรต่อ (และใช้เวลาเท่าไร)
+SELECT next_type, COUNT(*) n, AVG(next_t - t_ms) avg_ms FROM (
+  SELECT type, t_ms,
+         LEAD(type) OVER w AS next_type, LEAD(t_ms) OVER w AS next_t
+  FROM ui_events WINDOW w AS (PARTITION BY session_id ORDER BY seq)
+) WHERE type = 'miss_tap' GROUP BY next_type ORDER BY n DESC;
+
+-- สัดส่วนยกเลิกการเลือก แยกตามมือถือ/เมาส์
+SELECT s.pointer, SUM(e.outcome='undone') * 1.0 / SUM(e.type='pick') AS undo_rate
+FROM ui_events e JOIN ui_sessions s ON s.id = e.session_id
+WHERE e.type IN ('pick','unpick') GROUP BY s.pointer;
+
+-- กดพลาดเกิดแถวไหนของวงล้อ (ตรวจปัญหาพื้นที่กดซ้อนกัน)
+SELECT rx/100 AS col, COUNT(*) n FROM ui_events
+WHERE type='miss_tap' AND target='fan' GROUP BY col;
+```
+
+**ฝั่งเว็บ**
+- เก็บใน memory แล้วส่งเป็นชุด (batch) ทุก 10 วินาทีและตอน `pagehide` ด้วย `navigator.sendBeacon` ไม่ให้หน่วงการใช้งาน
+- ครอบ handler เดิมด้วยฟังก์ชัน `track(type, target, outcome, e)` ไม่แก้ตรรกะเดิม
+- **ไม่เก็บ:** ข้อความที่พิมพ์ (คำถาม, ช่องค้นหา, บันทึก), การกดแป้นพิมพ์, ตำแหน่งเมาส์ที่ไม่ได้กด
+- ไม่ส่งอะไรเลยจนกว่าผู้ใช้ยินยอม `analytics` และ `LOG_URL`/endpoint ถูกตั้งค่า (เหมือนพฤติกรรมเดิมของ `LOG_URL`)
+
+**ฝั่งเซิร์ฟเวอร์ (`POST /events`)**
+- ตรวจว่าผู้ส่งเคยบันทึก consent `analytics` (granted=1) ด้วย `anon_id`/user เดียวกัน
+- รับ `type` และ `outcome` เฉพาะที่อยู่ในรายการ ค่าตัวเลขถูกจำกัดช่วง ฟิลด์ที่ไม่รู้จักถูกทิ้ง `data_json` ไม่เกิน 200 ไบต์
+- จำกัด: ไม่เกิน 100 events/คำขอ, 500 events/session, body ไม่เกิน 16 KB, rate limit ต่อ IP
+- เขียนแบบ batch (`DB.batch`) เพื่อประหยัดจำนวน query; `seq` ซ้ำถูกข้าม (ส่งซ้ำได้โดยไม่เบิ้ล)
+
+**ความเป็นส่วนตัว (PDPA)**
+- ลำดับการกดที่ผูกกับคนได้ถือเป็นข้อมูลส่วนบุคคล จึงเป็น **opt-in** (ค่าเริ่มต้นปิด) มีป้ายขอความยินยอมแยกจากข้อกำหนดทั่วไป และถอนได้ทุกเมื่อ
+- `ui_sessions.id` สุ่มต่อแท็บ (เก็บใน `sessionStorage`) ไม่คงอยู่ข้ามวัน จึงตามพฤติกรรมข้ามวันของคนเดียวกันไม่ได้
+- ผูก `user_id` เฉพาะผู้ที่ล็อกอินและยินยอม ข้อมูลส่วนนั้นรวมในไฟล์ export และถูกลบพร้อมบัญชี (`ON DELETE CASCADE`)
+- ไม่เก็บ IP; เก็บแค่ประเภทอุปกรณ์ (touch/mouse) และขนาดจอ
+- ข้อมูลดิบเก็บ 30 วัน แล้วเหลือแต่สถิติรวมที่ไม่มีตัวตน
+
+**ปริมาณข้อมูล:** ประมาณ 30–60 events ต่อ session ถ้ามี 10,000 session ต่อวันจะได้ราว 0.3–0.6 ล้านแถวต่อวัน (30 วัน ≈ 9–18 ล้านแถว) ซึ่งหนักสำหรับ D1 ให้ตรวจเพดานขนาดและค่าใช้จ่ายล่าสุดก่อน ถ้าถึงระดับนั้นให้ย้ายข้อมูลดิบไป Analytics Engine หรือไฟล์ NDJSON ใน R2 (ส่งผ่าน Queue) แล้วเก็บเฉพาะ `ui_daily_stats` ใน D1 ช่วงเริ่มต้นที่ผู้ใช้ยังน้อย D1 พอ และอาจสุ่มเก็บเฉพาะบางส่วนของ session (sampling) ได้
+
 ## 5. งานเบื้องหลัง (Cron / Queue)
 
 | งาน | ความถี่ | ทำอะไร |
@@ -293,6 +423,7 @@ CREATE INDEX line_due ON line_subscriptions(enabled, schedule, hour) WHERE block
 | Backup D1 ไป R2 | ทุกวัน | export เป็นไฟล์ เก็บ 30 วัน (ใช้คู่กับ Time Travel ของ D1) |
 | ลบไฟล์ export หมดอายุใน R2 | ทุกชั่วโมง | ไฟล์เกิน 24 ชม. |
 | ส่งอีเมล | ผ่าน Queue | ลองซ้ำเมื่อล้มเหลว ไม่ให้ request ของผู้ใช้ค้างรอ |
+| รวมสถิติ + ลบ `ui_events` เกิน 30 วัน | ทุกวัน | `INSERT ... SELECT` ลง `ui_daily_stats` ก่อนแล้วจึง `DELETE` ลบ session ที่ไม่มี event เหลือ |
 | ส่งแจ้งเตือน LINE | ทุกชั่วโมง | หา `line_subscriptions` ที่ถึงเวลา (ตาม `hour`, `schedule`, เวลาไทย) ส่ง push ผ่าน Queue แล้วอัปเดต `last_sent_at` ข้อความอ้างอิงไพ่รายวันของวันนั้นได้ (ดู 5.1) |
 
 ### 5.1 แจ้งเตือนผ่าน LINE
@@ -369,7 +500,7 @@ sequenceDiagram
 | 5 | `deck_versions` + สคริปต์ publish + KV |
 | 5.5 | ไพ่รายวัน (`/content/daily`) ทำคู่กับ deck_versions ได้เลย |
 | 6 | แจ้งเตือน LINE: webhook, `line_subscriptions`, cron ส่ง, consent |
-| 7 | feedback + events |
+| 7 | feedback + บันทึกลำดับการกด (4.2) |
 | 8 | UI เว็บ: ปุ่มล็อกอิน, ประวัติ, บันทึก, ตั้งค่าแจ้งเตือน, หน้านโยบาย PDPA |
 
 ## 11. สถานะคำถาม
