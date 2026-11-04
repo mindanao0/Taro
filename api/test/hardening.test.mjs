@@ -5,6 +5,7 @@ import {resolveSocial} from '../lib/social.mjs';
 import {sendMail} from '../lib/mail.mjs';
 import {readBody} from '../lib/http.mjs';
 import {mailAllowed} from '../lib/util.mjs';
+import {PBKDF2_ITERATIONS, hashPassword, resetCeiling, verifyPassword} from '../lib/crypto.mjs';
 
 const PW = 'a long test passphrase';
 const row = (env, sql, ...a) => env.db.prepare(sql).get(...a);
@@ -218,6 +219,43 @@ const ageSessions = env => env.db.prepare("UPDATE sessions SET created_at = '202
   calls.length = 0; await assert.doesNotReject(send(mk(['throw']))); assert.equal(calls.length, 2, 'gives up after the retry without throwing');
   calls.length = 0; await send(mk([422])); assert.equal(calls.length, 1, 'a rejected request is not retried');
   calls.length = 0; await send(mk([401])); assert.equal(calls.length, 1);
+}
+
+/* ---- password hashing adapts if the platform refuses a high iteration count ---- */
+{
+  assert.equal(PBKDF2_ITERATIONS, 600_000);
+  const small = await hashPassword('s3cret-pass', 2000);   // a small count is fast, and shows the count is stored in the hash
+  assert.match(small, /^pbkdf2-sha256\$2000\$/);
+  // a runtime that refuses counts above 100,000, as older Workers did
+  const realDerive = crypto.subtle.deriveBits.bind(crypto.subtle);
+  let calls = [];
+  crypto.subtle.deriveBits = (alg, key, bits) => {
+    calls.push(alg.iterations);
+    if (alg.iterations > 100_000) return Promise.reject(Object.assign(new Error('iteration counts above 100000 are not supported'), {name: 'NotSupportedError'}));
+    return realDerive(alg, key, bits);
+  };
+  try {
+    resetCeiling();
+    const low = await hashPassword('s3cret-pass');   // wants 600,000
+    assert.match(low, /^pbkdf2-sha256\$100000\$/, 'settled at the fallback instead of failing');
+    assert.deepEqual(calls, [600_000, 100_000], 'tried the high count once, then the fallback');
+    calls = [];
+    await hashPassword('another-one');
+    assert.deepEqual(calls, [100_000], 'remembers it: no more failed attempts');
+    const v = await verifyPassword('s3cret-pass', low);
+    assert.deepEqual([v.ok, v.needsRehash], [true, false], 'a fallback hash is not re-hashed on every sign-in while the platform refuses the high count');
+    assert.equal((await verifyPassword('wrong', low)).ok, false);
+    crypto.subtle.deriveBits = () => Promise.reject(new Error('boom'));   // a real failure at the fallback count is not hidden
+    await assert.rejects(hashPassword('x', 100_000), /boom/);
+  } finally { crypto.subtle.deriveBits = realDerive; resetCeiling(); }
+  // once the platform allows it again, the weaker hash is flagged for an upgrade at the next sign-in
+  const old = await hashPassword('s3cret-pass', 100_000);
+  assert.equal((await verifyPassword('s3cret-pass', old, 600_000)).needsRehash, true);
+  // and the sign-in path really upgrades it
+  const env = makeEnv({PBKDF2_ITERATIONS: '3000'}), c = await member(env, 'up@example.com');
+  env.db.prepare('UPDATE credentials SET password_hash = ?').run(await hashPassword(PW, 1000));
+  await c.post('/auth/login', {email: 'up@example.com', password: PW});
+  assert.match(row(env, 'SELECT password_hash h FROM credentials').h, /^pbkdf2-sha256\$3000\$/);
 }
 
 /* ---- request body reader ---- */

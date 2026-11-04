@@ -4,3 +4,4 @@ __pycache__/
 assets/source/
 data/completed.txt
 node_modules/
+.wrangler/

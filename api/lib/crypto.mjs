@@ -24,9 +24,14 @@ export function timingSafeEqual(a, b) {
   return r === 0;
 }
 
-// Default is the highest iteration count Workers' WebCrypto is documented to accept for PBKDF2 (verify with `wrangler dev`).
-// The count is stored in each hash, so it can be raised later (or the algorithm swapped) and old hashes upgraded at login.
-export const PBKDF2_ITERATIONS = 100_000;
+// 600,000 SHA-256 rounds is the OWASP recommendation. Checked in local workerd (wrangler dev), which accepts it in about 0.1 s.
+// Older Workers runtimes refused PBKDF2 counts above 100,000, so if the platform ever rejects the high count we settle at the
+// fallback (and remember it) instead of failing every sign-up and login. The count is stored in each hash, so hashes made
+// either way keep verifying and are upgraded at the next sign-in once the platform allows it.
+export const PBKDF2_ITERATIONS = 600_000;
+export const PBKDF2_FALLBACK = 100_000;
+let ceiling = Infinity;   // lowered at run time if the platform refuses a high count
+export const resetCeiling = () => { ceiling = Infinity; };   // test hook: forget what was learned
 
 async function derive(password, salt, iterations) {
   const key = await crypto.subtle.importKey('raw', enc.encode(password.normalize('NFKC')), 'PBKDF2', false, ['deriveBits']);
@@ -35,7 +40,15 @@ async function derive(password, salt, iterations) {
 
 export async function hashPassword(password, iterations = PBKDF2_ITERATIONS) {
   const salt = crypto.getRandomValues(new Uint8Array(16));
-  return `pbkdf2-sha256$${iterations}$${b64u(salt)}$${b64u(await derive(password, salt, iterations))}`;
+  const n = Math.min(iterations, ceiling);
+  try {
+    return `pbkdf2-sha256$${n}$${b64u(salt)}$${b64u(await derive(password, salt, n))}`;
+  } catch (e) {
+    if (n <= PBKDF2_FALLBACK) throw e;
+    ceiling = PBKDF2_FALLBACK;   // the platform refused the high count: use the fallback from now on
+    console.warn('PBKDF2 count refused, using fallback', {wanted: n, name: e?.name});
+    return hashPassword(password, PBKDF2_FALLBACK);
+  }
 }
 
 // Returns {ok, needsRehash}; a malformed stored value never verifies.
@@ -44,5 +57,5 @@ export async function verifyPassword(password, stored, wantIterations = PBKDF2_I
   const iterations = Number(it);
   if (alg !== 'pbkdf2-sha256' || !Number.isInteger(iterations) || iterations < 1 || iterations > 10_000_000 || !salt || !hash) return {ok: false, needsRehash: false};
   const got = await derive(password, fromB64u(salt), iterations);
-  return {ok: timingSafeEqual(got, fromB64u(hash)), needsRehash: iterations < wantIterations};
+  return {ok: timingSafeEqual(got, fromB64u(hash)), needsRehash: iterations < Math.min(wantIterations, ceiling)};   // not endlessly re-hashed while the platform refuses the high count
 }
