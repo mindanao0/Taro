@@ -9,6 +9,8 @@ import {deleteAccount, exportData, getConsents, requestEmailChange, setConsent, 
 import {authed} from './lib/util.mjs';
 import {addFavorite, deleteReading, getReading, listFavorites, listReadings, removeFavorite, saveReading, setNote} from './lib/readings.mjs';
 import {dailyCard} from './lib/daily.mjs';
+import {HOURLY_CRON, deleteLineNotify, getLineNotify, lineWebhook, putLineNotify, sendDue} from './lib/line.mjs';
+import {postFeedback} from './lib/feedback.mjs';
 
 const VERIFY_HOURS = 24, RESET_MINUTES = 30;
 const LOGIN_FAILS = 10, LOGIN_WINDOW_MIN = 15;     // per email, on top of the per-IP limiter
@@ -202,6 +204,8 @@ const ROUTES = [
   ['GET', '/content/daily', dailyCard],
   ['POST', '/me/readings', authed(saveReading)], ['GET', '/me/readings', authed(listReadings)], ['GET', '/me/readings/:id', authed(getReading)],
   ['PUT', '/me/readings/:id/note', authed(setNote)], ['DELETE', '/me/readings/:id', authed(deleteReading)],
+  ['GET', '/me/line-notify', authed(getLineNotify)], ['PUT', '/me/line-notify', authed(putLineNotify)], ['DELETE', '/me/line-notify', authed(deleteLineNotify)],
+  ['POST', '/line/webhook', lineWebhook, {csrf: false}], ['POST', '/feedback', postFeedback, {limit: true}],
   ['GET', '/me/favorites', authed(listFavorites)], ['PUT', '/me/favorites/:card_id', authed(addFavorite)], ['DELETE', '/me/favorites/:card_id', authed(removeFavorite)]
 ];
 export const addRoutes = list => ROUTES.push(...list);
@@ -252,5 +256,5 @@ export default {
     for (const [k, v] of Object.entries(cors)) res.headers.set(k, v);
     return res;
   },
-  async scheduled(event, env, ctx) { ctx.waitUntil(maintain(env)); }
+  async scheduled(event, env, ctx) { ctx.waitUntil(event.cron === HOURLY_CRON ? sendDue(env) : maintain(env)); }
 };

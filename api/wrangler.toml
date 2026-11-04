@@ -11,6 +11,7 @@ compatibility_date = "2026-10-01"
 WEB_URL = "https://ivoryrosetarot.online"
 API_URL = "https://api.ivoryrosetarot.online"          # used to build the OAuth redirect URI: <API_URL>/auth/<provider>/callback
 ALLOWED_ORIGINS = "https://ivoryrosetarot.online,https://www.ivoryrosetarot.online"
+LINE_OA_URL = "https://line.me/R/ti/p/@REPLACE_WITH_YOUR_OFFICIAL_ACCOUNT_ID"   # "add friend" link shown in account settings
 EMAIL_FROM = "Ivory Rose Tarot <no-reply@ivoryrosetarot.online>"   # the domain must be verified in Resend (SPF/DKIM)
 # Secrets (never in this file), set with `wrangler secret put <NAME>`:
 #   RESEND_API_KEY, COOKIE_SECRET (long random string), DAILY_SECRET (long random string),
@@ -30,6 +31,7 @@ name = "AUTH_LIMITER"
 namespace_id = "1101"
 simple = { limit = 10, period = 60 }
 
-# Daily at 03:27 Thai time (20:27 UTC): delete expired sessions, used or expired email tokens, old audit rows.
+# Daily at 03:27 Thai time (20:27 UTC): delete expired sessions, tokens, old audit rows, accounts deleted over 30 days ago.
+# Hourly at :07: send due LINE reminders (must match HOURLY_CRON in lib/line.mjs).
 [triggers]
-crons = ["27 20 * * *"]
+crons = ["27 20 * * *", "7 * * * *"]
