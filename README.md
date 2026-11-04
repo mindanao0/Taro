@@ -6,6 +6,8 @@
 
 เปิด `START_HERE.html` หลังแตก ZIP เพื่ออ่านคู่มือในเบราว์เซอร์ แล้วเลือกเปิดแค็ตตาล็อกภาพทั้งหมดได้
 
+> **จะเปิดใช้จริงต้องทำอะไรต่อ:** อ่าน [`docs/NEXT_STEPS_TH.md`](docs/NEXT_STEPS_TH.md) (เช็กลิสต์เรียงตามลำดับ) เว็บเลือกไพ่ใช้งานได้เลยโดยไม่ต้องทำอะไร ส่วนระบบสมาชิกปิดอยู่จนกว่าจะตั้งค่า
+
 ## เปิดเว็บอ่านไพ่
 
 `index.html` คือเว็บเลือกไพ่ และดูแค็ตตาล็อก เปิดไฟล์ตรง ๆ ไม่ได้ เพราะเบราว์เซอร์บล็อกการโหลด JSON และโมดูลจากไฟล์ในเครื่อง ให้เปิดผ่านเซิร์ฟเวอร์แบบ static จากโฟลเดอร์นี้:
@@ -21,6 +23,9 @@ python3 -m http.server 8000
 - `docs/01_READING_GUIDE_TH.md` วิธีเริ่มอ่านไพ่และอ่านไพ่กลับหัว
 - `docs/02_CARD_MEANINGS_TH.md` ความหมายครบ 78 ใบและตัวอย่างประเด็นความรัก
 - `docs/03_ART_DIRECTION_TH.md` แนวภาพ กรอบ สัญลักษณ์ และการเปลี่ยนจาก RWS
+- `docs/07_AUTH_BACKEND_PLAN_TH.md` แผน backend ระบบสมัคร/ล็อกอิน (Google, LINE, Facebook, อีเมล) พร้อมผัง database
+- `docs/RUNBOOK_TH.md` คู่มือดูแลระบบหลัง deploy: เช็กสุขภาพ, สำรอง/กู้, หมุนความลับ, ตามเรื่องบัญชี, เหตุข้อมูลรั่ว
+- `docs/08_BACKEND_ARCHITECTURE_TH.md` แผน backend ทั้งระบบ ข้อมูลทุกประเภทเก็บที่ไหน ผังตารางทั้งหมด งานเบื้องหลัง และหลังบ้านผู้ดูแล
 - `docs/04_WEB_HANDOFF_TH.md` โครงข้อมูลและข้อกำหนดสำหรับผู้พัฒนาเว็บ
 - `docs/05_SOURCES_AND_PROVENANCE.md` แหล่งอ้างอิงและที่มาของเนื้อหา
 - `docs/06_QA_AND_PRINT_TH.md` ผลตรวจและสิ่งที่ต้องตรวจเพิ่มก่อนพิมพ์
@@ -51,7 +56,7 @@ python3 -m http.server 8000
 ```
 npm i -g wrangler && wrangler login
 wrangler d1 create taro-log                 # คัดลอก database_id ไปใส่ใน wrangler.toml
-wrangler d1 execute taro-log --remote --file worker/schema.sql
+wrangler d1 migrations apply taro-log --remote   # สร้างตารางจากโฟลเดอร์ migrations/
 wrangler deploy                             # ได้ URL แบบ https://taro-log.<ชื่อ>.workers.dev
 ```
 
@@ -61,9 +66,15 @@ wrangler deploy                             # ได้ URL แบบ https://ta
 wrangler d1 execute taro-log --remote --command "SELECT at, spread, q FROM questions ORDER BY id DESC LIMIT 50"
 ```
 
+คู่มือฉบับเต็มพร้อมตารางการป้องกัน: `docs/DEPLOY_TH.md`
+
+## ระบบสมาชิก (ไม่บังคับ)
+
+`account.html` และโฟลเดอร์ `api/` คือระบบสมัคร/ล็อกอิน (อีเมล, Google, LINE, Facebook), ประวัติการอ่านไพ่พร้อมโน้ตส่วนตัว, ไพ่โปรด, ไพ่ประจำวัน และแจ้งเตือนผ่าน LINE ทุกอย่างปิดอยู่จนกว่าจะตั้ง `API_URL` ใน `scripts/config.mjs` ตอนปิดอยู่เว็บทำงานเหมือนเดิมทุกอย่าง ไม่มีบัญชี ไม่ส่งข้อมูลออกไปไหน ลองในเครื่องได้โดยไม่ต้องมีบัญชีใด ๆ: `node api/dev/server.mjs` (ดู `docs/DEPLOY_API_TH.md` ข้อ 0) แผนและเหตุผลการออกแบบอยู่ใน `docs/07_AUTH_BACKEND_PLAN_TH.md` และ `docs/08_BACKEND_ARCHITECTURE_TH.md`
+
 ## ตรวจข้อมูลอีกครั้ง
 
-จากโฟลเดอร์นี้ รัน `python3 scripts/package_deck.py --check-only` เพื่อตรวจจำนวน ID ไฟล์ภาพ ขนาด และ checksum หรือ `node scripts/reading-core.test.mjs` เพื่อตรวจตรรกะการสุ่มแบบไม่ซ้ำ
+จากโฟลเดอร์นี้ รัน `python3 scripts/package_deck.py --check-only` เพื่อตรวจจำนวน ID ไฟล์ภาพ ขนาด และ checksum หรือ `node scripts/reading-core.test.mjs` เพื่อตรวจตรรกะการสุ่มแบบไม่ซ้ำ `python3 scripts/validate_data.py` ตรวจว่า `data/` กับ `docs/` ตรงกัน `node worker/index.test.mjs` และ `node worker/click-events.test.mjs` ตรวจ Worker (ตัวหลังรัน migration จริงบน SQLite) `node api/test/{auth,social,readings,line}.test.mjs` ตรวจระบบสมาชิก (`api/`: อีเมล, Google/LINE/Facebook, ประวัติ, ไพ่โปรด, ไพ่รายวัน, แจ้งเตือน LINE) และ `node scripts/api-client.test.mjs` ตรวจตัวเรียก API ฝั่งเว็บ `node api/test/hardening.test.mjs` ตรวจช่องโหว่ที่เคยเจอในการรีวิว `npm test` รันชุดเร็วทั้งหมดในครั้งเดียว `npm run test:workerd` รัน API บน runtime จริงของ Cloudflare (workerd) `npm run test:a11y` ตรวจ accessibility ด้วย axe และ `node scripts/launch-check.mjs` ดูรายการที่ยังค้างก่อนเปิดจริง คู่มือ deploy ที่ `docs/DEPLOY_API_TH.md` และ `node scripts/track.test.mjs` ตรวจตัวบันทึกลำดับการกด และ `node tests/e2e.mjs` เปิดเว็บจริงด้วย Playwright ทั้งมือถือและเดสก์ท็อป (ต้องมี `playwright`)
 
 ## ดาวน์โหลดจาก GitHub
 

@@ -19,6 +19,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap">
 <style>
 :root{
+  --field:#ffffff66;   /* border of text fields: at least 3:1 against the page (WCAG 1.4.11) */
   --bg:#0b0908; --text:#ece4d3; --dim:#9a8f7e; --line:#ffffff1c; --gold:#c8a25a;
   --display:"Instrument Serif","IBM Plex Sans Thai",Georgia,serif;
   --sans:"IBM Plex Sans Thai","Noto Sans Thai",system-ui,sans-serif;
@@ -42,20 +43,27 @@ button{cursor:pointer;background:none;border:0;padding:0}
 .top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 32px;
   max-width:1180px;margin:0 auto;padding:24px 28px 0}
 .mark{font:italic 400 1.7rem/1 var(--display);margin:0}
-.mark button{font:inherit;color:inherit;padding:0}
+.mark button{font:inherit;color:inherit;padding:9px 0}
 .mark button:hover{color:var(--gold)}
 .top nav{display:flex;gap:28px}
-.top nav button{padding:4px 0;color:var(--dim);border-bottom:1px solid transparent}
+.top nav button{padding:9px 0;color:var(--dim);border-bottom:1px solid transparent}
 .top nav button:hover{color:var(--text)}
 .top nav button[aria-current=page]{color:var(--text);border-bottom-color:var(--gold)}
+.top nav a{padding:9px 0;color:var(--dim);text-decoration:none;border-bottom:1px solid transparent} .top nav a:hover{color:var(--text);border-color:var(--gold)}
+.daily{width:min(520px,100%)} .dailybtn{display:flex;align-items:center;gap:16px;width:100%;text-align:left;padding:10px 16px 10px 10px;border:1px solid var(--line);border-radius:14px;color:var(--text);transition:border-color .2s}
+.dailybtn:hover{border-color:#ffffff40} .dailybtn img{width:52px;height:auto;border-radius:4px;flex:none} .dailybtn small{display:block;color:var(--dim);line-height:1.4} .dailybtn b{font-weight:500}
+.savebar{margin:26px auto 0;max-width:640px;border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.savebar textarea{width:100%;min-height:72px;margin:8px 0;background:#ffffff0a;border:1px solid var(--field);border-radius:8px;padding:10px 12px;resize:vertical}
+.savebar textarea:focus{outline:0;border-color:var(--gold)} .savebar .go{padding:8px 20px;border:1px solid var(--gold);border-radius:999px;background:#c8a25a22;min-height:44px} .savebar .go:hover{background:#c8a25a44} .savebar .go[disabled]{opacity:.5}
+.fav{margin-top:14px;padding:8px 18px;border:1px solid var(--line);border-radius:999px;min-height:44px;color:var(--dim)} .fav[aria-pressed=true]{color:var(--gold);border-color:var(--gold)}
 main{max-width:1180px;margin:0 auto;padding:0 28px 100px}
 h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 
 /* ask */
 .ask{display:grid;justify-items:center;gap:30px;padding:64px 0 20px;text-align:center}
-.q{width:min(820px,100%);background:transparent;border:0;border-bottom:1px solid var(--line);padding:12px 4px;
+.q{width:min(820px,100%);background:transparent;border:0;border-bottom:1px solid var(--field);padding:12px 4px;
   font:400 clamp(1.7rem,4.2vw,3rem)/1.25 var(--display);text-align:center;color:var(--text)}
-.q::placeholder{color:#9a8f7e99;font-style:italic}
+.q::placeholder{color:#9a8f7ed9;font-style:italic}
 .q:focus{outline:0;border-bottom-color:var(--gold)}
 .picks{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;border:0;margin:0;padding:0;position:relative}
 .pick{display:inline-flex;align-items:center;gap:10px;padding:8px 20px 8px 14px;border:1px solid var(--line);border-radius:999px;color:var(--dim);cursor:pointer;line-height:1.4}
@@ -67,7 +75,7 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 .pick:has(input:checked){background:var(--text);border-color:var(--text);color:var(--bg)}
 .pick:has(input:checked) rect.x{fill:#8e2a2c}
 .pick:has(input:focus-visible){outline:2px solid var(--gold);outline-offset:3px}
-.switch{display:inline-flex;gap:10px;align-items:center;color:var(--dim);cursor:pointer}
+.switch{display:inline-flex;gap:10px;align-items:center;color:var(--dim);cursor:pointer;min-height:44px}
 .switch input{accent-color:var(--gold);width:18px;height:18px}
 .deck-btn{display:flex;flex-direction:column;align-items:center;gap:22px;margin-top:10px}
 .deck{position:relative;display:block;width:min(560px,88vw);height:260px}
@@ -170,15 +178,16 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 
 /* catalog */
 .finder{display:flex;flex-wrap:wrap;gap:16px 40px;align-items:end;margin:18px 0 38px}
-.finder input{width:min(380px,100%);background:transparent;border:0;border-bottom:1px solid var(--line);padding:8px 2px;color:var(--text)}
-.finder input::placeholder{color:#9a8f7e99}
+.finder input{width:min(380px,100%);background:transparent;border:0;border-bottom:1px solid var(--field);padding:8px 2px;color:var(--text)}
+.finder input::placeholder{color:#9a8f7ed9}
 .finder input:focus{outline:0;border-bottom-color:var(--gold)}
 .cats{display:flex;flex-wrap:wrap;gap:6px 24px}
 .cats button{color:var(--dim);padding:2px 0;border-bottom:1px solid transparent}
 .cats button:hover{color:var(--text)}
 .cats button[aria-pressed=true]{color:var(--text);border-bottom-color:var(--gold)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:40px 26px}
-.tile{text-align:left;display:block;width:100%}
+.tile{text-align:left;display:block;width:100%;position:relative}
+.star{position:absolute;top:8px;right:10px;color:var(--gold);font-style:normal;font-size:1.3rem;text-shadow:0 1px 6px #000}
 .tile img{display:block;width:100%;aspect-ratio:937/1678;object-fit:contain;background:#14110f;box-shadow:0 22px 44px -18px #000}
 .tile:hover img{outline:1px solid var(--gold);outline-offset:4px}
 .tile span{display:block;margin-top:14px;font:400 1.4rem/1.2 var(--display)}
@@ -222,6 +231,7 @@ dialog::backdrop{background:#000c}
   <nav aria-label="เมนูหลัก">
     <button id="n-read" aria-current="page">เลือกไพ่</button>
     <button id="n-cat">ไพ่ทั้งสำรับ</button>
+    <a id="n-account" href="account.html" hidden>เข้าสู่ระบบ</a>
   </nav>
 </header>
 <main>
@@ -229,13 +239,14 @@ dialog::backdrop{background:#000c}
 
 <section id="read">
   <form class="ask" id="ask">
-    <input class="q" id="q" type="text" aria-label="คำถามของฉัน" placeholder="คุณอยากถามอะไรกับไพ่" autocomplete="off">
+    <input class="q" id="q" type="text" maxlength="300" enterkeyhint="go" aria-label="คำถามของฉัน" placeholder="คุณอยากถามอะไรกับไพ่" autocomplete="off">
     <fieldset class="picks" id="spreads"><legend class="sr">รูปแบบการวาง</legend></fieldset>
     <label class="switch"><input type="checkbox" id="rev"> ให้มีไพ่กลับหัว</label>
     <button class="deck-btn" type="submit" id="deckbtn">
       <span class="deck" id="deckstage" aria-hidden="true"></span>
       <span class="t">เริ่มเลือกไพ่</span>
     </button>
+    <div class="daily" id="daily" hidden></div>
   </form>
 
   <section id="pick" hidden>
@@ -256,13 +267,15 @@ dialog::backdrop{background:#000c}
       <a class="link" id="toread" href="#chapters" hidden>ไปอ่านความหมาย</a>
       <button class="link" id="all" type="button">เปิดทั้งหมด</button>
     </div>
+    <div class="savebar" id="savebar" hidden></div>
     <div class="chaps" id="chapters"></div>
     <section class="pairs" id="pairs" hidden></section>
     <section class="overview" id="overview" hidden></section>
     <section class="overview" id="sharing" hidden><h2>เก็บผลอ่าน</h2><p class="note">ข้อความที่แชร์จะไม่รวมคำถามส่วนตัว</p><div class="acts"><button class="link" id="share-reading" type="button">แชร์ผลอ่าน</button><button class="link" id="save-reading" type="button">ดาวน์โหลดผลอ่าน</button></div><p id="share-status" class="note" aria-live="polite"></p></section>
     <section class="overview" id="offers" hidden><h2>สิ่งที่กำลังเตรียม</h2><p>เรากำลังออกแบบคำอ่านเชิงลึกและ Ivory Rose Club ราคาเสนอ 29 บาทต่อ 30 วัน เพื่อช่วยให้คุณทบทวนคำถามและกลับมาอ่านต่อได้</p><p class="note">ยังไม่เปิดขายหรือรับชำระเงิน รายละเอียดและราคาอาจเปลี่ยนแปลง</p><button class="link" id="interest-deep" type="button">สนใจคำอ่านเชิงลึก</button> · <button class="link" id="interest-club" type="button">สนใจ Club</button><p id="offer-status" class="note" aria-live="polite"></p><p><a href="club-preview.html">ดูตัวอย่าง Club และเนื้อหาเดือนแรก</a></p></section>
   </div>
-  <p class="note foot">ไพ่ถูกสับแบบสุ่มก่อนวางให้เลือก คุณเป็นคนเลือกเองทุกใบ <span id="logsay">คำถามและผลอ่านไม่ถูกส่งเพื่อสร้างคำอ่าน เว็บใช้ Cloudflare Web Analytics เพื่อวัดการเข้าชม</span> เว็บนี้ไว้ช่วยให้คุณทบทวนเรื่องราวของตัวเอง ไม่ใช่คำทำนาย วิธีอ่านสรุปมาจากตำราไพ่ทั่วไป ไม่ใช่กฎตายตัว</p>
+  <label class="note switch" id="trackrow" hidden><input type="checkbox" id="trackopt"> ช่วยปรับปรุงเว็บ: บันทึกลำดับการกดและตำแหน่งที่กด (ไม่เก็บข้อความที่พิมพ์ ไม่ระบุตัวตน) ปิดได้ทุกเมื่อ</label>
+  <p class="note foot">ไพ่ถูกสับแบบสุ่มก่อนวางให้เลือก คุณเป็นคนเลือกเองทุกใบ <span id="logsay">คำถามและผลอ่านไม่ถูกส่งเพื่อสร้างคำอ่าน เว็บใช้ Cloudflare Web Analytics เพื่อวัดการเข้าชม</span> เว็บนี้ไว้ช่วยให้คุณทบทวนเรื่องราวของตัวเอง ไม่ใช่คำทำนาย วิธีอ่านสรุปมาจากตำราไพ่ทั่วไป ไม่ใช่กฎตายตัว <a class="link" href="privacy.html">นโยบายความเป็นส่วนตัว</a> · <a class="link" href="terms.html">ข้อกำหนดการใช้งาน</a></p>
 </section>
 
 <section id="cat" hidden>
@@ -282,9 +295,26 @@ dialog::backdrop{background:#000c}
 import {meaningFor, randomBelow, shuffled} from './scripts/reading-core.mjs';
 import {frameFor, bridgeFor, pairReadings, useFor, TOPICS, POSITIONS} from './scripts/reading-guide.mjs';
 import {topicFor} from './scripts/topic-model.mjs';
+import {createTracker, pointOf} from './scripts/track.mjs';
+import {API_URL} from './scripts/config.mjs';
+import {createApi, errorText} from './scripts/api-client.mjs';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* ---------- optional click-sequence log (docs/08 §4.2) ----------
+   Off until TRACK_URL is set AND the visitor ticks the box in the footer. Sends only event types, element ids,
+   click positions and timing; never typed text. The session id lives in sessionStorage (new for every tab). */
+const TRACK_URL = '';
+const store = {get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }};
+const sid = (() => { try { return sessionStorage.taroSid ||= crypto.randomUUID(); } catch { return crypto.randomUUID(); } })();
+const tracker = createTracker({
+  url: TRACK_URL, sid, consent: () => store.get('taro.analytics') === '1',
+  meta: {viewport_w: innerWidth, viewport_h: innerHeight, pointer: matchMedia('(pointer: coarse)').matches ? 'touch' : 'mouse', app_version: 'web-1'},
+  send: (u, body) => { if (!(document.visibilityState === 'hidden' && navigator.sendBeacon?.(u, body))) fetch(u, {method: 'POST', mode: 'no-cors', keepalive: true, body}).catch(() => {}); }
+});
+const trackClick = (type, o) => tracker.track(type, o);   // click-sequence log (opt-in); `track(event)` further down is the separate visit counter
+addEventListener('pagehide', () => tracker.flush());
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') tracker.flush(); });
 const CATS = [['', 'ทั้งหมด'], ['major', 'ไพ่ใหญ่'], ['wands', 'ไม้เท้า'], ['cups', 'ถ้วย'], ['swords', 'ดาบ'], ['pentacles', 'เหรียญ']];
 let cards, byId, spreads, PM, TM, reading, shown = new Set(), cat = '';
 
@@ -313,7 +343,7 @@ function show(name) {
     k === name ? $(b).setAttribute('aria-current', 'page') : $(b).removeAttribute('aria-current');
   }
 }
-for (const [k, b] of Object.entries(views)) $(b).onclick = () => { show(k); if (k === 'read' && pk) fitFan(); };
+for (const [k, b] of Object.entries(views)) $(b).onclick = e => { trackClick('view_enter', {view: k, target: 'nav:' + k, point: pointOf(e, $(b))}); show(k); if (k === 'read' && pk) fitFan(); };
 function toHome() {
   pk = null; show('read');
   $('pick').hidden = $('session').hidden = true; $('ask').hidden = false; scrollTo(0, 0);
@@ -321,12 +351,12 @@ function toHome() {
 // Picking and reading are one history step, so the phone's Back gesture returns to the start instead of leaving the site.
 const leave = () => history.state?.v ? history.back() : toHome();
 const enter = () => history.state?.v || history.pushState({v: 1}, '');
-$('home').onclick = leave;
+$('home').onclick = e => { trackClick('home', {point: pointOf(e, $('home'))}); leave(); };
 addEventListener('popstate', e => { if (!e.state?.v && !location.hash && (pk || !$('session').hidden)) toHome(); });
 // In-page links scroll without adding history entries (a hash step would otherwise look like "Back" to the handler above).
 document.addEventListener('click', e => {
   const a = e.target.closest('a[href^="#"]'), t = a && document.getElementById(a.getAttribute('href').slice(1));
-  if (t) { e.preventDefault(); t.scrollIntoView(); }
+  if (t) { e.preventDefault(); t.scrollIntoView(); if (a.id === 'toread') trackClick('jump_to_reading', {view: 'session', point: pointOf(e, a)}); }
 });
 
 /* ---------- layout shared by glyphs and the table ---------- */
@@ -383,7 +413,8 @@ function dealDeck(animate) {
   els.forEach((el, k) => { el.classList.add('gather', 'stack'); stack(k); });
   dealT = setTimeout(deal, 340);
 }
-$('spreads').addEventListener('change', () => dealDeck(true));
+$('spreads').addEventListener('change', e => { trackClick('spread_select', {view: 'read', target: 'spread:' + chosen().id}); dealDeck(true); });
+$('rev').addEventListener('change', () => trackClick('reversed_toggle', {view: 'read', data: {on: $('rev').checked}}));
 { let first = true, lastW = 0; new ResizeObserver(() => { if (stage.clientWidth === lastW) return; lastW = stage.clientWidth; dealDeck(first); first = false; }).observe(stage); }
 
 /* ---------- table ---------- */
@@ -524,12 +555,12 @@ function openCard(i) {
 }
 
 function begin(rd) {
-  reading = rd; reading.topic = topicFor(TM, rd.question); shown = new Set(); track('reading_start'); track('topic_' + reading.topic);
+  reading = rd; reading.topic = topicFor(TM, rd.question); shown = new Set(); saved = false; track('reading_start'); track('topic_' + reading.topic);
   $('ask').hidden = true; $('pick').hidden = true; $('session').hidden = false;
   $('recap').innerHTML = `<p class="rq">${esc(rd.question) || 'ไม่ได้ตั้งคำถาม'}</p>
     <p class="rm"><span>${esc(spreadOf(rd.spread_id).name_th)}</span><button class="link" id="again" type="button">เลือกใหม่</button></p>
     ${TOPICS[reading.topic] ? `<p class="note">คำถามนี้ดูเกี่ยวกับ${esc(TOPICS[reading.topic].th)} จึงวางมุมนั้นไว้ก่อนในแต่ละใบ</p>` : ''}`;
-  renderTable(true); renderChapters();
+  renderTable(true); renderChapters(); renderSaveBar();
   scrollTo(0, 0);
 }
 $('ask').onsubmit = e => { e.preventDefault(); startPick(); };
@@ -537,8 +568,9 @@ $('recap').onclick = e => {
   if (e.target.id !== 'again') return;
   leave(); $('q').focus();
 };
-$('table').onclick = e => { const b = e.target.closest('.card'); if (b) openCard(+b.dataset.i); };
-$('all').onclick = () => {
+$('table').onclick = e => { const b = e.target.closest('.card'); if (b) { trackClick('card_open', {view: 'session', target: 'pos:' + b.dataset.i, point: pointOf(e, b), data: {again: shown.has(+b.dataset.i)}}); openCard(+b.dataset.i); } };
+$('all').onclick = e => {
+  trackClick('open_all', {view: 'session', point: pointOf(e, $('all'))});
   const rd = reading, todo = rd.cards.map((_, i) => i).filter(i => !shown.has(i));
   todo.forEach((i, k) => setTimeout(() => { if (rd === reading) flip(i); }, k * 250));
   setTimeout(() => { if (rd !== reading) return; renderChapters(); $('chapters').scrollIntoView(); }, todo.length * 250 + 450);
@@ -562,6 +594,7 @@ const wheel = {th: 0, v: 0, raf: 0, last: 0, moved: false};
 function startPick() {
   enter();
   const sp = chosen();
+  trackClick('start_pick', {view: 'pick', target: 'spread:' + sp.id, data: {rev: $('rev').checked}});
   pk = {order: shuffled(cards.map(c => c.id)), picks: Array(sp.positions.length).fill(null), sp, question: $('q').value, reversed: $('rev').checked};
   $('ask').hidden = true; $('pick').hidden = false;
   $('fan').innerHTML = cards.map((_, k) => `<button type="button" class="fc" data-k="${k}" aria-label="ไพ่คว่ำใบที่ ${k + 1} จาก ${cards.length}"></button>`).join('');
@@ -615,8 +648,9 @@ function spin() {   // momentum after a flick
     wheel.th += dx / wheel.R; wheel.v = 0.6 * wheel.v + 0.4 * (dx / wheel.R / dt);
     down = {...down, x: e.clientX, t: e.timeStamp}; drawWheel();
   };
-  wrap.onpointerup = wrap.onpointercancel = () => { down = null; wrap.classList.remove('drag'); if (wheel.moved) spin(); };
+  wrap.onpointerup = wrap.onpointercancel = () => { down = null; wrap.classList.remove('drag'); if (wheel.moved) { trackClick('wheel_spin', {view: 'pick', target: 'fan'}); spin(); } };
   wrap.addEventListener('click', e => { if (wheel.moved) { e.stopPropagation(); e.preventDefault(); wheel.moved = false; } }, true);
+  wrap.addEventListener('click', e => { if (pk && !e.target.closest('.fc')) trackClick('miss_tap', {view: 'pick', target: 'fan', outcome: 'miss', point: pointOf(e, wrap)}); });
   wrap.addEventListener('wheel', e => {
     if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
     e.preventDefault(); wheel.th -= e.deltaX / wheel.R; drawWheel();
@@ -630,6 +664,11 @@ function spin() {   // momentum after a flick
 const LOG_URL = '';
 if (!/^(www\.)?ivoryrosetarot\.online$/.test(location.hostname)) $('logsay').textContent = 'เว็บทดสอบนี้ไม่ส่งคำถามหรือผลอ่าน และไม่นับสถิติรวมกับเว็บจริง';
 if (LOG_URL) $('logsay').textContent = 'ผลอ่านอยู่ในเครื่องของคุณ ส่วนข้อความคำถามที่พิมพ์จะถูกเก็บไว้โดยไม่มีชื่อ อีเมล หรือข้อมูลที่ระบุตัวคุณ เพื่อใช้ปรับปรุงเว็บ จึงไม่ควรพิมพ์ข้อมูลส่วนตัวลงในคำถาม';
+if (TRACK_URL) {
+  $('trackrow').hidden = false;
+  $('trackopt').checked = store.get('taro.analytics') === '1';
+  $('trackopt').onchange = () => { store.set('taro.analytics', $('trackopt').checked ? '1' : '0'); if (!$('trackopt').checked) tracker.stop(); };
+}
 function logQuestion(q, spread) {
   q = String(q).trim();
   if (LOG_URL && q) fetch(LOG_URL, {method: 'POST', mode: 'no-cors', keepalive: true, body: JSON.stringify({q, spread})}).catch(() => {});
@@ -661,6 +700,8 @@ for (const [id,event] of [['interest-deep','interest_deep'],['interest-club','in
 function finishPick() {
   clearTimeout(pk.timer);
   const {order, picks, sp, question, reversed} = pk;
+  picks.forEach((k, i) => trackClick('pick_kept', {view: 'pick', target: 'fan:' + k, outcome: 'kept', data: {pos: i}}));
+  trackClick('auto_open', {view: 'pick', data: {n: picks.length}});
   logQuestion(question, sp.id);
   begin({schema_version: '1.0.0', deck_id: 'gothic-ivory-rose', spread_id: sp.id, question: String(question),
     created_at: new Date().toISOString(), reversed_enabled: Boolean(reversed),
@@ -668,9 +709,10 @@ function finishPick() {
       orientation: reversed && randomBelow(2) === 1 ? 'reversed' : 'upright'}))});
   pk = null;
 }
-$('pickcancel').onclick = leave;
-function unpick(i) {   // put a picked card back; the other cards keep their positions
-  const k = pk.picks[i]; pk.picks[i] = null; clearTimeout(pk.timer);
+$('pickcancel').onclick = e => { trackClick('pick_cancel', {view: 'pick', point: pointOf(e, $('pickcancel')), data: {picked: pk ? pk.picks.filter(k => k !== null).length : 0}}); leave(); };
+function unpick(i, how = 'slot', e) {   // put a picked card back; the other cards keep their positions
+  const k = pk.picks[i];
+  trackClick('unpick', {view: 'pick', target: `${how}:${how === 'fan' ? k : i}`, outcome: 'undone', point: pointOf(e, e?.target?.closest?.('button')), data: {pos: i}}); pk.picks[i] = null; clearTimeout(pk.timer);
   $('fan').querySelector(`.fc[data-k="${k}"]`)?.classList.remove('picked');
   renderPickHead();
 }
@@ -678,9 +720,10 @@ $('fan').onclick = e => {
   const b = e.target.closest('.fc');
   if (!b || !pk) return;
   const k = +b.dataset.k, i = pk.picks.indexOf(k);
-  if (i >= 0) return unpick(i);
+  if (i >= 0) return unpick(i, 'fan', e);
   const slot = pk.picks.indexOf(null);
-  if (slot < 0) return;
+  if (slot < 0) { trackClick('blocked_tap', {view: 'pick', target: 'fan:' + k, outcome: 'blocked', point: pointOf(e, b)}); return; }
+  trackClick('pick', {view: 'pick', target: 'fan:' + k, point: pointOf(e, b), data: {pos: slot}});
   pk.picks[slot] = k; b.classList.add('picked');
   renderPickHead();
   if (!pk.picks.includes(null)) {   // all picked: open automatically after a moment, long enough to undo a mis-tap
@@ -688,7 +731,7 @@ $('fan').onclick = e => {
     pk.timer = setTimeout(() => { if (pk === mine && !pk.picks.includes(null)) finishPick(); }, 1000);
   }
 };
-$('slots').onclick = e => { const b = e.target.closest('button[data-i]'); if (b && pk) unpick(+b.dataset.i); };
+$('slots').onclick = e => { const b = e.target.closest('button[data-i]'); if (b && pk) unpick(+b.dataset.i, 'slot', e); };
 let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (pk) fitFan(); else if (reading && !$('session').hidden) renderTable(false); }, 150); });
 
 /* ---------- catalog ---------- */
@@ -698,25 +741,91 @@ function detail(c) {
     <p class="en">${esc(c.name_en)}</p><h2>${esc(c.name_th)}</h2>
     <p class="kw">${esc(c.keywords_th.join(', '))}</p>
     <dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
-    <p class="qq">${esc(c.reflection_th)}</p></div></div>`;
+    <p class="qq">${esc(c.reflection_th)}</p>${account ? `<button type="button" class="fav" id="favbtn" aria-pressed="${favs.has(c.id)}">${favs.has(c.id) ? '★ ไพ่โปรด' : '☆ เพิ่มเป็นไพ่โปรด'}</button>` : ''}</div></div>`;
+  if (account) $('favbtn').onclick = async () => {
+    const on = !favs.has(c.id), r = on ? await api.put('/me/favorites/' + c.id) : await api.del('/me/favorites/' + c.id);
+    if (!r.ok) return;
+    on ? favs.add(c.id) : favs.delete(c.id);
+    $('favbtn').setAttribute('aria-pressed', on); $('favbtn').textContent = on ? '★ ไพ่โปรด' : '☆ เพิ่มเป็นไพ่โปรด';
+    renderCat();   // stars on the grid behind the dialog follow
+  };
+  trackClick('dialog_open', {view: 'cat', target: 'card:' + c.id});
   $('dlg').showModal();
 }
-$('dx').onclick = () => $('dlg').close();
-$('dlg').onclick = e => { if (e.target === $('dlg')) $('dlg').close(); };
+$('dx').onclick = () => { trackClick('dialog_close', {view: 'cat', target: 'x'}); $('dlg').close(); };
+$('dlg').onclick = e => { if (e.target === $('dlg')) { trackClick('dialog_close', {view: 'cat', target: 'backdrop'}); $('dlg').close(); } };
+
+/* ---------- optional account features (only when API_URL is set in scripts/config.mjs) ---------- */
+const api = API_URL ? createApi(API_URL) : null;
+let account = null, saveConsent = false, saved = false;
+const favs = new Set();
+async function loadAccount() {
+  if (!api) return;
+  $('n-account').hidden = false;
+  const r = await api.get('/me');
+  account = r.ok ? r.data : null;
+  if (account) {
+    $('n-account').textContent = account.user.display_name || 'บัญชีของฉัน';
+    const [c, f] = await Promise.all([api.get('/me/consents'), api.get('/me/favorites')]);
+    saveConsent = !!c.data?.consents?.find(x => x.kind === 'save_history')?.granted;
+    favs.clear(); (f.data?.favorites ?? []).forEach(x => favs.add(x.card_id));
+  }
+  renderSaveBar();
+  renderCat();   // adds the favourites filter and the stars
+}
+function renderSaveBar() {
+  const bar = $('savebar');
+  bar.hidden = !api || !reading;
+  if (bar.hidden) return;
+  if (saved) { bar.innerHTML = '<p class="note" style="margin:0">บันทึกลงประวัติแล้ว ดูได้ที่ <a class="link" href="account.html">หน้าบัญชี</a></p>'; return; }
+  if (!account) { bar.innerHTML = '<p class="note" style="margin:0"><a class="link" href="account.html">เข้าสู่ระบบ</a> เพื่อบันทึกการอ่านนี้ลงประวัติและเขียนโน้ตส่วนตัว</p>'; return; }
+  bar.innerHTML = `<label for="rnote" class="note">โน้ตส่วนตัว (ไม่บังคับ)</label><textarea id="rnote" maxlength="2000"></textarea>
+    ${saveConsent ? '' : '<p class="note">การบันทึกประวัติต้องได้รับความยินยอมจากคุณ ข้อมูลอยู่ในบัญชีของคุณ เห็นได้เฉพาะคุณ ลบได้ทุกเมื่อ</p>'}
+    <button type="button" class="go" id="rsave">${saveConsent ? 'บันทึกลงประวัติ' : 'ยินยอมและบันทึก'}</button> <span class="note" id="rsay" role="status"></span>`;
+}
+$('savebar').onclick = async e => {
+  if (e.target.id !== 'rsave' || !reading) return;
+  const btn = e.target, say = t => { $('rsay').textContent = t; };
+  btn.disabled = true;
+  if (!saveConsent) {
+    const c = await api.post('/me/consents', {kind: 'save_history', version: '1', granted: true});
+    if (!c.ok) { say(errorText(c.data?.error)); btn.disabled = false; return; }
+    saveConsent = true;
+  }
+  const r = await api.post('/me/readings', {spread_id: reading.spread_id, question: reading.question, reversed_enabled: reading.reversed_enabled,
+    cards: reading.cards.map(c => ({position_id: c.position_id, card_id: c.card_id, orientation: c.orientation})), note: $('rnote').value});
+  if (r.ok) { saved = true; renderSaveBar(); } else { say(errorText(r.data?.error)); btn.disabled = false; }
+};
+async function showDaily() {
+  if (!api) return;
+  const r = await api.get('/content/daily');
+  const c = r.ok && byId[r.data.card_id];
+  if (!c) return;
+  $('daily').hidden = false;
+  $('daily').innerHTML = `<button type="button" class="dailybtn" id="dailybtn"><img src="${c.image_web}" alt="${esc(c.alt_th)}" width="52"><span><small>ไพ่ประจำวันนี้</small><b>${esc(c.name_th)}</b><small>${esc(c.name_en)}</small></span></button>`;
+  $('dailybtn').onclick = () => detail(c);
+}
 
 function renderCat() {
   const q = $('s').value.trim().toLowerCase();
-  const list = cards.filter(c => (!cat || c.arcana === cat || c.suit === cat) &&
+  const list = cards.filter(c => (!cat || (cat === 'fav' ? favs.has(c.id) : c.arcana === cat || c.suit === cat)) &&
     (!q || [c.name_th, c.name_en, ...c.keywords_th].some(t => t.toLowerCase().includes(q))));
-  $('cats').innerHTML = CATS.map(([k, n]) => `<button data-k="${k}" aria-pressed="${k === cat}">${n}</button>`).join('');
+  const chips = account ? [...CATS, ['fav', '★ ไพ่โปรด']] : CATS;   // the favourites filter exists only for signed-in visitors
+  if (cat === 'fav' && !account) cat = '';
+  $('cats').innerHTML = chips.map(([k, n]) => `<button data-k="${k}" aria-pressed="${k === cat}">${n}</button>`).join('');
   $('grid').innerHTML = list.map(c => `<button class="tile" data-id="${c.id}">
-    <img loading="lazy" src="${c.image_web}" alt="${esc(c.alt_th)}"><span>${esc(c.name_en)}</span><b>${esc(c.name_th)}</b></button>`).join('')
-    || '<p class="empty">ไม่พบไพ่ที่ตรงกับคำค้น ลองใช้ชื่อสั้นลงหรือเลือกหมวดทั้งหมด</p>';
+    <img loading="lazy" src="${c.image_web}" alt="${esc(c.alt_th)}">${account && favs.has(c.id) ? '<i class="star" aria-hidden="true">★</i><span class="sr">ไพ่โปรด</span>' : ''}<span>${esc(c.name_en)}</span><b>${esc(c.name_th)}</b></button>`).join('')
+    || `<p class="empty">${cat === 'fav' ? 'ยังไม่มีไพ่โปรด เปิดรายละเอียดไพ่แล้วกดดาวเพื่อเพิ่ม' : 'ไม่พบไพ่ที่ตรงกับคำค้น ลองใช้ชื่อสั้นลงหรือเลือกหมวดทั้งหมด'}</p>`;
 }
-$('cats').onclick = e => { if (e.target.dataset.k != null) { cat = e.target.dataset.k; renderCat(); } };
+$('cats').onclick = e => { if (e.target.dataset.k != null) { cat = e.target.dataset.k; trackClick('catalog_filter', {view: 'cat', target: 'cat:' + (cat || 'all'), point: pointOf(e, e.target)}); renderCat(); } };
 $('grid').onclick = e => { const b = e.target.closest('.tile'); if (b) detail(byId[b.dataset.id]); };
-$('s').oninput = renderCat;
+let searchTimer;
+$('s').oninput = () => {   // log only the length and result count, never the words typed
+  renderCat(); clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => trackClick('catalog_search', {view: 'cat', data: {len: $('s').value.trim().length, n: $('grid').querySelectorAll('.tile').length}}), 800);
+};
 renderCat();
+loadAccount(); showDaily();
 </script>
 <script>
 /* ทุกโดเมนที่ไม่ใช่ production (uat.*, *.pages.dev, localhost): ไม่ให้ search engine เก็บ และไม่นับสถิติปนกับ production */

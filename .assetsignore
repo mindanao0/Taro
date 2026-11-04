@@ -16,3 +16,15 @@ CNAME
 wrangler.events.jsonc
 data/topic_examples.json
 data/topic_test.json
+api
+tests
+migrations
+node_modules
+.github
+.wrangler
+package.json
+package-lock.json
+scripts/*.test.mjs
+scripts/*.py
+scripts/launch-check.mjs
+scripts/test-all.mjs
