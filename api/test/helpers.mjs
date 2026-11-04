@@ -34,25 +34,33 @@ export function makeEnv(extra = {}) {
   return env;
 }
 
-// A browser-like client: keeps the session cookie and sends the same-site Origin.
+// A browser-like client: keeps cookies (session + oauth state) and sends the same-site Origin.
 export function client(env, {origin = ORIGIN} = {}) {
   const pending = [];
   const ctx = {waitUntil: p => pending.push(p)};
-  let cookie = '';
-  const call = async (method, path, body, {headers = {}, withOrigin = true, rawBody, contentType = 'application/json'} = {}) => {
+  const jar = new Map();
+  const SESSION = '__Host-taro_session';
+  const call = async (method, path, body, {headers = {}, withOrigin = true, rawBody, contentType = 'application/json', host = 'https://api.test'} = {}) => {
     const h = {...headers};
     if (withOrigin && origin) h.origin = origin;
-    if (cookie) h.cookie = cookie;
+    if (jar.size) h.cookie = [...jar].map(([k, v]) => `${k}=${v}`).join('; ');
     if (body !== undefined || rawBody !== undefined) h['content-type'] = contentType;
-    const res = await worker.fetch(new Request('https://api.test' + path, {method, headers: h, body: rawBody ?? (body === undefined ? undefined : JSON.stringify(body))}), env, ctx);
+    const res = await worker.fetch(new Request(host + path, {method, redirect: 'manual', headers: h, body: rawBody ?? (body === undefined ? undefined : JSON.stringify(body))}), env, ctx);
     await Promise.all(pending.splice(0));   // let background mail sends finish
-    const set = res.headers.get('set-cookie');
-    if (set) cookie = set.split(';')[0].endsWith('=') ? '' : set.split(';')[0];
+    for (const c of res.headers.getSetCookie()) {
+      const [pair] = c.split(';'), i = pair.indexOf('=');
+      const name = pair.slice(0, i), value = pair.slice(i + 1);
+      value ? jar.set(name, value) : jar.delete(name);
+    }
     let data = null;
     if ((res.headers.get('content-type') || '').includes('json')) data = await res.json();
-    return {status: res.status, data, headers: res.headers};
+    return {status: res.status, data, headers: res.headers, location: res.headers.get('location')};
   };
-  return {call, post: (p, b, o) => call('POST', p, b, o), get: (p, o) => call('GET', p, undefined, o), get cookie() { return cookie; }, set cookie(v) { cookie = v; }};
+  return {call, post: (p, b, o) => call('POST', p, b, o), get: (p, o) => call('GET', p, undefined, o),
+    put: (p, b, o) => call('PUT', p, b, o), del: (p, o) => call('DELETE', p, undefined, o),
+    jar,
+    get cookie() { return jar.has(SESSION) ? `${SESSION}=${jar.get(SESSION)}` : ''; },
+    set cookie(v) { const i = v.indexOf('='); v ? jar.set(v.slice(0, i), v.slice(i + 1)) : jar.delete(SESSION); }};
 }
 
 // Pulls the token out of the newest email's link (#verify=... or #reset=...)

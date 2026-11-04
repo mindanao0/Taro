@@ -1,17 +1,19 @@
-// Cloudflare Worker `taro-api`: accounts and email/password login (docs/07). Social login arrives in the next phase.
+// Cloudflare Worker `taro-api`: accounts, email/password and social login, per-user data (docs/07, docs/08).
 import {PBKDF2_ITERATIONS, hashPassword, randomToken, sha256Hex, verifyPassword} from './lib/crypto.mjs';
 import {clearedCookie, json, originsOf, readJson, sessionCookie} from './lib/http.mjs';
 import {existsMail, resetMail, sendMail, verifyMail} from './lib/mail.mjs';
 import {SESSION_SECONDS, createSession, currentSession, deleteSession, deleteUserSessions} from './lib/session.mjs';
+import {audit, countEvents, iso, webUrl} from './lib/util.mjs';
+import {providerList, socialCallback, socialStart} from './lib/social.mjs';
+import {deleteAccount, exportData, getConsents, requestEmailChange, setConsent, unlinkIdentity} from './lib/account.mjs';
+import {authed} from './lib/util.mjs';
 
 const VERIFY_HOURS = 24, RESET_MINUTES = 30;
 const LOGIN_FAILS = 10, LOGIN_WINDOW_MIN = 15;     // per email, on top of the per-IP limiter
 const RESETS_PER_HOUR = 3;
 const MIN_PASSWORD = 10, MAX_PASSWORD = 128;
 
-const iso = (ms = Date.now()) => new Date(ms).toISOString();
 const iterationsOf = env => Number(env.PBKDF2_ITERATIONS) || PBKDF2_ITERATIONS;
-const webUrl = env => (env.WEB_URL || 'https://ivoryrosetarot.online').replace(/\/$/, '');
 
 const cleanEmail = v => {
   if (typeof v !== 'string') return null;
@@ -22,13 +24,6 @@ const passwordError = (pw, email) =>
   typeof pw !== 'string' || pw.length < MIN_PASSWORD ? 'password_too_short'
   : pw.length > MAX_PASSWORD ? 'password_too_long'
   : email && pw.toLowerCase() === email ? 'password_is_email' : null;
-
-async function audit(env, event, {userId = null, subject = null, provider = null} = {}) {
-  await env.DB.prepare('INSERT INTO audit_log (user_id, event, subject, provider, at) VALUES (?, ?, ?, ?, ?)')
-    .bind(userId, event, subject, provider, iso()).run();
-}
-const countEvents = async (env, event, subject, sinceMs) =>
-  (await env.DB.prepare('SELECT COUNT(*) AS n FROM audit_log WHERE event = ? AND subject = ? AND at > ?').bind(event, subject, iso(Date.now() - sinceMs)).first()).n;
 
 async function ipLimited(env, req) {   // the IP is only a rate-limit key, never stored
   if (!env.AUTH_LIMITER) return false;
@@ -42,14 +37,13 @@ async function issueToken(env, userId, purpose, ttlMs) {
     .bind(await sha256Hex(token), userId, purpose, iso(Date.now() + ttlMs)).run();
   return token;
 }
-// Marks a valid, unused, unexpired token as used and returns its user id (single use even under concurrent requests).
-async function consumeToken(env, token, purpose) {
+// Marks a valid, unused, unexpired token as used and returns {user_id, purpose, new_email} (single use even under concurrent requests).
+async function consumeToken(env, token, purposes) {
   if (typeof token !== 'string' || token.length > 128) return null;
-  const id = await sha256Hex(token), now = iso();
-  const res = await env.DB.prepare('UPDATE email_tokens SET used_at = ? WHERE id = ? AND purpose = ? AND used_at IS NULL AND expires_at > ?')
-    .bind(now, id, purpose, now).run();
-  if (!(res.meta?.changes ?? res.changes)) return null;
-  return (await env.DB.prepare('SELECT user_id FROM email_tokens WHERE id = ?').bind(id).first())?.user_id ?? null;
+  const now = iso();
+  const marks = purposes.map(() => '?').join(', ');
+  return await env.DB.prepare(`UPDATE email_tokens SET used_at = ? WHERE id = ? AND purpose IN (${marks}) AND used_at IS NULL AND expires_at > ? RETURNING user_id, purpose, new_email`)
+    .bind(now, await sha256Hex(token), ...purposes, now).first();
 }
 
 let dummyHash;   // verified against when the email is unknown, so unknown and wrong-password take similar time
@@ -119,10 +113,16 @@ async function logout(req, env) {
 
 async function verifyEmail(req, env) {
   const b = await readJson(req);
-  const userId = await consumeToken(env, b?.token, 'verify_email');
-  if (!userId) return json(400, {error: 'invalid_or_expired_token'});
-  await env.DB.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').bind(userId).run();
-  await audit(env, 'verify_email', {userId});
+  const t = await consumeToken(env, b?.token, ['verify_email', 'change_email']);
+  if (!t) return json(400, {error: 'invalid_or_expired_token'});
+  if (t.purpose === 'change_email') {
+    const taken = await env.DB.prepare('SELECT 1 AS x FROM users WHERE email = ? AND id != ?').bind(t.new_email, t.user_id).first();
+    if (taken) return json(409, {error: 'email_in_use'});   // someone else claimed it while the link was pending
+    await env.DB.prepare('UPDATE users SET email = ?, email_verified = 1 WHERE id = ?').bind(t.new_email, t.user_id).run();
+  } else {
+    await env.DB.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').bind(t.user_id).run();
+  }
+  await audit(env, 'verify_email', {userId: t.user_id});
   return json(204);
 }
 
@@ -148,8 +148,9 @@ async function resetPassword(req, env) {
   const b = await readJson(req);
   const pwErr = passwordError(b?.password);
   if (pwErr) return json(400, {error: pwErr});
-  const userId = await consumeToken(env, b.token, 'reset_password');
-  if (!userId) return json(400, {error: 'invalid_or_expired_token'});
+  const used = await consumeToken(env, b.token, ['reset_password']);
+  if (!used) return json(400, {error: 'invalid_or_expired_token'});
+  const userId = used.user_id;
   const now = iso();
   await env.DB.batch([
     env.DB.prepare('INSERT INTO credentials (user_id, password_hash, updated_at) VALUES (?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET password_hash = excluded.password_hash, updated_at = excluded.updated_at')
@@ -166,7 +167,7 @@ async function me(req, env) {
   if (!s) return json(401, {error: 'not_signed_in'});
   const ids = await env.DB.prepare('SELECT provider, created_at FROM identities WHERE user_id = ?').bind(s.user.id).all();
   const cred = await env.DB.prepare('SELECT 1 AS x FROM credentials WHERE user_id = ?').bind(s.user.id).first();
-  return json(200, {user: s.user, has_password: !!cred, identities: (ids.results ?? ids).map(r => r.provider)});
+  return json(200, {user: s.user, has_password: !!cred, identities: (ids.results ?? ids).map(r => r.provider), providers_available: providerList(env)});
 }
 
 async function changePassword(req, env) {
@@ -187,18 +188,35 @@ async function changePassword(req, env) {
   return json(204);
 }
 
-const ROUTES = {
-  'POST /auth/register': [register, true], 'POST /auth/login': [login, true], 'POST /auth/logout': [logout, false],
-  'POST /auth/verify-email': [verifyEmail, true], 'POST /auth/forgot-password': [forgotPassword, true], 'POST /auth/reset-password': [resetPassword, true],
-  'GET /me': [me, false], 'POST /me/password': [changePassword, false]
-};
+// [method, path pattern, handler, options]  options: limit = per-IP auth limiter, csrf = false for non-browser callers
+const ROUTES = [
+  ['POST', '/auth/register', register, {limit: true}], ['POST', '/auth/login', login, {limit: true}], ['POST', '/auth/logout', logout],
+  ['POST', '/auth/verify-email', verifyEmail, {limit: true}], ['POST', '/auth/forgot-password', forgotPassword, {limit: true}], ['POST', '/auth/reset-password', resetPassword, {limit: true}],
+  ['GET', '/auth/:provider/start', socialStart, {limit: true, csrf: false}], ['GET', '/auth/:provider/callback', socialCallback, {csrf: false}],
+  ['GET', '/me', me], ['POST', '/me/password', changePassword], ['POST', '/me/email', authed(requestEmailChange), {limit: true}],
+  ['DELETE', '/me/identities/:provider', authed(unlinkIdentity)],
+  ['GET', '/me/consents', authed(getConsents)], ['POST', '/me/consents', authed(setConsent)],
+  ['GET', '/me/export', authed(exportData)], ['POST', '/me/delete', authed(deleteAccount)]
+];
+export const addRoutes = list => ROUTES.push(...list);
+
+function match(method, path) {
+  for (const [m, pattern, handler, opts = {}] of ROUTES) {
+    if (m !== method) continue;
+    const re = new RegExp('^' + pattern.replace(/:(\w+)/g, '(?<$1>[^/]+)') + '$');
+    const hit = re.exec(path);
+    if (hit) return {handler, opts, params: {...hit.groups}};
+  }
+  return null;
+}
 
 export async function maintain(env, now = new Date()) {
   const t = now.toISOString();
   await env.DB.batch([
     env.DB.prepare('DELETE FROM sessions WHERE expires_at < ?').bind(t),
     env.DB.prepare('DELETE FROM email_tokens WHERE expires_at < ? OR used_at IS NOT NULL').bind(new Date(now.getTime() - 86_400_000).toISOString()),
-    env.DB.prepare('DELETE FROM audit_log WHERE at < ?').bind(new Date(now.getTime() - 90 * 86_400_000).toISOString())
+    env.DB.prepare('DELETE FROM audit_log WHERE at < ?').bind(new Date(now.getTime() - 90 * 86_400_000).toISOString()),
+    env.DB.prepare('DELETE FROM users WHERE deleted_at IS NOT NULL AND deleted_at < ?').bind(new Date(now.getTime() - 30 * 86_400_000).toISOString())   // cascades to every row of that user
   ]);
 }
 
@@ -209,16 +227,18 @@ export default {
     const cors = allowed ? {'access-control-allow-origin': origin, 'access-control-allow-credentials': 'true', vary: 'Origin'} : {vary: 'Origin'};
 
     if (req.method === 'OPTIONS') {
-      return allowed ? new Response(null, {status: 204, headers: {...cors, 'access-control-allow-methods': 'GET, POST, OPTIONS', 'access-control-allow-headers': 'content-type', 'access-control-max-age': '600'}})
+      return allowed ? new Response(null, {status: 204, headers: {...cors, 'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS', 'access-control-allow-headers': 'content-type', 'access-control-max-age': '600'}})
         : new Response(null, {status: 403});
     }
-    const route = ROUTES[`${req.method} ${new URL(req.url).pathname}`];
+    const hit = match(req.method, new URL(req.url).pathname);
+    const mutating = req.method !== 'GET' && req.method !== 'HEAD';
     let res;
     try {
-      if (!route) res = json(404, {error: 'not_found'});
-      else if (req.method === 'POST' && (!allowed || !(req.headers.get('content-type') || '').includes('application/json'))) res = json(403, {error: 'forbidden'});   // CSRF guard: browsers cannot forge Origin or send JSON cross-site without CORS approval
-      else if (route[1] && await ipLimited(env, req)) res = json(429, {error: 'rate_limited'});
-      else res = await route[0](req, env, ctx);
+      if (!hit) res = json(404, {error: 'not_found'});
+      // CSRF guard: a browser cannot forge Origin, and cannot send JSON cross-site without CORS approval. Calls from other servers (LINE) opt out and prove themselves another way.
+      else if (mutating && hit.opts.csrf !== false && (!allowed || (req.method !== 'DELETE' && !(req.headers.get('content-type') || '').includes('application/json')))) res = json(403, {error: 'forbidden'});
+      else if (hit.opts.limit && await ipLimited(env, req)) res = json(429, {error: 'rate_limited'});
+      else res = await hit.handler(req, env, ctx, hit.params);
     } catch (e) {
       console.error('unhandled', e?.message);   // message only: stack and inputs may hold secrets
       res = json(500, {error: 'server_error'});
@@ -226,5 +246,5 @@ export default {
     for (const [k, v] of Object.entries(cors)) res.headers.set(k, v);
     return res;
   },
-  async scheduled(_event, env, ctx) { ctx.waitUntil(maintain(env)); }
+  async scheduled(event, env, ctx) { ctx.waitUntil(maintain(env)); }
 };

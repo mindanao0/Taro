@@ -10,6 +10,13 @@ export async function sha256Hex(text) {
   return [...d].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+export async function sha256Bytes(text) { return new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode(text))); }
+
+export async function hmac(secret, data) {   // HMAC-SHA256 -> bytes; `data` may be a string or bytes
+  const key = await crypto.subtle.importKey('raw', enc.encode(secret), {name: 'HMAC', hash: 'SHA-256'}, false, ['sign']);
+  return new Uint8Array(await crypto.subtle.sign('HMAC', key, typeof data === 'string' ? enc.encode(data) : data));
+}
+
 export function timingSafeEqual(a, b) {
   if (a.length !== b.length) return false;
   let r = 0;

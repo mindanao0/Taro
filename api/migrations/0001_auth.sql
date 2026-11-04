@@ -41,7 +41,8 @@ CREATE INDEX sessions_exp ON sessions(expires_at);
 CREATE TABLE email_tokens (
   id TEXT PRIMARY KEY,                           -- sha256 of the token in the emailed link
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  purpose TEXT NOT NULL CHECK (purpose IN ('verify_email','reset_password')),
+  purpose TEXT NOT NULL CHECK (purpose IN ('verify_email','reset_password','change_email')),
+  new_email TEXT,                                -- change_email only: the address being proven; users.email changes when the link is used
   expires_at TEXT NOT NULL,
   used_at TEXT
 );
