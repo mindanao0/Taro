@@ -306,7 +306,7 @@ const store = {get: k => { try { return localStorage.getItem(k); } catch { retur
 const sid = (() => { try { return sessionStorage.taroSid ||= crypto.randomUUID(); } catch { return crypto.randomUUID(); } })();
 const tracker = createTracker({
   url: TRACK_URL, sid, consent: () => store.get('taro.analytics') === '1',
-  meta: {viewport_w: innerWidth, viewport_h: innerHeight, pointer: matchMedia('(pointer: coarse)').matches ? 'touch' : 'mouse', app_version: 'web-1', started_at: new Date().toISOString()},
+  meta: {viewport_w: innerWidth, viewport_h: innerHeight, pointer: matchMedia('(pointer: coarse)').matches ? 'touch' : 'mouse', app_version: 'web-1'},
   send: (u, body) => { if (!(document.visibilityState === 'hidden' && navigator.sendBeacon?.(u, body))) fetch(u, {method: 'POST', mode: 'no-cors', keepalive: true, body}).catch(() => {}); }
 });
 const track = (type, o) => tracker.track(type, o);

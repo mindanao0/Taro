@@ -1,9 +1,9 @@
 // Account management for a signed-in user: unlink a login method, change email, consents, export, delete.
 import {sha256Hex, randomToken, verifyPassword, PBKDF2_ITERATIONS} from './crypto.mjs';
-import {json, readJson} from './http.mjs';
+import {clearedCookie, json, readJson} from './http.mjs';
 import {existsMail, sendMail, verifyMail} from './mail.mjs';
-import {deleteSession, deleteUserSessions} from './session.mjs';
-import {audit, cleanText, iso, webUrl} from './util.mjs';
+import {deleteUserSessions} from './session.mjs';
+import {audit, cleanText, isRecentLogin, iso, mailAllowed, webUrl} from './util.mjs';
 
 const iterationsOf = env => Number(env.PBKDF2_ITERATIONS) || PBKDF2_ITERATIONS;
 export const CONSENT_KINDS = new Set(['terms', 'privacy', 'save_history', 'line_notify']);
@@ -30,12 +30,16 @@ export async function requestEmailChange(req, env, ctx, s) {
   if (cred) {
     const ok = typeof b.password === 'string' && (await verifyPassword(b.password, cred.password_hash, iterationsOf(env))).ok;
     if (!ok) return json(403, {error: 'wrong_password'});
+  } else if (!isRecentLogin(s)) {
+    return json(403, {error: 'recent_login_required'});   // no password to confirm with, so a stolen older session must not be able to swap the account's email
   }
+  const mayMail = await mailAllowed(env, email);   // anyone can type anyone's address here: mail per address is capped, the answer stays the same
   const taken = await env.DB.prepare('SELECT id FROM users WHERE email = ? AND id != ?').bind(email, s.user.id).first();
   if (taken) {   // same answer as success, so this cannot be used to probe which addresses have accounts
-    ctx.waitUntil(sendMail(env, {to: email, ...existsMail(`${webUrl(env)}/account.html`)}));
+    if (mayMail) ctx.waitUntil(sendMail(env, {to: email, ...existsMail(`${webUrl(env)}/account.html`)}));
     return json(202, {ok: true});
   }
+  if (!mayMail) return json(202, {ok: true});
   await env.DB.prepare("UPDATE email_tokens SET used_at = ? WHERE user_id = ? AND purpose = 'change_email' AND used_at IS NULL").bind(iso(), s.user.id).run();
   const token = randomToken(32);
   await env.DB.prepare('INSERT INTO email_tokens (id, user_id, purpose, new_email, expires_at) VALUES (?, ?, ?, ?, ?)')
@@ -89,6 +93,7 @@ export async function deleteAccount(req, env, _ctx, s) {
   if (b?.confirm !== 'DELETE') return json(400, {error: 'confirmation_required'});
   const cred = await env.DB.prepare('SELECT password_hash FROM credentials WHERE user_id = ?').bind(s.user.id).first();
   if (cred && !(typeof b.password === 'string' && (await verifyPassword(b.password, cred.password_hash, iterationsOf(env))).ok)) return json(403, {error: 'wrong_password'});
+  if (!cred && !isRecentLogin(s)) return json(403, {error: 'recent_login_required'});   // a forgotten signed-in browser must not be enough to wipe a social-only account
   await env.DB.batch([
     env.DB.prepare('UPDATE users SET deleted_at = ? WHERE id = ?').bind(iso(), s.user.id),
     env.DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(s.user.id),
@@ -96,7 +101,7 @@ export async function deleteAccount(req, env, _ctx, s) {
     env.DB.prepare('DELETE FROM line_subscriptions WHERE user_id = ?').bind(s.user.id)
   ]);
   await audit(env, 'delete_account', {userId: s.user.id});
-  return json(204, undefined, {'set-cookie': '__Host-taro_session=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0'});
+  return json(204, undefined, {'set-cookie': clearedCookie()});
 }
 
 /* ---- devices that are signed in, and the display name ---- */
@@ -108,7 +113,7 @@ export async function revokeSession(req, env, _ctx, s, params) {
   const res = await env.DB.prepare('DELETE FROM sessions WHERE id = ? AND user_id = ?').bind(params.id, s.user.id).run();   // only your own devices
   if (!(res.meta?.changes ?? res.changes)) return json(404, {error: 'not_found'});
   await audit(env, 'session_revoke', {userId: s.user.id});
-  return json(204, undefined, params.id === s.sessionId ? {'set-cookie': '__Host-taro_session=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0'} : {});
+  return json(204, undefined, params.id === s.sessionId ? {'set-cookie': clearedCookie()} : {});
 }
 export async function revokeOtherSessions(req, env, _ctx, s) {
   await deleteUserSessions(env, s.user.id, s.sessionId);

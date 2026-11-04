@@ -96,7 +96,7 @@ async function member(env, email) {
   // an unverified address (LINE/Facebook) never restores or merges
   env.db.prepare("UPDATE users SET deleted_at = '2026-11-01T00:00:00.000Z' WHERE id = ?").run(uid);
   r = await resolveSocial(env, 'line', {sub: 'l-x', email: 'gone@example.com', emailVerified: false, name: null, picture: null});
-  assert.equal(r.error, 'email_exists_login_first'); assert.ok(row(env, 'SELECT deleted_at FROM users WHERE id = ?', uid).deleted_at);
+  assert.ok(r.created && r.userId !== uid, 'a separate account'); assert.ok(row(env, 'SELECT deleted_at FROM users WHERE id = ?', uid).deleted_at, 'the deleted account is left alone');
 }
 
 /* ---- devices ---- */

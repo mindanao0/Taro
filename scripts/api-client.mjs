@@ -41,7 +41,7 @@ const MESSAGES = {
   bad_state: 'คำขอไม่ถูกต้อง กรุณาเริ่มใหม่',
   identity_in_use: 'บัญชีนี้ถูกผูกกับสมาชิกคนอื่นแล้ว',
   account_deleted: 'บัญชีนี้ถูกลบแล้ว',
-  email_exists_login_first: 'มีบัญชีที่ใช้อีเมลนี้อยู่แล้ว เข้าสู่ระบบด้วยวิธีเดิมก่อน แล้วผูกบัญชีนี้ได้จากหน้าตั้งค่า'
+  recent_login_required: 'เพื่อความปลอดภัย กรุณาออกจากระบบแล้วเข้าสู่ระบบอีกครั้ง แล้วทำรายการนี้ภายใน 10 นาที'
 };
 // Short, human label for a stored User-Agent string, e.g. "Chrome · Android".
 export function deviceLabel(ua) {

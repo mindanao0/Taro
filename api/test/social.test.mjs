@@ -195,11 +195,14 @@ const F = (id, extra = {}) => ({fb: {id, name: 'Fon Face', picture: {data: {url:
   assert.match(env.mails.at(-1).subject, /ยืนยันอีเมล/, 'a normal verification mail, not the "already exists" one');
   assert.equal(count(env, 'users'), 2);
 
-  // now an existing account owns the address: LINE with the same address is refused, not merged
+  // now an existing account owns the address: LINE with the same address is NOT merged into it, and the answer reveals nothing
+  // about the address (no "already exists" error): it just starts a separate account whose users.email stays empty
   const other = client(env);
   const r2 = await social(other, 'line', L('line-2', {email: 'lek@line.test'}));
-  assert.equal(r2.result.error, 'email_exists_login_first');
-  assert.equal(count(env, 'identities'), 1); assert.equal((await other.get('/me')).status, 401);
+  assert.equal(r2.result.login, 'ok'); assert.equal(r2.result.error, undefined);
+  const me2 = (await other.get('/me')).data;
+  assert.equal(me2.user.email, null); assert.notEqual(me2.user.id, row(env, "SELECT id FROM users WHERE email = 'lek@line.test'").id, 'a separate account, not the owner of the address');
+  assert.equal(row(env, "SELECT COUNT(*) n FROM users WHERE email = 'lek@line.test'").n, 1);
   // without an address at all, that is fine
   assert.equal((await social(client(env), 'line', L('line-3'))).result.login, 'ok');
   // LINE nonce mismatch is rejected
@@ -212,7 +215,7 @@ const F = (id, extra = {}) => ({fb: {id, name: 'Fon Face', picture: {data: {url:
   me = (await fb.get('/me')).data;
   assert.equal(me.user.email, null); assert.equal(me.user.avatar_url, 'https://img.test/f.png'); assert.deepEqual(me.identities, ['facebook']);
   assert.equal(mock.tokenReq[0].code_verifier, undefined, 'no PKCE parameter for Facebook');
-  assert.equal((await social(client(env), 'facebook', F('fb-2', {email: 'lek@line.test'}))).result.error, 'email_exists_login_first');
+  assert.equal((await social(client(env), 'facebook', F('fb-2', {email: 'lek@line.test'}))).result.login, 'ok', 'same for Facebook: no error that would confirm the address has an account');
   assert.equal((await social(client(env), 'facebook', F('fb-3', {picture: {data: {url: 'http://insecure.test/x.png'}}}))).result.login, 'ok');
   assert.equal(row(env, "SELECT u.avatar_url a FROM users u JOIN identities i ON i.user_id = u.id WHERE i.provider_user_id = 'fb-3'").a, null, 'non-https avatars are dropped');
 }

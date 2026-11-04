@@ -1,13 +1,15 @@
 // Email/password accounts: register, verify, login, logout, password reset and change. Router and middleware live in ../index.js.
 import {PBKDF2_ITERATIONS, hashPassword, randomToken, sha256Hex, verifyPassword} from './crypto.mjs';
 import {clearedCookie, json, readJson, sessionCookie} from './http.mjs';
-import {existsMail, resetMail, sendMail, verifyMail} from './mail.mjs';
+import {emailChangedMail, existsMail, resetMail, sendMail, verifyMail} from './mail.mjs';
 import {SESSION_SECONDS, createSession, currentSession, deleteSession, deleteUserSessions} from './session.mjs';
-import {audit, countEvents, iso, webUrl} from './util.mjs';
+import {audit, countEvents, isRecentLogin, iso, mailAllowed, pseudonym, restoreStatement, revokeResetTokens, webUrl} from './util.mjs';
 import {providerList} from './social.mjs';
 
 const VERIFY_HOURS = 24, RESET_MINUTES = 30;
-const LOGIN_FAILS = 10, LOGIN_WINDOW_MIN = 15;     // per email, on top of the per-IP limiter
+// Lock-out is counted per (email, network address) so one person cannot lock the real owner out from elsewhere;
+// a much higher per-email ceiling still stops a distributed guessing run.
+const LOGIN_FAILS_PER_SOURCE = 5, LOGIN_FAILS_PER_EMAIL = 40, LOGIN_WINDOW_MIN = 15;
 const RESETS_PER_HOUR = 3;
 const MIN_PASSWORD = 10, MAX_PASSWORD = 128;
 
@@ -29,10 +31,11 @@ export async function ipLimited(env, req) {   // the IP is only a rate-limit key
   return !success;
 }
 
-async function issueToken(env, userId, purpose, ttlMs) {
+// `email` is the address the link is mailed to. A reset link is only honoured while the account still has that address.
+async function issueToken(env, userId, purpose, ttlMs, email = null) {
   const token = randomToken(32);
-  await env.DB.prepare('INSERT INTO email_tokens (id, user_id, purpose, expires_at) VALUES (?, ?, ?, ?)')
-    .bind(await sha256Hex(token), userId, purpose, iso(Date.now() + ttlMs)).run();
+  await env.DB.prepare('INSERT INTO email_tokens (id, user_id, purpose, new_email, expires_at) VALUES (?, ?, ?, ?, ?)')
+    .bind(await sha256Hex(token), userId, purpose, email, iso(Date.now() + ttlMs)).run();
   return token;
 }
 // Marks a valid, unused, unexpired token as used and returns {user_id, purpose, new_email} (single use even under concurrent requests).
@@ -63,9 +66,13 @@ export async function register(req, env, ctx) {
 
   const hash = await hashPassword(b.password, iterationsOf(env));   // computed on both paths so timing does not reveal existing accounts
   const existing = await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first();
+  const mayMail = await mailAllowed(env, email);   // anyone can type anyone's address here, so mail per address is capped; the answer stays the same
   if (existing) {
-    const token = await issueToken(env, existing.id, 'reset_password', RESET_MINUTES * 60_000);
-    ctx.waitUntil(sendMail(env, {to: email, ...existsMail(`${webUrl(env)}/account.html#reset=${token}`)}));
+    if (mayMail) {
+      await revokeResetTokens(env, existing.id);
+      const token = await issueToken(env, existing.id, 'reset_password', RESET_MINUTES * 60_000, email);
+      ctx.waitUntil(sendMail(env, {to: email, ...existsMail(`${webUrl(env)}/account.html#reset=${token}`)}));
+    }
   } else {
     const id = crypto.randomUUID(), now = iso();
     await env.DB.batch([
@@ -74,8 +81,10 @@ export async function register(req, env, ctx) {
       env.DB.prepare("INSERT INTO consents (user_id, kind, version, granted, at) VALUES (?, 'terms', ?, 1, ?), (?, 'privacy', ?, 1, ?)").bind(id, termsVersion, now, id, termsVersion, now)
     ]);
     await audit(env, 'register', {userId: id});
-    const token = await issueToken(env, id, 'verify_email', VERIFY_HOURS * 3_600_000);
-    ctx.waitUntil(sendMail(env, {to: email, ...verifyMail(`${webUrl(env)}/account.html#verify=${token}`)}));
+    if (mayMail) {
+      const token = await issueToken(env, id, 'verify_email', VERIFY_HOURS * 3_600_000);
+      ctx.waitUntil(sendMail(env, {to: email, ...verifyMail(`${webUrl(env)}/account.html#verify=${token}`)}));
+    }
   }
   // Same answer either way; the visitor logs in after registering.
   return json(201, {ok: true, message: 'check_email'});
@@ -86,13 +95,16 @@ export async function login(req, env) {
   const email = cleanEmail(b?.email);
   if (!email || typeof b.password !== 'string' || b.password.length > MAX_PASSWORD) return json(400, {error: 'invalid_request'});
   const subject = await sha256Hex(email);
-  if (await countEvents(env, 'login_fail', subject, LOGIN_WINDOW_MIN * 60_000) >= LOGIN_FAILS) return json(429, {error: 'too_many_attempts'});
+  const source = await pseudonym(env, 'login', email, req.headers.get('cf-connecting-ip') || 'unknown');   // keyed hash: the address itself is not stored
+  const window = LOGIN_WINDOW_MIN * 60_000;
+  if (await countEvents(env, 'login_fail', source, window) >= LOGIN_FAILS_PER_SOURCE || await countEvents(env, 'login_fail', subject, window) >= LOGIN_FAILS_PER_EMAIL) return json(429, {error: 'too_many_attempts'});
 
   const row = await env.DB.prepare(
     `SELECT u.id, u.email, u.email_verified, u.display_name, u.avatar_url, u.deleted_at, c.password_hash
      FROM users u JOIN credentials c ON c.user_id = u.id WHERE u.email = ?`).bind(email).first();
   const {ok, needsRehash} = await verifyPassword(b.password, row?.password_hash ?? await dummyFor(env), iterationsOf(env));
   if (!row || !ok) {
+    await audit(env, 'login_fail', {userId: row?.id ?? null, subject: source});
     await audit(env, 'login_fail', {userId: row?.id ?? null, subject});
     return json(401, {error: 'invalid_credentials'});
   }
@@ -101,7 +113,8 @@ export async function login(req, env) {
       .bind(await hashPassword(b.password, iterationsOf(env)), iso(), row.id).run();
   }
   const restored = !!row.deleted_at;   // the right password within the 30-day grace period brings a deleted account back
-  await env.DB.prepare('UPDATE users SET last_login_at = ?, deleted_at = NULL WHERE id = ?').bind(iso(), row.id).run();
+  await env.DB.prepare('UPDATE users SET last_login_at = ? WHERE id = ?').bind(iso(), row.id).run();
+  if (restored) await restoreStatement(env, row.id).run();
   await audit(env, restored ? 'restore' : 'login', {userId: row.id});
   const token = await createSession(env, row.id, req.headers.get('user-agent'));
   return json(200, {user: publicUser(row), restored}, {'set-cookie': sessionCookie(token, SESSION_SECONDS)});
@@ -113,14 +126,22 @@ export async function logout(req, env) {
   return json(204, undefined, {'set-cookie': clearedCookie()});
 }
 
-export async function verifyEmail(req, env) {
+export async function verifyEmail(req, env, ctx) {
   const b = await readJson(req);
   const t = await consumeToken(env, b?.token, ['verify_email', 'change_email']);
   if (!t) return json(400, {error: 'invalid_or_expired_token'});
   if (t.purpose === 'change_email') {
-    const taken = await env.DB.prepare('SELECT 1 AS x FROM users WHERE email = ? AND id != ?').bind(t.new_email, t.user_id).first();
-    if (taken) return json(409, {error: 'email_in_use'});   // someone else claimed it while the link was pending
-    await env.DB.prepare('UPDATE users SET email = ?, email_verified = 1 WHERE id = ?').bind(t.new_email, t.user_id).run();
+    const before = await env.DB.prepare('SELECT email FROM users WHERE id = ?').bind(t.user_id).first();
+    try {
+      await env.DB.prepare('UPDATE users SET email = ?, email_verified = 1 WHERE id = ?').bind(t.new_email, t.user_id).run();   // UNIQUE decides a race for the address
+    } catch (e) {
+      if (/UNIQUE|constraint/i.test(e?.message)) return json(409, {error: 'email_in_use'});   // someone else claimed it while the link was pending
+      throw e;
+    }
+    await revokeResetTokens(env, t.user_id);   // a reset link mailed to the old address must not outlive the address
+    if (before?.email && before.email !== t.new_email) {   // tell the old address, so a change nobody asked for does not go unnoticed
+      ctx.waitUntil(sendMail(env, {to: before.email, ...emailChangedMail(t.new_email, env.SUPPORT_EMAIL)}));
+    }
   } else {
     await env.DB.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').bind(t.user_id).run();
   }
@@ -138,8 +159,8 @@ export async function forgotPassword(req, env, ctx) {
     await audit(env, 'reset_request', {subject});
     const user = await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first();   // deleted accounts too: the reset link also restores them
     if (user) {
-      await env.DB.prepare("UPDATE email_tokens SET used_at = ? WHERE user_id = ? AND purpose = 'reset_password' AND used_at IS NULL").bind(iso(), user.id).run();
-      const token = await issueToken(env, user.id, 'reset_password', RESET_MINUTES * 60_000);
+      await revokeResetTokens(env, user.id);
+      const token = await issueToken(env, user.id, 'reset_password', RESET_MINUTES * 60_000, email);
       ctx.waitUntil(sendMail(env, {to: email, ...resetMail(`${webUrl(env)}/account.html#reset=${token}`)}));
     }
   }
@@ -153,13 +174,17 @@ export async function resetPassword(req, env) {
   const used = await consumeToken(env, b.token, ['reset_password']);
   if (!used) return json(400, {error: 'invalid_or_expired_token'});
   const userId = used.user_id;
+  const acct = await env.DB.prepare('SELECT email, deleted_at FROM users WHERE id = ?').bind(userId).first();
+  if (!acct || !used.new_email || acct.email !== used.new_email) return json(400, {error: 'invalid_or_expired_token'});   // the link was mailed to an address the account no longer has
   const now = iso();
   await env.DB.batch([
     env.DB.prepare('INSERT INTO credentials (user_id, password_hash, updated_at) VALUES (?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET password_hash = excluded.password_hash, updated_at = excluded.updated_at')
       .bind(userId, await hashPassword(b.password, iterationsOf(env)), now),
-    env.DB.prepare('UPDATE users SET email_verified = 1, deleted_at = NULL WHERE id = ?').bind(userId)   // the link went to this address, so it proves control of it (and restores an account deleted within the grace period)
+    env.DB.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').bind(userId)   // the link went to this address, so it proves control of it
   ]);
+  await revokeResetTokens(env, userId);   // any other link still outstanding is now void
   await deleteUserSessions(env, userId);   // every device is signed out
+  if (acct.deleted_at) { await restoreStatement(env, userId).run(); await audit(env, 'restore', {userId}); }   // proving the mailbox also brings back an account deleted within the grace period
   await audit(env, 'pw_reset', {userId});
   return json(204);
 }
@@ -180,8 +205,7 @@ export async function resendVerification(req, env, ctx, s) {
 export async function me(req, env) {
   const s = await currentSession(env, req);
   if (!s) return json(401, {error: 'not_signed_in'});
-  const ids = await env.DB.prepare('SELECT provider, created_at FROM identities WHERE user_id = ?').bind(s.user.id).all();
-  const cred = await env.DB.prepare('SELECT 1 AS x FROM credentials WHERE user_id = ?').bind(s.user.id).first();
+  const [ids, cred] = await Promise.all([env.DB.prepare('SELECT provider, created_at FROM identities WHERE user_id = ?').bind(s.user.id).all(), env.DB.prepare('SELECT 1 AS x FROM credentials WHERE user_id = ?').bind(s.user.id).first()]);
   return json(200, {user: s.user, has_password: !!cred, identities: (ids.results ?? ids).map(r => r.provider), providers_available: providerList(env)});
 }
 
@@ -192,12 +216,15 @@ export async function changePassword(req, env) {
   const pwErr = passwordError(b?.password, s.user.email);
   if (pwErr) return json(400, {error: pwErr});
   const cred = await env.DB.prepare('SELECT password_hash FROM credentials WHERE user_id = ?').bind(s.user.id).first();
-  if (cred) {   // a social-only user setting a first password has nothing to confirm
+  if (cred) {
     const {ok} = typeof b.current === 'string' ? await verifyPassword(b.current, cred.password_hash, iterationsOf(env)) : {ok: false};
     if (!ok) return json(403, {error: 'wrong_current_password'});
+  } else if (!isRecentLogin(s)) {
+    return json(403, {error: 'recent_login_required'});   // a social-only user adding a first password needs a recent sign-in: otherwise a stolen session could set one and keep the account
   }
   await env.DB.prepare('INSERT INTO credentials (user_id, password_hash, updated_at) VALUES (?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET password_hash = excluded.password_hash, updated_at = excluded.updated_at')
     .bind(s.user.id, await hashPassword(b.password, iterationsOf(env)), iso()).run();
+  await revokeResetTokens(env, s.user.id);
   await deleteUserSessions(env, s.user.id, s.sessionId);   // other devices are signed out, this one stays
   await audit(env, 'pw_change', {userId: s.user.id});
   return json(204);

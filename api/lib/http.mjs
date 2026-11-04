@@ -5,11 +5,12 @@ export const json = (status, body, headers = {}) => new Response(body === undefi
   status, headers: {'cache-control': 'no-store', ...(body === undefined ? {} : {'content-type': 'application/json'}), ...headers}
 });
 
-// Reads a small JSON object body; returns null if missing, too large, malformed, or not an object.
-export async function readJson(req, max = 8192) {
+// Reads a request body as text, stopping as soon as it passes `max` bytes (so an oversized body is never buffered whole).
+// Returns null if the body is too large; '' if there is none.
+export async function readBody(req, max = 8192) {
   if (Number(req.headers.get('content-length')) > max) return null;
   const reader = req.body?.getReader();
-  if (!reader) return null;
+  if (!reader) return '';
   const parts = []; let size = 0;
   for (;;) {
     const {done, value} = await reader.read();
@@ -20,8 +21,15 @@ export async function readJson(req, max = 8192) {
   }
   const all = new Uint8Array(size); let o = 0;
   for (const p of parts) { all.set(p, o); o += p.byteLength; }
+  return new TextDecoder().decode(all);
+}
+
+// Reads a small JSON object body; returns null if missing, too large, malformed, or not an object.
+export async function readJson(req, max = 8192) {
+  const text = await readBody(req, max);
+  if (text === null) return null;
   try {
-    const b = JSON.parse(new TextDecoder().decode(all));
+    const b = JSON.parse(text);
     return b && typeof b === 'object' && !Array.isArray(b) ? b : null;
   } catch { return null; }
 }

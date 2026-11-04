@@ -21,7 +21,7 @@ export async function currentSession(env, req) {
   if (!token || token.length > 128) return null;
   const id = await sha256Hex(token);
   const row = await env.DB.prepare(
-    `SELECT s.id AS sid, s.last_seen_at, u.id, u.email, u.email_verified, u.display_name, u.avatar_url
+    `SELECT s.id AS sid, s.created_at AS started_at, s.last_seen_at, u.id, u.email, u.email_verified, u.display_name, u.avatar_url
      FROM sessions s JOIN users u ON u.id = s.user_id
      WHERE s.id = ? AND s.expires_at > ? AND u.deleted_at IS NULL`).bind(id, iso()).first();
   if (!row) return null;
@@ -29,7 +29,7 @@ export async function currentSession(env, req) {
     await env.DB.prepare('UPDATE sessions SET last_seen_at = ?, expires_at = ? WHERE id = ?')
       .bind(iso(), iso(Date.now() + SESSION_SECONDS * 1000), id).run();
   }
-  return {sessionId: id, user: {id: row.id, email: row.email, email_verified: !!row.email_verified, display_name: row.display_name, avatar_url: row.avatar_url}};
+  return {sessionId: id, startedAt: row.started_at, user: {id: row.id, email: row.email, email_verified: !!row.email_verified, display_name: row.display_name, avatar_url: row.avatar_url}};
 }
 
 export const deleteSession = (env, id) => env.DB.prepare('DELETE FROM sessions WHERE id = ?').bind(id).run();

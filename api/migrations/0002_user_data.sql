@@ -58,6 +58,7 @@ CREATE TABLE line_subscriptions (
   hour INTEGER NOT NULL DEFAULT 19 CHECK (hour BETWEEN 0 AND 23),   -- Thai time
   weekday INTEGER NOT NULL DEFAULT 0 CHECK (weekday BETWEEN 0 AND 6),   -- 0 = Sunday, used when weekly
   last_sent_at TEXT,
+  fail_count INTEGER NOT NULL DEFAULT 0,         -- consecutive refusals from LINE for this user; 3 in a row stops the reminders
   blocked_at TEXT
 );
 CREATE INDEX line_due ON line_subscriptions(enabled, friend) WHERE blocked_at IS NULL;

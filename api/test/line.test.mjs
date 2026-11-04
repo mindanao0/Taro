@@ -9,11 +9,11 @@ const row = (env, sql, ...a) => env.db.prepare(sql).get(...a);
 const count = (env, t, w = '') => row(env, `SELECT COUNT(*) n FROM ${t} ${w}`).n;
 
 /* ---- LINE network mock ---- */
-const net = {friends: new Set(), pushes: [], replies: [], pushStatus: () => 200};
+const net = {friends: new Set(), pushes: [], replies: [], pushStatus: () => 200, profileStatus: null};
 const fetcher = async (url, init = {}) => {
   url = String(url);
   assert.equal(init.headers?.authorization, `Bearer ${TOKEN}`, 'every LINE call is authenticated');
-  if (url.includes('/v2/bot/profile/')) return new Response('{}', {status: net.friends.has(decodeURIComponent(url.split('/').pop())) ? 200 : 404});
+  if (url.includes('/v2/bot/profile/')) return new Response('{}', {status: net.profileStatus ?? (net.friends.has(decodeURIComponent(url.split('/').pop())) ? 200 : 404)});
   if (url.endsWith('/v2/bot/message/push')) { const b = JSON.parse(init.body); const st = net.pushStatus(b.to); if (st === 'throw') throw new Error('network'); net.pushes.push({to: b.to, text: b.messages[0].text, status: st}); return new Response('{}', {status: st}); }
   if (url.endsWith('/v2/bot/message/reply')) { net.replies.push(JSON.parse(init.body)); return new Response('{}', {status: 200}); }
   throw new Error('unexpected ' + url);
@@ -58,7 +58,19 @@ const webhook = (env, events, {sig, secret = SECRET} = {}) => {
   r = (await c.put('/me/line-notify', {enabled: true, schedule: 'weekly', hour: 20, weekday: 3})).data;
   assert.equal(r.subscription.friend, true, 'friend status is checked with LINE'); assert.equal(count(env, 'line_subscriptions'), 1, 'upsert, not duplicate');
   assert.equal((await client(env, {origin: 'https://evil.test'}).put('/me/line-notify', {enabled: true})).status, 403);
+  // an unclear answer from LINE (outage, rate limit, bad token) must not overwrite what we already know
+  net.profileStatus = 500;
+  r = (await c.put('/me/line-notify', {enabled: true, schedule: 'daily', hour: 9})).data;
+  assert.equal(r.subscription.friend, true, 'a failing friend check keeps the stored value');
+  net.profileStatus = 429; assert.equal((await c.put('/me/line-notify', {enabled: true})).data.subscription.friend, true);
+  net.profileStatus = 401; assert.equal((await c.put('/me/line-notify', {enabled: true})).data.subscription.friend, true);
+  net.profileStatus = null; net.friends.clear();   // a clear 404 means they are not a friend (any more)
+  assert.equal((await c.put('/me/line-notify', {enabled: true})).data.subscription.friend, false);
+  net.profileStatus = 500; net.friends.add(lineId); net.profileStatus = null;
   assert.equal((await c.del('/me/line-notify')).status, 204); assert.equal(count(env, 'line_subscriptions'), 0);
+  net.profileStatus = 500;   // nothing stored yet and LINE unreachable: unknown counts as not a friend
+  assert.equal((await c.put('/me/line-notify', {enabled: true})).data.subscription.friend, false);
+  net.profileStatus = null; await c.del('/me/line-notify');
   net.friends.clear();
 }
 
@@ -73,6 +85,13 @@ const webhook = (env, events, {sig, secret = SECRET} = {}) => {
   assert.equal(sub().friend, 0, 'forged events change nothing');
   assert.equal((await webhook(env, [])).status, 200, "LINE's verify ping");
   assert.equal((await webhook(makeEnv(), [])).status, 503, 'unconfigured');
+  // an oversized body is refused while it is being read, before anything else (the signature cannot even be checked on it)
+  const big = await worker.fetch(new Request('https://api.test/line/webhook', {method: 'POST', headers: {'x-line-signature': 'AAAA'}, body: 'x'.repeat(70_000)}), env, {waitUntil() {}});
+  assert.equal(big.status, 413);
+  let pulled = 0;
+  const stream = new ReadableStream({pull(ctl) { pulled += 1; ctl.enqueue(new Uint8Array(16_384)); if (pulled > 200) ctl.close(); }});
+  const chunked = await worker.fetch(new Request('https://api.test/line/webhook', {method: 'POST', body: stream, duplex: 'half'}), env, {waitUntil() {}});
+  assert.equal(chunked.status, 413); assert.ok(pulled < 20, `stopped reading after about the cap (${pulled} chunks of 16 KB pulled, not 200)`);
 
   assert.equal((await webhook(env, [{type: 'follow', source: {userId: lineId}}, {type: 'follow', source: {userId: 'someone-unknown'}}])).status, 200);
   assert.equal(sub().friend, 1);
@@ -132,18 +151,52 @@ const webhook = (env, events, {sig, secret = SECRET} = {}) => {
   r = await sendDue(env, now + 60_000);
   assert.equal(r.sent, 0, 'running again in the same hour sends nothing twice');
 
-  // a day later: permanent refusal blocks, a rate limit leaves it for the next run, a network error likewise, others still go out
+  // a day later, mixed outcomes in one run. 400/404-type answers are strikes against that user, 5xx and network errors are retried
+  // next run, and the others are still delivered
   net.pushes.length = 0;
   env.db.prepare('UPDATE line_subscriptions SET hour = 19').run();
-  env.db.prepare("UPDATE line_subscriptions SET blocked_at = NULL, friend = 1, enabled = 1, schedule = 'daily', last_sent_at = NULL").run();
-  const nine = {[users[0].lineId]: 200, [users[1].lineId]: 403, [users[2].lineId]: 429, [users[3].lineId]: 'throw', [users[4].lineId]: 500, [users[5].lineId]: 200};
-  net.pushStatus = to => nine[to];
+  env.db.prepare("UPDATE line_subscriptions SET blocked_at = NULL, friend = 1, enabled = 1, schedule = 'daily', last_sent_at = NULL, fail_count = 0").run();
+  const mixed = {[users[0].lineId]: 200, [users[1].lineId]: 400, [users[2].lineId]: 500, [users[3].lineId]: 'throw', [users[4].lineId]: 200, [users[5].lineId]: 200};
+  net.pushStatus = to => mixed[to];
   r = await sendDue(env, now + 86_400_000);
-  assert.deepEqual([r.sent, r.failed, r.blocked], [2, 3, 1]);
-  const st = id => row(env, 'SELECT last_sent_at, blocked_at FROM line_subscriptions WHERE line_user_id = ?', id);
-  assert.ok(st(users[0].lineId).last_sent_at && st(users[5].lineId).last_sent_at, 'successes recorded');
-  assert.ok(st(users[1].lineId).blocked_at, '403 stops further tries');
-  for (const u of [users[2], users[3], users[4]]) { assert.equal(st(u.lineId).last_sent_at, null); assert.equal(st(u.lineId).blocked_at, null, 'transient failures are retried'); }
+  assert.deepEqual([r.sent, r.failed, r.blocked, r.aborted], [3, 3, 0, null]);
+  const st = id => row(env, 'SELECT last_sent_at, blocked_at, fail_count FROM line_subscriptions WHERE line_user_id = ?', id);
+  for (const u of [users[0], users[4], users[5]]) assert.ok(st(u.lineId).last_sent_at, 'successes recorded');
+  assert.equal(st(users[1].lineId).fail_count, 1); assert.equal(st(users[1].lineId).blocked_at, null, 'one refusal is not enough to stop reminders');
+  for (const u of [users[2], users[3]]) { assert.equal(st(u.lineId).last_sent_at, null); assert.equal(st(u.lineId).blocked_at, null); assert.equal(st(u.lineId).fail_count, 0, 'outages are not held against the user'); }
+  // the third refusal in a row switches that user off; an outage in between does not reset or add to the count
+  env.db.prepare('UPDATE line_subscriptions SET last_sent_at = NULL').run();
+  await sendDue(env, now + 2 * 86_400_000); assert.equal(st(users[1].lineId).fail_count, 2);
+  env.db.prepare('UPDATE line_subscriptions SET last_sent_at = NULL').run();
+  r = await sendDue(env, now + 3 * 86_400_000); assert.equal(r.blocked, 1);
+  assert.ok(st(users[1].lineId).blocked_at, 'three refusals in a row stop the reminders');
+  // a success clears earlier strikes
+  env.db.prepare("UPDATE line_subscriptions SET fail_count = 2, blocked_at = NULL, last_sent_at = NULL WHERE line_user_id = ?").run(users[1].lineId);
+  net.pushStatus = () => 200; env.db.prepare('UPDATE line_subscriptions SET last_sent_at = NULL').run();
+  await sendDue(env, now + 4 * 86_400_000); assert.equal(st(users[1].lineId).fail_count, 0);
+
+  // a wrong or expired channel token (401/403) is not any user's fault: the run stops and NO ONE is blocked or penalised
+  for (const code of [401, 403]) {
+    env.db.prepare("UPDATE line_subscriptions SET last_sent_at = NULL, blocked_at = NULL, fail_count = 0, enabled = 1, friend = 1").run();
+    net.pushes.length = 0; net.pushStatus = () => code;
+    r = await sendDue(env, now + 5 * 86_400_000);
+    assert.equal(r.aborted, 'auth'); assert.equal(r.sent, 0); assert.equal(r.blocked, 0);
+    assert.equal(row(env, 'SELECT COUNT(*) n FROM line_subscriptions WHERE blocked_at IS NOT NULL OR fail_count > 0 OR last_sent_at IS NOT NULL').n, 0, `${code}: nobody blocked, penalised or marked as sent`);
+    assert.ok(net.pushes.length <= 5, 'stops after the first batch in flight instead of hammering LINE');
+  }
+  // LINE rate limit (429): stop the run, leave everyone for the next one
+  net.pushes.length = 0; net.pushStatus = () => 429;
+  r = await sendDue(env, now + 5 * 86_400_000);
+  assert.equal(r.aborted, 'rate'); assert.ok(net.pushes.length <= 5); assert.equal(row(env, 'SELECT COUNT(*) n FROM line_subscriptions WHERE blocked_at IS NOT NULL OR fail_count > 0').n, 0);
+
+  // people LINE keeps refusing cannot use up the per-run quota: healthy subscribers are served first
+  {
+    const q = mk(), refused = [];
+    for (let i = 300; i < 345; i++) { const u = await lineUser(q, i); q.db.prepare("INSERT INTO line_subscriptions (user_id, line_user_id, friend, schedule, hour, fail_count) VALUES (?, ?, 1, 'daily', 0, ?)").run(u.uid, u.lineId, i < 342 ? 2 : 0); if (i < 342) refused.push(u.lineId); }
+    net.pushes.length = 0; net.pushStatus = to => refused.includes(to) ? 400 : 200;
+    r = await sendDue(q, now);
+    assert.equal(r.sent, 3, 'the three healthy subscribers all got theirs although 42 refused ones were also due');
+  }
 
   // withdrawn consent: not sent, and switched off
   const w = users[2];

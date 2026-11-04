@@ -6,7 +6,10 @@ export const TYPES = new Set([
   'catalog_search', 'catalog_filter', 'dialog_open', 'dialog_close']);
 export const OUTCOMES = new Set(['ok', 'kept', 'undone', 'miss', 'blocked']);
 
-const int = (v, lo, hi) => Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : undefined;
+// Shared with worker/index.js (the page and the Worker must agree on what a valid value is).
+export const clampInt = (v, lo, hi) => Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : null;
+export const wordOf = (v, re, max) => typeof v === 'string' && v.length <= max && re.test(v) ? v : null;
+const int = (v, lo, hi) => clampInt(v, lo, hi) ?? undefined;
 const short = (v, n = 40) => typeof v === 'string' && v ? v.slice(0, n) : undefined;
 
 // Position of a pointer event: viewport pixels plus 0-1000 inside `el` (so "left edge of fan card 12" is comparable across screens).

@@ -3,33 +3,16 @@
 //   POST /events  opt-in click-sequence batches        -> D1 `ui_sessions` / `ui_events`
 //   cron          roll old click events into daily stats, purge old rows
 // The page posts with mode:'no-cors' (text/plain), so there is no preflight and no CORS headers are needed.
-import {TYPES, OUTCOMES, CONSENT_VERSION} from '../scripts/track.mjs';
+import {TYPES, OUTCOMES, CONSENT_VERSION, clampInt as num, wordOf as word} from '../scripts/track.mjs';
+import {DEFAULT_ORIGINS, readBody} from '../api/lib/http.mjs';
 
 const SPREADS = new Set(['single', 'three', 'relationship-five', 'celtic-cross']);
-const ORIGINS = new Set(['https://ivoryrosetarot.online', 'https://www.ivoryrosetarot.online']);
+const ORIGINS = new Set(DEFAULT_ORIGINS);
 const MAX_BODY = 4096;           // questions: a 1000-char Thai question is ~3 KB of UTF-8, anything longer is junk
 const MAX_EVENTS_BODY = 16384;   // click batches
 const MAX_Q = 300;
 const RAW_DAYS = 30, QUESTION_DAYS = 90;
 const done = status => new Response(null, {status, headers: {'cache-control': 'no-store'}});
-
-// Reads at most `max` bytes; returns null if the body is larger.
-async function readCapped(stream, max) {
-  if (!stream) return '';
-  const reader = stream.getReader(), parts = [];
-  let size = 0;
-  for (;;) {
-    const {done: end, value} = await reader.read();
-    if (end) break;
-    size += value.byteLength;
-    if (size > max) { await reader.cancel(); return null; }
-    parts.push(value);
-  }
-  const all = new Uint8Array(size);
-  let o = 0;
-  for (const p of parts) { all.set(p, o); o += p.byteLength; }
-  return new TextDecoder().decode(all);
-}
 
 async function limited(limiter, req) {   // optional rate limit; the IP is only a key, never stored
   if (!limiter) return false;
@@ -37,13 +20,10 @@ async function limited(limiter, req) {   // optional rate limit; the IP is only 
   return !success;
 }
 
-const num = (v, lo, hi) => Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : null;
-const word = (v, re, max) => typeof v === 'string' && v.length <= max && re.test(v) ? v : null;
 
 async function postQuestion(req, env) {
-  if (Number(req.headers.get('content-length')) > MAX_BODY) return done(413);
   if (await limited(env.LIMITER, req)) return done(429);
-  const text = await readCapped(req.body, MAX_BODY);   // also covers chunked bodies that send no content-length
+  const text = await readBody(req, MAX_BODY);   // stops reading at the cap, also for chunked bodies that send no content-length
   if (text === null) return done(413);
   let b;
   try { b = JSON.parse(text); } catch { return done(400); }
@@ -75,9 +55,8 @@ function cleanEvent(e) {
 }
 
 async function postEvents(req, env) {
-  if (Number(req.headers.get('content-length')) > MAX_EVENTS_BODY) return done(413);
   if (await limited(env.EVENTS_LIMITER, req)) return done(429);
-  const text = await readCapped(req.body, MAX_EVENTS_BODY);
+  const text = await readBody(req, MAX_EVENTS_BODY);
   if (text === null) return done(413);
   let b;
   try { b = JSON.parse(text); } catch { return done(400); }
@@ -90,7 +69,7 @@ async function postEvents(req, env) {
   if (events.some(e => !e)) return done(400);
 
   const m = b.meta && typeof b.meta === 'object' ? b.meta : {};
-  const started = typeof m.started_at === 'string' && !Number.isNaN(Date.parse(m.started_at)) ? new Date(m.started_at).toISOString() : new Date().toISOString();
+  const started = new Date().toISOString();   // server time only: retention and rollup are keyed on this, so the client must not choose it
   const db = env.DB;
   await db.batch([
     db.prepare('INSERT OR IGNORE INTO ui_sessions (id, started_at, consent_version, viewport_w, viewport_h, pointer, app_version) VALUES (?, ?, ?, ?, ?, ?, ?)')

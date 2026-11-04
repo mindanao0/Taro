@@ -170,13 +170,34 @@ assert.equal(count(env, 'sessions'), 0); assert.equal((await web.get('/me')).sta
 
 /* ---- throttling ---- */
 {
-  const e2 = makeEnv(), c = client(e2);
+  const e2 = makeEnv({COOKIE_SECRET: 'k'.repeat(32)}), c = client(e2);
   await c.post('/auth/register', {email: 'bob@example.com', password: 'bobs long password'});
-  for (let i = 0; i < 10; i++) assert.equal((await c.post('/auth/login', {email: 'bob@example.com', password: 'nope nope nope'})).status, 401);
-  assert.equal((await c.post('/auth/login', {email: 'bob@example.com', password: 'bobs long password'})).status, 429, 'locked even for the right password');
-  assert.equal((await c.post('/auth/login', {email: 'bob@example.com', password: 'bobs long password'})).data.error, 'too_many_attempts');
-  assert.equal((await c.post('/auth/login', {email: 'unknown@example.com', password: 'nope nope nope'})).status, 401);   // other addresses unaffected
-  assert.ok(row(e2, 'SELECT subject FROM audit_log WHERE event = ? LIMIT 1', 'login_fail').subject.length === 64, 'audit stores a hash, not the address');
+  const from = ip => ({headers: {'cf-connecting-ip': ip}});
+  const login = (ip, pw = 'bobs long password') => c.call('POST', '/auth/login', {email: 'bob@example.com', password: pw}, from(ip));
+
+  // an attacker at one address is locked out after 5 misses...
+  for (let i = 0; i < 5; i++) assert.equal((await login('203.0.113.9', 'nope nope nope')).status, 401);
+  assert.equal((await login('203.0.113.9', 'nope nope nope')).status, 429);
+  assert.equal((await login('203.0.113.9')).data.error, 'too_many_attempts', 'that address is locked even for the right password');
+  // ...but cannot lock the real owner out from somewhere else
+  assert.equal((await login('198.51.100.7')).status, 200, 'the owner, on another network, signs in fine');
+  assert.equal((await c.call('POST', '/auth/login', {email: 'unknown@example.com', password: 'nope nope nope'}, from('203.0.113.9'))).status, 401, 'other addresses are unaffected');
+
+  // a distributed guessing run is still stopped by the per-email ceiling (40 misses in 15 minutes from any mix of addresses)
+  for (let i = 0; i < 35; i++) assert.equal((await login(`192.0.2.${i + 1}`, 'nope nope nope')).status, 401);   // 5 misses so far + 35 = the ceiling of 40
+  assert.equal((await login('192.0.2.200')).status, 429, 'over the ceiling nobody gets in, even with the right password');
+  assert.equal((await login('192.0.2.201')).data.error, 'too_many_attempts');
+
+  // nothing in the log is a raw address, email or IP: only 64-hex tags
+  const subjects = e2.db.prepare("SELECT DISTINCT subject FROM audit_log WHERE event = 'login_fail'").all().map(r => r.subject);
+  assert.ok(subjects.length > 2 && subjects.every(x => /^[0-9a-f]{64}$/.test(x)), 'audit stores one-way tags only');
+  assert.ok(!JSON.stringify(e2.db.prepare('SELECT * FROM audit_log').all()).match(/203\.0\.113|bob@example/), 'no IP or email in the audit log');
+  // the per-source tag depends on the secret, so it cannot be reversed by trying every IPv4 address
+  const other = makeEnv({COOKIE_SECRET: 'z'.repeat(32)}), c9 = client(other);
+  await c9.post('/auth/register', {email: 'bob@example.com', password: 'bobs long password'});
+  await c9.call('POST', '/auth/login', {email: 'bob@example.com', password: 'x'.repeat(12)}, from('203.0.113.9'));
+  const t1 = e2.db.prepare("SELECT subject FROM audit_log WHERE event = 'login_fail' ORDER BY id LIMIT 1").get().subject;
+  assert.ok(!other.db.prepare("SELECT 1 FROM audit_log WHERE subject = ?").get(t1), 'the same email and IP give a different tag under another secret');
 
   let n = 0;
   const e3 = makeEnv({AUTH_LIMITER: {limit: async () => ({success: ++n <= 1})}}), c3 = client(e3);

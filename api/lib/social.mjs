@@ -2,8 +2,8 @@
 // State, nonce and PKCE verifier travel in a short-lived signed cookie, so no table is needed.
 import {b64u, fromB64u, hmac, randomToken, sha256Bytes, timingSafeEqual} from './crypto.mjs';
 import {SESSION_SECONDS, createSession, currentSession} from './session.mjs';
-import {sessionCookie} from './http.mjs';
-import {apiUrl, audit, iso, webUrl} from './util.mjs';
+import {readCookie, sessionCookie} from './http.mjs';
+import {apiUrl, audit, iso, restoreStatement, webUrl} from './util.mjs';
 
 const OAUTH_COOKIE = '__Host-taro_oauth';
 const OAUTH_TTL = 600;
@@ -28,13 +28,6 @@ async function unsign(env, value) {
   } catch { return null; }
 }
 const oauthCookie = (value, maxAge) => `${OAUTH_COOKIE}=${value}; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=${maxAge}`;
-function cookieValue(req, name) {
-  for (const part of (req.headers.get('cookie') || '').split(';')) {
-    const i = part.indexOf('=');
-    if (i > 0 && part.slice(0, i).trim() === name) return part.slice(i + 1).trim();
-  }
-  return null;
-}
 
 /* ---------- JWT (Google): RS256 against the provider's published keys ---------- */
 const jwksCache = new Map();   // url -> {keys, at}
@@ -106,15 +99,16 @@ export const providerList = env => Object.keys(PROVIDERS).filter(n => configured
 
 /* ---------- account resolution (docs/07 §5.3) ---------- */
 // Only an address the provider vouches for ever lands in users.email. An unvouched address stays on the identity row,
-// so nobody can squat someone else's email by signing up through LINE or Facebook with it.
-export async function resolveSocial(env, provider, p, {linkUserId = null} = {}) {
+// so nobody can squat someone else's email by signing up through LINE or Facebook with it. That also means no error
+// here can reveal whether an address has an account: an unvouched address simply starts a separate account.
+async function resolveOnce(env, provider, p, linkUserId) {
   const db = env.DB, now = iso();
   const found = await db.prepare(
     'SELECT i.user_id, u.deleted_at FROM identities i JOIN users u ON u.id = i.user_id WHERE i.provider = ? AND i.provider_user_id = ?').bind(provider, p.sub).first();
   if (found) {
     if (linkUserId && found.user_id !== linkUserId) return {error: 'identity_in_use'};
     if (found.deleted_at) {   // deleted within the 30-day grace period: proving control of the login method brings the account back
-      await db.prepare('UPDATE users SET deleted_at = NULL WHERE id = ?').bind(found.user_id).run();
+      await restoreStatement(env, found.user_id).run();
       return {userId: found.user_id, restored: true};
     }
     return {userId: found.user_id};
@@ -130,20 +124,20 @@ export async function resolveSocial(env, provider, p, {linkUserId = null} = {}) 
   if (p.email && p.emailVerified) {
     const same = await db.prepare('SELECT id, email_verified, deleted_at FROM users WHERE email = ?').bind(p.email.toLowerCase()).first();   // includes accounts deleted within the grace period
     if (same) {
-      const stmts = [addIdentity(same.id), fillProfile(same.id), db.prepare('UPDATE users SET email_verified = 1, deleted_at = NULL WHERE id = ?').bind(same.id)];
+      const stmts = [];
       if (!same.email_verified) {
-        // Whoever set a password on this never-verified address may not be its owner (pre-hijacking), so that password and
-        // its sessions and pending links are revoked now that the real owner has proved control through the provider.
-        stmts.push(db.prepare('DELETE FROM credentials WHERE user_id = ?').bind(same.id),
-          db.prepare('DELETE FROM sessions WHERE user_id = ?').bind(same.id),
+        // Whoever registered this never-verified address may not be its owner (pre-hijacking). Now that the real owner has proved
+        // control through the provider, everything the earlier holder set up is revoked: password, sessions, pending links, AND any
+        // login methods they linked (otherwise they could still sign in through their own LINE/Facebook), plus LINE reminders.
+        stmts.push(db.prepare('DELETE FROM identities WHERE user_id = ?').bind(same.id), db.prepare('DELETE FROM line_subscriptions WHERE user_id = ?').bind(same.id),
+          db.prepare('DELETE FROM credentials WHERE user_id = ?').bind(same.id), db.prepare('DELETE FROM sessions WHERE user_id = ?').bind(same.id),
           db.prepare('DELETE FROM email_tokens WHERE user_id = ?').bind(same.id));
       }
+      stmts.push(addIdentity(same.id), fillProfile(same.id), db.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').bind(same.id));
+      if (same.deleted_at) stmts.push(restoreStatement(env, same.id));
       await db.batch(stmts);
       return {userId: same.id, merged: true, restored: !!same.deleted_at};
     }
-  } else if (p.email) {
-    const taken = await db.prepare('SELECT 1 AS x FROM users WHERE email = ?').bind(p.email.toLowerCase()).first();
-    if (taken) return {error: 'email_exists_login_first'};   // never merge on an address the provider does not vouch for
   }
   const id = crypto.randomUUID();
   await db.batch([
@@ -152,6 +146,15 @@ export async function resolveSocial(env, provider, p, {linkUserId = null} = {}) 
     addIdentity(id)
   ]);
   return {userId: id, created: true};
+}
+
+// Two callbacks for the same new person can race; the loser hits a UNIQUE constraint. Running the lookup again finds the winner's rows.
+export async function resolveSocial(env, provider, p, {linkUserId = null} = {}) {
+  try { return await resolveOnce(env, provider, p, linkUserId); }
+  catch (e) {
+    if (!/UNIQUE|constraint/i.test(e?.message)) throw e;
+    return resolveOnce(env, provider, p, linkUserId);
+  }
 }
 
 /* ---------- endpoints ---------- */
@@ -185,7 +188,7 @@ export async function socialStart(req, env, _ctx, params) {
 
 export async function socialCallback(req, env, _ctx, params) {
   const name = params.provider, prov = PROVIDERS[name];
-  const jar = await unsign(env, cookieValue(req, OAUTH_COOKIE));
+  const jar = await unsign(env, readCookie(req, OAUTH_COOKIE));
   const clear = oauthCookie('', 0);
   if (!prov || !configured(env, name) || !jar || jar.provider !== name) return back(env, '/account.html', 'error=session_expired', [clear]);
   const ret = safeReturn(jar.ret), url = new URL(req.url);

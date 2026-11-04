@@ -56,6 +56,13 @@ assert.equal((await post('x'.repeat(20000))).status, 413);
 assert.equal((await worker.fetch(new Request('https://x.test/events', {method: 'GET', headers: {origin: 'https://ivoryrosetarot.online'}}), env)).status, 405);
 assert.equal((await post({}, {path: '/nope'})).status, 404);
 
+// the session start time is the server's: a client cannot pick it (retention and rollup are keyed on it)
+for (const [sid, started] of [['future-session-1', '2999-01-01T00:00:00.000Z'], ['past-session-1', '2001-01-01T00:00:00.000Z']]) {
+  await post(good([ev(1)], {sid, meta: {started_at: started, pointer: 'touch'}}));
+  const got = Date.parse(db.prepare('SELECT started_at FROM ui_sessions WHERE id = ?').get(sid).started_at);
+  assert.ok(Math.abs(got - Date.now()) < 60_000, `${sid}: stored start time is the server's, not the client's ${started}`);
+}
+
 // coordinates are clamped, never rejected
 await post(good([ev(1, {x: 99999, rx: 5000})], {sid: 'clamp-session-1'}));
 const c = db.prepare("SELECT x, rx FROM ui_events WHERE session_id = 'clamp-session-1'").get();
