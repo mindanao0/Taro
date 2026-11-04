@@ -2,6 +2,18 @@
 
 สถานะ: แผน ยังไม่มีโค้ด ไฟล์นี้คือภาพรวมทั้งหมด ส่วนระบบล็อกอินลงรายละเอียดไว้ใน `docs/07_AUTH_BACKEND_PLAN_TH.md` (ตาราง `users`, `identities`, `credentials`, `sessions`, `email_tokens`, `audit_log` อยู่ในไฟล์นั้น ไม่ซ้ำที่นี่)
 
+## 0. ข้อตัดสินใจที่ล็อกแล้ว
+
+| เรื่อง | ตัดสินใจ | ผลต่อแผน |
+|---|---|---|
+| ฟีเจอร์รอบแรก | ประวัติการอ่าน + บันทึกส่วนตัว | **ตัดทิ้ง:** ไพ่โปรด (`favorites`), ไพ่รายวัน |
+| คนแก้เนื้อหา | มีแต่ dev | **ตัดทิ้ง:** Admin UI และ `admin_roles` ใช้ Git + สคริปต์ publish |
+| เข้ารหัสคำถาม/บันทึกระดับแอป | ไม่ทำ | เก็บเป็นข้อความธรรมดาใน D1 ป้องกันด้วยสิทธิ์เข้าถึงและการไม่ใส่ใน log |
+| กลุ่มผู้ใช้ | ไทยก่อน | ยึด PDPA เป็นหลัก ไม่ทำ GDPR รอบแรก (อธิบายด้านล่าง) |
+| แจ้งเตือน | LINE อย่างเดียว | เพิ่มหัวข้อ 5.1 และตาราง `line_subscriptions` ไม่ทำอีเมลแจ้งเตือน |
+
+**GDPR คืออะไร:** General Data Protection Regulation เป็นกฎหมายคุ้มครองข้อมูลส่วนบุคคลของสหภาพยุโรป ใช้กับเว็บที่ "เสนอบริการให้คนในยุโรป" หรือ "ติดตามพฤติกรรมของคนในยุโรป" แม้ผู้ให้บริการจะอยู่นอกยุโรป ถ้าเป้าหมายคือคนไทยและไม่ได้โปรโมตหรือรองรับคนยุโรปโดยเฉพาะ ก็ยังไม่เข้าข่ายชัดเจน ส่วนกฎหมายที่ใช้กับเว็บนี้คือ **PDPA ของไทย** ซึ่งมีหลักคล้ายกัน (แจ้งวัตถุประสงค์, ขอความยินยอม, ให้ผู้ใช้เข้าถึง/ลบข้อมูลได้, แจ้งเหตุข้อมูลรั่วต่อสำนักงาน คปส. ภายใน 72 ชั่วโมง) แผนนี้ออกแบบรองรับข้อเหล่านี้ไว้แล้ว (consents, export, ลบบัญชี) จึงขยายไป GDPR ภายหลังได้ไม่ยาก ควรให้ผู้เชี่ยวชาญกฎหมายตรวจนโยบายความเป็นส่วนตัวก่อนเปิดจริง โดยเฉพาะเรื่องข้อมูลที่ประมวลผลบนเซิร์ฟเวอร์นอกประเทศ
+
 ## 1. ภาพรวม
 
 ตอนนี้เว็บเป็น static ทั้งหมด (HTML + JSON + รูป) มี backend อย่างเดียวคือ Worker เก็บคำถาม แผนนี้เพิ่ม backend จริง แต่ยังอยู่บน Cloudflare เพื่อไม่ต้องดูแลเซิร์ฟเวอร์เอง
@@ -10,30 +22,29 @@
 flowchart TB
   subgraph Client
     WEB[เว็บ static<br/>ivoryrosetarot.online]
-    ADM[หน้า Admin<br/>admin.ivoryrosetarot.online]
   end
   subgraph Cloudflare
     API[Worker: taro-api<br/>auth, readings, journal, feedback, consent]
-    ADMAPI[Worker: taro-admin<br/>จัดการเนื้อหา, ดูสถิติ]
-    CRON[Cron Triggers<br/>ล้างข้อมูลหมดอายุ, สำรอง, ไพ่รายวัน]
+    CRON[Cron Triggers<br/>ล้างข้อมูลหมดอายุ, สำรอง, ส่งแจ้งเตือน LINE]
     Q[Queue<br/>ส่งอีเมล]
     D1[(D1<br/>ข้อมูลหลักแบบตาราง)]
     KV[(KV<br/>แคช เนื้อหาที่เผยแพร่แล้ว)]
     R2[(R2<br/>รูปไพ่, ไฟล์ export, backup)]
     AE[(Analytics Engine<br/>เหตุการณ์ใช้งานแบบไม่ระบุตัวตน)]
   end
-  EXT[ผู้ให้บริการภายนอก<br/>Google, LINE, Facebook, อีเมล]
+  EXT[ผู้ให้บริการภายนอก<br/>Google, LINE Login, Facebook, อีเมล]
+  LM[LINE Messaging API]
+  CRON -- push ข้อความ --> LM
+  LM -- webhook follow/unfollow --> API
 
   WEB --> API
-  ADM --> ADMAPI
   API --> D1
   API --> KV
   API --> AE
   API --> Q --> EXT
   API <--> EXT
-  ADMAPI --> D1
-  ADMAPI --> R2
-  ADMAPI -- เผยแพร่ --> KV
+  SCRIPT[สคริปต์ publish_deck<br/>รันโดย dev] -- เผยแพร่ --> KV
+  SCRIPT --> D1
   CRON --> D1
   CRON --> R2
   WEB -- รูป --> R2
@@ -47,7 +58,6 @@ flowchart TB
 | รหัสผ่าน | D1 (เฉพาะ hash) | ไม่เก็บรหัสจริง | จนลบบัญชี |
 | ประวัติการอ่านไพ่ | D1 | ผู้ใช้ดูย้อนหลัง ลบรายการได้ | จนผู้ใช้ลบ (opt-in เท่านั้น) |
 | บันทึกส่วนตัว (journal) ต่อการอ่าน | D1 | เป็นข้อความของผู้ใช้ | จนผู้ใช้ลบ |
-| ไพ่โปรด / ปักหมุด | D1 | ข้อมูลเล็กผูกกับผู้ใช้ | จนผู้ใช้ลบ |
 | ความยินยอม (consent) | D1 | ต้องพิสูจน์ได้ว่าใครยินยอมอะไร เมื่อไหร่ | ตามกฎหมาย แม้บัญชีถูกลบให้เก็บแบบไม่ระบุตัวตน |
 | คำถามแบบไม่ล็อกอิน (ตัวเก็บเดิม) | D1 ตาราง `questions` | มีอยู่แล้ว ไม่ผูกกับผู้ใช้ | 90 วัน แล้วลบอัตโนมัติ |
 | Feedback / รายงานปัญหา | D1 | admin ต้องจัดการสถานะ | 1 ปี |
@@ -55,6 +65,7 @@ flowchart TB
 | เนื้อหาไพ่/spread/ความหมาย (ต้นฉบับ) | Git (`data/*.json`) | ตรวจทานได้ มีประวัติ เป็นแหล่งจริง | ถาวร |
 | เนื้อหาที่เผยแพร่แล้ว (สำเนาให้เว็บอ่านเร็ว) | KV + JSON ใน static | อ่านบ่อย เขียนน้อย | แทนที่เมื่อเผยแพร่ใหม่ |
 | รูปไพ่ PNG ต้นฉบับ + WebP | R2 (เว็บยังใช้ไฟล์ใน repo ได้ระหว่างเปลี่ยนผ่าน) | ไฟล์ใหญ่ ไม่ควรอยู่ใน D1 | ถาวร |
+| การสมัครแจ้งเตือน LINE (LINE user id, ความถี่) | D1 | ต้องรู้ว่าส่งให้ใคร เมื่อไหร่ | จนผู้ใช้ปิดแจ้งเตือนหรือลบบัญชี |
 | ไฟล์ export ข้อมูลผู้ใช้ (PDPA) | R2 ชั่วคราว | ให้ดาวน์โหลดครั้งเดียว | 24 ชั่วโมง |
 | Backup ฐานข้อมูล | R2 | กู้คืนเมื่อเสียหาย | 30 วันย้อนหลัง |
 | Secret (client secret, คีย์ลงลายเซ็น) | Worker secrets | ห้ามอยู่ใน repo หรือ DB | หมุนคีย์ปีละครั้ง |
@@ -70,10 +81,9 @@ erDiagram
   users ||--o{ readings : "อ่านไพ่"
   readings ||--o{ reading_cards : "ไพ่ในแต่ละตำแหน่ง"
   readings ||--o| reading_notes : "บันทึกส่วนตัว"
-  users ||--o{ favorites : "ไพ่โปรด"
+  users ||--o| line_subscriptions : "แจ้งเตือน LINE"
   users ||--o{ consents : "ความยินยอม"
   users ||--o{ feedback : "ส่งความเห็น"
-  users ||--o{ admin_roles : "สิทธิ์ผู้ดูแล"
   users ||--o{ audit_log : "เหตุการณ์ความปลอดภัย/แอดมิน"
   deck_versions ||--o{ readings : "อ่านด้วยสำรับเวอร์ชันไหน"
   questions }o--|| deck_versions : "ไม่ผูกผู้ใช้"
@@ -101,15 +111,20 @@ erDiagram
     TEXT body
     TEXT updated_at
   }
-  favorites {
+  line_subscriptions {
     TEXT user_id PK,FK
-    TEXT card_id PK
-    TEXT created_at
+    TEXT line_user_id "ได้จาก LINE Login / webhook"
+    INTEGER enabled "0/1"
+    TEXT schedule "daily | weekly"
+    INTEGER hour "0-23 เวลาไทย"
+    INTEGER weekday "0-6 ถ้า weekly"
+    TEXT last_sent_at
+    TEXT blocked_at "ผู้ใช้บล็อก/เลิกเป็นเพื่อน"
   }
   consents {
     INTEGER id PK
     TEXT user_id FK "nullable (ผู้ใช้ไม่ล็อกอินใช้ anon_id)"
-    TEXT kind "terms, privacy, save_history, log_questions"
+    TEXT kind "terms, privacy, save_history, log_questions, line_notify"
     TEXT version "เวอร์ชันของข้อความที่ผู้ใช้เห็น"
     INTEGER granted "1 ให้, 0 ถอน"
     TEXT at
@@ -121,12 +136,6 @@ erDiagram
     TEXT body
     TEXT page
     TEXT status "new, seen, done"
-    TEXT created_at
-  }
-  admin_roles {
-    TEXT user_id PK,FK
-    TEXT role "editor, admin"
-    TEXT granted_by FK
     TEXT created_at
   }
   deck_versions {
@@ -183,18 +192,11 @@ CREATE TABLE reading_notes (
   updated_at TEXT NOT NULL
 );
 
-CREATE TABLE favorites (
-  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  card_id TEXT NOT NULL,
-  created_at TEXT NOT NULL,
-  PRIMARY KEY (user_id, card_id)
-);
-
 CREATE TABLE consents (
   id INTEGER PRIMARY KEY,
   user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
   anon_id TEXT,                              -- สุ่มเก็บในเบราว์เซอร์ สำหรับคนไม่ล็อกอิน
-  kind TEXT NOT NULL CHECK (kind IN ('terms','privacy','save_history','log_questions')),
+  kind TEXT NOT NULL CHECK (kind IN ('terms','privacy','save_history','log_questions','line_notify')),
   version TEXT NOT NULL,
   granted INTEGER NOT NULL,
   at TEXT NOT NULL
@@ -211,12 +213,17 @@ CREATE TABLE feedback (
   created_at TEXT NOT NULL
 );
 
-CREATE TABLE admin_roles (
+CREATE TABLE line_subscriptions (
   user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-  role TEXT NOT NULL CHECK (role IN ('editor','admin')),
-  granted_by TEXT REFERENCES users(id),
-  created_at TEXT NOT NULL
+  line_user_id TEXT NOT NULL UNIQUE,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  schedule TEXT NOT NULL DEFAULT 'weekly' CHECK (schedule IN ('daily','weekly')),
+  hour INTEGER NOT NULL DEFAULT 19 CHECK (hour BETWEEN 0 AND 23),
+  weekday INTEGER CHECK (weekday BETWEEN 0 AND 6),
+  last_sent_at TEXT,
+  blocked_at TEXT
 );
+CREATE INDEX line_due ON line_subscriptions(enabled, schedule, hour) WHERE blocked_at IS NULL;
 ```
 
 ทำไมแยก `reading_cards` ออกจาก `readings` แทนการเก็บ JSON ก้อนเดียว: query สถิติได้ (ไพ่ไหนถูกเปิดบ่อย, ตำแหน่งไหนมักได้ไพ่ลักษณะไหน) บังคับ "ไม่ซ้ำ" ที่ฐานข้อมูลได้ และไม่ต้องแก้ JSON ทุกครั้งที่เปลี่ยนโครง
@@ -237,7 +244,8 @@ CREATE TABLE admin_roles (
 | GET | `/me/readings/:id` | ดูรายละเอียดหนึ่งรายการ | ใช่ (เจ้าของเท่านั้น) |
 | PUT | `/me/readings/:id/note` | เขียน/แก้บันทึก | ใช่ |
 | DELETE | `/me/readings/:id` | ลบรายการ | ใช่ |
-| GET/PUT/DELETE | `/me/favorites/:card_id` | ไพ่โปรด | ใช่ |
+| GET/PUT/DELETE | `/me/line-notify` | ดู/ตั้ง/ปิดการแจ้งเตือน LINE (ความถี่, เวลา) | ใช่ + consent `line_notify` |
+| POST | `/line/webhook` | รับเหตุการณ์ follow/unfollow/block จาก LINE (ตรวจ `X-Line-Signature`) | ไม่ (ยืนยันด้วยลายเซ็น) |
 | POST | `/me/export` | ขอไฟล์ข้อมูลทั้งหมดของตัวเอง (JSON ใน R2 ลิงก์ 24 ชม.) | ใช่ |
 | DELETE | `/me` | ลบบัญชี + ข้อมูลทั้งหมด (ดู 07) | ใช่ |
 
@@ -255,28 +263,56 @@ CREATE TABLE admin_roles (
 | Backup D1 ไป R2 | ทุกวัน | export เป็นไฟล์ เก็บ 30 วัน (ใช้คู่กับ Time Travel ของ D1) |
 | ลบไฟล์ export หมดอายุใน R2 | ทุกชั่วโมง | ไฟล์เกิน 24 ชม. |
 | ส่งอีเมล | ผ่าน Queue | ลองซ้ำเมื่อล้มเหลว ไม่ให้ request ของผู้ใช้ค้างรอ |
-| ไพ่รายวัน (ถ้าทำฟีเจอร์นี้) | ทุกวัน | สุ่มไพ่หนึ่งใบแบบกำหนดจากวันที่ เก็บใน KV ให้ทุกคนเห็นใบเดียวกัน |
+| ส่งแจ้งเตือน LINE | ทุกชั่วโมง | หา `line_subscriptions` ที่ถึงเวลา (ตาม `hour`, `schedule`, เวลาไทย) ส่ง push ผ่าน Queue แล้วอัปเดต `last_sent_at` |
 
-## 6. หลังบ้านสำหรับผู้ดูแล (Admin)
+### 5.1 แจ้งเตือนผ่าน LINE
 
-เฟสแรกไม่ต้องทำหน้าเว็บ admin เต็มรูปแบบ ทำเป็นขั้นตอน:
+**ข้อควรรู้:** LINE Notify ปิดบริการแล้ว (ตามที่ผมทราบ ประกาศสิ้นสุดบริการเมื่อ มี.ค. 2025 ตรวจยืนยันกับ LINE Developers อีกครั้งก่อนทำ) ทางที่ใช้ได้คือ **LINE Official Account + Messaging API**
 
-1. **เริ่ม:** จัดการเนื้อหาผ่าน Git + สคริปต์ (วิธีที่ทำอยู่) เพิ่มสคริปต์ `publish_deck` ที่คำนวณ `content_hash`, ใส่แถวใน `deck_versions`, อัปโหลด JSON ที่เผยแพร่ไป KV
-2. **ต่อมา:** เมื่อมีคนที่ไม่ใช่ dev ต้องแก้ข้อความ ค่อยทำ `taro-admin` + หน้า admin:
-   - ล็อกอินด้วยบัญชีเดียวกับผู้ใช้ แต่ต้องมีแถวใน `admin_roles` และเปิด 2FA
-   - `editor` แก้ข้อความไพ่เป็นฉบับร่าง `admin` กดเผยแพร่ (สร้าง `deck_versions` ใหม่)
-   - ดูและจัดการ feedback เปลี่ยนสถานะ
-   - ดูสถิติรวม (ไพ่ที่ถูกเลือกบ่อย, spread ยอดนิยม, ผู้ใช้ใหม่รายวัน) จาก Analytics Engine และ `reading_cards`
-   - ทุกการกระทำของ admin เขียนลง `audit_log`
-3. **เนื้อหาในแอดมิน:** ถ้าจะย้ายข้อความไพ่เข้า DB ต้องเพิ่มตาราง `card_texts(card_id, deck_version, field, body)` และรักษาให้ `scripts/validate_data.py` ตรวจฉบับที่ export กลับออกมาเป็น JSON ได้เหมือนเดิม
+```mermaid
+sequenceDiagram
+  actor U as ผู้ใช้
+  participant W as เว็บ/API
+  participant L as LINE
+  participant C as Cron (ทุกชั่วโมง)
+  U->>W: ล็อกอินด้วย LINE (ได้ line_user_id)
+  U->>W: เปิด "แจ้งเตือน" + ติ๊กยินยอม (consent line_notify)
+  W-->>U: ขอให้เพิ่มเพื่อน Official Account (ลิงก์/QR)
+  U->>L: เพิ่มเพื่อน
+  L->>W: webhook follow (ตรวจ X-Line-Signature)
+  W->>W: สร้าง/เปิด line_subscriptions
+  C->>W: หาผู้ที่ถึงเวลา
+  W->>L: push message ถึง line_user_id
+  U->>L: บล็อก/เลิกเป็นเพื่อน
+  L->>W: webhook unfollow
+  W->>W: blocked_at = now (หยุดส่ง)
+```
+
+- **ต้องใช้ provider เดียวกัน:** LINE Login channel กับ Messaging API channel ต้องอยู่ใน LINE provider เดียวกัน `userId` ถึงจะตรงกัน ถ้าแยก provider จะจับคู่ผู้ใช้ไม่ได้
+- **ผู้ใช้ต้องเพิ่มเพื่อน OA ก่อน** ถึงส่ง push ได้ ล็อกอินด้วย LINE อย่างเดียวไม่พอ
+- **ผู้ใช้ที่สมัครด้วยอีเมล** ก็เปิดแจ้งเตือนได้ โดยผูก LINE ผ่าน flow ผูก identity ใน 07 แล้วเพิ่มเพื่อน
+- **เนื้อหาข้อความ:** เป็นข้อความเตือนทั่วไป เช่น "ถึงเวลาทบทวนตัวเองกับไพ่" **ไม่ใส่คำถามหรือผลอ่านของผู้ใช้** เพราะข้อความอยู่บนหน้าจอล็อกและผ่านเซิร์ฟเวอร์ LINE
+- **โควตา:** แพ็กเกจฟรีของ Official Account จำกัดจำนวนข้อความ push ต่อเดือน ตรวจแพ็กเกจและราคาปัจจุบันก่อนเปิดจริง ค่าเริ่มต้นเป็น weekly เพื่อประหยัดโควตา
+- **ปิดง่าย:** มีวิธีหยุดทั้งในหน้าตั้งค่าและในแชต ถอนความยินยอมแล้วเขียน `consents` granted=0 และตั้ง `enabled=0`
+- **ส่งไม่สำเร็จเพราะถูกบล็อก:** ตั้ง `blocked_at` และหยุดส่ง ไม่ลองซ้ำไม่จำกัด
+
+## 6. การจัดการเนื้อหาและการดูแลระบบ (ไม่มี Admin UI)
+
+มีแต่ dev จึงไม่ทำหน้า admin ใช้ Git + สคริปต์ + `wrangler`
+
+- **เผยแพร่เนื้อหา:** แก้ `data/*.json` → `python3 scripts/validate_data.py` → สคริปต์ `publish_deck` คำนวณ `content_hash`, ใส่แถวใน `deck_versions`, อัปโหลด JSON ไป KV
+- **ดู feedback:** query ด้วย `wrangler d1 execute ... --command "SELECT ... FROM feedback WHERE status='new'"` และเปลี่ยนสถานะด้วย `UPDATE`
+- **ดูสถิติ:** query Analytics Engine และ `reading_cards` ผ่านคำสั่ง หรือเขียนสคริปต์รายงานสั้น ๆ
+- **สิทธิ์:** ไม่มี role ในระบบ ผู้เข้าถึงข้อมูลผู้ใช้ได้คือคนที่มีสิทธิ์ใน Cloudflare account ให้เปิด 2FA และจำกัดจำนวนคน
+- **ถ้าวันหน้าต้องการ admin UI:** เพิ่ม `admin_roles` และ Worker ใหม่ภายหลังได้ ไม่กระทบตารางอื่น
 
 ## 7. ความเป็นส่วนตัวและวงจรชีวิตข้อมูล
 
 - **ลบบัญชี:** `deleted_at` ทันทีและตัด session ทั้งหมด หลัง 30 วันลบจริงทุกตารางที่ผูก `user_id` (ใช้ `ON DELETE CASCADE`) ส่วน `consents` และ `audit_log` เปลี่ยน `user_id` เป็น NULL เพื่อเก็บหลักฐานแบบไม่ระบุตัวตน
-- **ส่งออกข้อมูล:** `POST /me/export` สร้าง JSON ของ users, identities (ไม่รวม token), readings, notes, favorites, consents ลง R2
+- **ส่งออกข้อมูล:** `POST /me/export` สร้าง JSON ของ users, identities (ไม่รวม token), readings, notes, line_subscriptions, consents ลง R2
 - **Backup มีข้อมูลผู้ใช้:** ลบบัญชีแล้วข้อมูลยังอยู่ใน backup ได้ถึง 30 วัน ต้องบอกในนโยบายความเป็นส่วนตัว
-- **คำถามและบันทึกเป็นข้อความอิสระ** อาจมีข้อมูลอ่อนไหว: ไม่ส่งเข้า Analytics, ไม่ใส่ใน log, จำกัดผู้เข้าถึงเฉพาะ `admin`, และถ้าจะเข้ารหัสในระดับแอป (เก็บ ciphertext ใน D1) ให้ตัดสินใจตั้งแต่ต้น เพราะเพิ่มทีหลังต้อง migrate ข้อมูลเก่า
-- **เด็ก:** ถ้ากลุ่มเป้าหมายรวมผู้ใช้ต่ำกว่า 18 ปี ต้องปรึกษานโยบายเรื่องความยินยอมผู้ปกครอง
+- **คำถามและบันทึกเป็นข้อความอิสระ** อาจมีข้อมูลอ่อนไหว: ไม่ส่งเข้า Analytics, ไม่ใส่ใน log, จำกัดผู้เข้าถึงเฉพาะคนที่มีสิทธิ์ใน Cloudflare account, และตัดสินใจแล้วว่าไม่เข้ารหัสระดับแอป หากเปลี่ยนใจภายหลังต้อง migrate ข้อมูลเก่า
+- **เด็ก:** ถ้ากลุ่มเป้าหมายรวมผู้ใช้ต่ำกว่า 18 ปี ต้องปรึกษานโยบายเรื่องความยินยอมผู้ปกครอง (PDPA มีข้อกำหนดเรื่องผู้เยาว์)
 
 ## 8. การจัดการ schema และสภาพแวดล้อม
 
@@ -295,20 +331,22 @@ CREATE TABLE admin_roles (
 
 | เฟส | งาน |
 |---|---|
-| 0 | ตอบคำถามหัวข้อ 11 และใน 07 จด `api.` / `admin.` ลงทะเบียน provider |
+| 0 | ตอบคำถามที่เหลือ (หัวข้อ 11) จด `api.` ลงทะเบียน provider และสร้าง LINE Official Account |
 | 1 | โครง `taro-api`, migrations, helper, ย้าย `taro-log` เข้ามา, staging |
 | 2 | ล็อกอินอีเมล + social (ตาม 07) |
-| 3 | `consents`, `readings` + `reading_cards`, favorites, notes พร้อมเทสต์สิทธิ์ข้ามผู้ใช้ |
+| 3 | `consents`, `readings` + `reading_cards` + `reading_notes` พร้อมเทสต์สิทธิ์ข้ามผู้ใช้ |
 | 4 | Cron ล้างข้อมูล, backup, export/ลบบัญชี |
 | 5 | `deck_versions` + สคริปต์ publish + KV |
-| 6 | feedback + events + สถิติ |
-| 7 | UI เว็บ: ปุ่มล็อกอิน, ประวัติ, บันทึก, หน้านโยบาย |
-| 8 | (ถ้าต้องการ) Admin UI + ย้ายเนื้อหาเข้า DB |
+| 6 | แจ้งเตือน LINE: webhook, `line_subscriptions`, cron ส่ง, consent |
+| 7 | feedback + events |
+| 8 | UI เว็บ: ปุ่มล็อกอิน, ประวัติ, บันทึก, ตั้งค่าแจ้งเตือน, หน้านโยบาย PDPA |
 
-## 11. คำถามที่ต้องตอบเพิ่มจาก 07
+## 11. สถานะคำถาม
 
-1. ฟีเจอร์ไหนที่ต้องการจริงในรอบแรก: ประวัติ, บันทึกส่วนตัว, ไพ่โปรด, ไพ่รายวัน (ตัดตารางและ endpoint ของอันที่ไม่เอาได้เลย)
-2. ใครแก้เนื้อหาไพ่ ถ้ามีแต่ dev ใช้ Git ต่อไปได้ ไม่ต้องทำ admin UI
-3. ต้องการเข้ารหัสคำถาม/บันทึกในระดับแอปหรือไม่ (ผู้ใช้อ่านได้คนเดียว แลกกับ admin ดูสถิติจากข้อความไม่ได้ และกู้ข้อมูลถ้าผู้ใช้ทำคีย์หายไม่ได้)
-4. ผู้ใช้เป้าหมายอยู่ที่ไหน (ไทยอย่างเดียว หรือมียุโรป เพราะกำหนดว่าต้องทำ GDPR ด้วยหรือไม่)
-5. ต้องการแจ้งเตือน (อีเมลไพ่รายวัน, LINE Official Account) หรือไม่ ถ้าใช่ต้องเพิ่มตารางการสมัครรับและกฎความยินยอมแยก
+ตอบแล้ว: ฟีเจอร์รอบแรก, คนแก้เนื้อหา, การเข้ารหัส, กลุ่มผู้ใช้, ช่องทางแจ้งเตือน (ดูหัวข้อ 0)
+
+**ยังค้างจาก `docs/07`** ต้องตอบก่อนเริ่มเฟส 1-2:
+1. ผู้ให้บริการอีเมล (ใช้ยืนยันอีเมลและรีเซ็ตรหัสผ่าน) และมีโดเมนตั้ง SPF/DKIM ได้หรือไม่
+2. Apple Sign-In ต้องมีไหม (บังคับเฉพาะถ้าทำแอป iOS)
+3. ผู้ใช้ LINE/Facebook ที่ไม่มีอีเมล ให้ใช้ได้เลยหรือบังคับกรอก
+4. ใครเป็นเจ้าของ app ที่ Google/LINE/Facebook
