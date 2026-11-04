@@ -41,6 +41,7 @@ export function client(env, {origin = ORIGIN} = {}) {
   const jar = new Map();
   const SESSION = '__Host-taro_session';
   const call = async (method, path, body, {headers = {}, withOrigin = true, rawBody, contentType = 'application/json', host = 'https://api.test'} = {}) => {
+    if (path === '/auth/register' && body && typeof body === 'object' && !('terms_version' in body)) body = {...body, terms_version: '2026-11'};   // most tests are not about the terms; pass terms_version: undefined to test its absence
     const h = {...headers};
     if (withOrigin && origin) h.origin = origin;
     if (jar.size) h.cookie = [...jar].map(([k, v]) => `${k}=${v}`).join('; ');

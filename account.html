@@ -82,7 +82,7 @@ summary{cursor:pointer;padding:6px 0;font-size:1.05rem}
     <label for="rg-name">ชื่อที่แสดง (ไม่บังคับ)</label><input id="rg-name" type="text" name="display_name" maxlength="60" autocomplete="nickname">
     <label for="rg-email">อีเมล</label><input id="rg-email" type="email" name="email" autocomplete="email" required>
     <label for="rg-pw">รหัสผ่าน (อย่างน้อย 10 ตัวอักษร)</label><input id="rg-pw" type="password" name="password" autocomplete="new-password" minlength="10" required>
-    <label class="check"><input type="checkbox" id="rg-terms" required><span>ฉันรับทราบว่าเว็บเก็บอีเมลและข้อมูลบัญชีของฉันเพื่อใช้งานระบบสมาชิก ข้อมูลอยู่ในบัญชีของฉัน ลบบัญชีได้ทุกเมื่อ และเว็บไม่ใช่คำทำนาย</span></label>
+    <label class="check"><input type="checkbox" id="rg-terms" required><span>ฉันได้อ่านและยอมรับ<a href="terms.html" target="_blank" rel="noopener">ข้อกำหนดการใช้งาน</a>และ<a href="privacy.html" target="_blank" rel="noopener">นโยบายความเป็นส่วนตัว</a> รวมถึงรับทราบว่าเว็บไม่ใช่คำทำนาย</span></label>
     <button class="btn" type="submit">สมัครสมาชิก</button>
   </form>
   <form id="f-forgot" hidden>
@@ -106,6 +106,7 @@ summary{cursor:pointer;padding:6px 0;font-size:1.05rem}
 </section>
 
 <div id="member" hidden>
+  <section class="box" id="terms-banner" hidden></section>
   <section class="box" id="profile"></section>
   <section class="box" id="methods"></section>
   <section class="box" id="line" hidden></section>
@@ -125,12 +126,13 @@ summary{cursor:pointer;padding:6px 0;font-size:1.05rem}
       <button class="btn" type="submit">ส่ง</button>
     </form>
   </section>
+  <p class="note"><a href="terms.html">ข้อกำหนดการใช้งาน</a> · <a href="privacy.html">นโยบายความเป็นส่วนตัว</a></p>
   <p><button class="btn plain" type="button" id="logout">ออกจากระบบ</button></p>
 </div>
 </main>
 
 <script type="module">
-import {API_URL} from './scripts/config.mjs';
+import {API_URL, POLICY_VERSION} from './scripts/config.mjs';
 import {createApi, errorText} from './scripts/api-client.mjs';
 
 const $ = id => document.getElementById(id);
@@ -192,7 +194,7 @@ else {
   $('f-register').onsubmit = async e => {
     e.preventDefault();
     await busy(e.submitter, async () => {
-      const r = await api.post('/auth/register', form(e.target));
+      const r = await api.post('/auth/register', {...form(e.target), terms_version: POLICY_VERSION});
       if (!r.ok) return fail(r);
       e.target.reset(); tab('login');
       say('ส่งอีเมลยืนยันให้แล้ว (ถ้าอีเมลนี้ยังไม่มีบัญชี) กรุณาตรวจกล่องจดหมายและโฟลเดอร์สแปม แล้วเข้าสู่ระบบ');
@@ -213,6 +215,9 @@ else {
     const [cons, line] = await Promise.all([api.get('/me/consents'), api.get('/me/line-notify')]);
     consents = Object.fromEntries((cons.data?.consents ?? []).map(c => [c.kind, c]));
     const u = me.user, providers = me.providers_available, linked = new Set(me.identities);
+    const accepted = consents.terms?.granted && consents.terms.version === POLICY_VERSION && consents.privacy?.granted && consents.privacy.version === POLICY_VERSION;
+    $('terms-banner').hidden = !!accepted;
+    $('terms-banner').innerHTML = accepted ? '' : `<h2>โปรดรับทราบข้อกำหนดและนโยบาย</h2><p>${consents.terms ? 'ข้อกำหนดและนโยบายความเป็นส่วนตัวมีการปรับปรุง' : 'ก่อนใช้งานบัญชีต่อ'} กรุณาอ่านและยอมรับ <a href="terms.html" target="_blank" rel="noopener">ข้อกำหนดการใช้งาน</a> และ <a href="privacy.html" target="_blank" rel="noopener">นโยบายความเป็นส่วนตัว</a> (เวอร์ชัน ${esc(POLICY_VERSION)})</p><button class="btn" id="accept-terms" type="button">ฉันอ่านและยอมรับ</button>`;
 
     $('profile').innerHTML = `<h2>ข้อมูลบัญชี</h2>
       <p><strong>${esc(u.display_name || 'สมาชิก')}</strong></p>
@@ -283,7 +288,8 @@ else {
   });
   $('member').addEventListener('click', async e => {
     const t = e.target.closest('button'); if (!t) return;
-    if (t.id === 'resend') await busy(t, async () => { const r = await api.post('/me/resend-verification'); r.ok ? say('ส่งอีเมลยืนยันให้อีกครั้งแล้ว') : fail(r); });
+    if (t.id === 'accept-terms') await busy(t, async () => { for (const kind of ['terms', 'privacy']) { const r = await api.post('/me/consents', {kind, version: POLICY_VERSION, granted: true}); if (!r.ok) return fail(r); } say('ขอบคุณ บันทึกการรับทราบแล้ว'); await render(); });
+    else if (t.id === 'resend') await busy(t, async () => { const r = await api.post('/me/resend-verification'); r.ok ? say('ส่งอีเมลยืนยันให้อีกครั้งแล้ว') : fail(r); });
     else if (t.dataset.unlink) { if (!confirm(`เลิกผูก ${PROVIDER_NAMES[t.dataset.unlink]} ?`)) return; await busy(t, async () => { const r = await api.del('/me/identities/' + t.dataset.unlink); r.ok ? (say('เลิกผูกแล้ว'), await render()) : fail(r); }); }
     else if (t.id === 'ln-off') await busy(t, async () => { const r = await api.del('/me/line-notify'); r.ok ? (say('ปิดการแจ้งเตือนแล้ว'), await render()) : fail(r); });
     else if (t.id === 'export') await busy(t, async () => {

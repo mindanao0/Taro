@@ -122,6 +122,27 @@ assert.equal(count(env, 'sessions'), 0); assert.equal((await web.get('/me')).sta
   assert.equal((await b.get('/me')).status, 401, 'other devices are signed out');
 }
 
+/* ---- terms acceptance is recorded at sign-up ---- */
+{
+  const e = makeEnv(), c = client(e);
+  for (const bad of [undefined, '', 'has space', 'x'.repeat(30), 5, null]) {
+    const r = await c.post('/auth/register', {email: 't@example.com', password: 'a long test passphrase', terms_version: bad});
+    assert.equal(r.status, 400, String(bad)); assert.equal(r.data.error, 'terms_required');
+  }
+  assert.equal(count(e, 'users'), 0, 'nothing is created without acceptance');
+  assert.equal((await c.post('/auth/register', {email: 't@example.com', password: 'a long test passphrase', terms_version: '2026-11'})).status, 201);
+  const rows = e.db.prepare('SELECT kind, version, granted FROM consents ORDER BY kind').all();
+  assert.deepEqual(rows.map(r => [r.kind, r.version, r.granted]), [['privacy', '2026-11', 1], ['terms', '2026-11', 1]]);
+  // signing up again with an existing address records nothing for the account that already exists
+  await c.post('/auth/register', {email: 't@example.com', password: 'a long test passphrase', terms_version: '2027-01'});
+  assert.equal(count(e, 'consents'), 2);
+
+  // old feedback is purged after a year
+  e.db.prepare("INSERT INTO feedback (id, kind, body, created_at) VALUES ('old', 'bug', 'old report', '2020-01-01T00:00:00.000Z'), ('new', 'bug', 'new report', ?)").run(new Date().toISOString());
+  await maintain(e);
+  assert.deepEqual(e.db.prepare('SELECT id FROM feedback').all().map(r => r.id), ['new']);
+}
+
 /* ---- resend verification + provider list ---- */
 {
   const e = makeEnv({GOOGLE_CLIENT_ID: 'a', GOOGLE_CLIENT_SECRET: 'b', COOKIE_SECRET: 'c'.repeat(32)}), c = client(e);

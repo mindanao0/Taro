@@ -297,7 +297,7 @@ const F = (id, extra = {}) => ({fb: {id, name: 'Fon Face', picture: {data: {url:
   await c.post('/auth/register', {email: 'zoe@example.com', password: 'zoes long password'});
   await c.post('/auth/login', {email: 'zoe@example.com', password: 'zoes long password'});
   assert.equal((await client(env).get('/me/consents')).status, 401);
-  assert.deepEqual((await c.get('/me/consents')).data, {consents: []});
+  assert.deepEqual((await c.get('/me/consents')).data.consents.map(x => x.kind).sort(), ['privacy', 'terms'], 'sign-up recorded the terms and privacy acceptance');
   assert.equal((await c.post('/me/consents', {kind: 'save_history', version: '1', granted: true})).status, 204);
   assert.equal((await c.post('/me/consents', {kind: 'privacy', version: '2026-11', granted: true})).status, 204);
   assert.equal((await c.post('/me/consents', {kind: 'save_history', version: '1', granted: false})).status, 204);
@@ -305,7 +305,7 @@ const F = (id, extra = {}) => ({fb: {id, name: 'Fon Face', picture: {data: {url:
     assert.equal((await c.post('/me/consents', bad)).status, 400);
   const got = (await c.get('/me/consents')).data.consents;
   assert.equal(got.find(x => x.kind === 'save_history').granted, false, 'latest answer wins');
-  assert.equal(got.find(x => x.kind === 'privacy').version, '2026-11'); assert.equal(count(env, 'consents'), 3, 'history kept as proof');
+  assert.equal(got.find(x => x.kind === 'privacy').version, '2026-11'); assert.equal(count(env, 'consents'), 5, 'history kept as proof (2 from sign-up + 3 here)');
 
   await social(c, 'line', L('line-zoe'), {mode: 'link'});
   env.db.prepare("INSERT INTO line_subscriptions (user_id, line_user_id, enabled, friend) SELECT id, 'U-zoe', 1, 1 FROM users").run();

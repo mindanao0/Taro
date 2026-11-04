@@ -63,6 +63,8 @@ async function register(req, env, ctx) {
   if (!email) return json(400, {error: 'invalid_email'});
   const pwErr = passwordError(b.password, email);
   if (pwErr) return json(400, {error: pwErr});
+  const termsVersion = typeof b.terms_version === 'string' && /^[\w.-]{1,20}$/.test(b.terms_version) ? b.terms_version : null;
+  if (!termsVersion) return json(400, {error: 'terms_required'});   // signing up means accepting the terms and privacy policy, and we keep proof of which version
   const display = typeof b.display_name === 'string' ? b.display_name.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim().slice(0, 60) || null : null;
 
   const hash = await hashPassword(b.password, iterationsOf(env));   // computed on both paths so timing does not reveal existing accounts
@@ -74,7 +76,8 @@ async function register(req, env, ctx) {
     const id = crypto.randomUUID(), now = iso();
     await env.DB.batch([
       env.DB.prepare('INSERT INTO users (id, email, email_verified, display_name, created_at) VALUES (?, ?, 0, ?, ?)').bind(id, email, display, now),
-      env.DB.prepare('INSERT INTO credentials (user_id, password_hash, updated_at) VALUES (?, ?, ?)').bind(id, hash, now)
+      env.DB.prepare('INSERT INTO credentials (user_id, password_hash, updated_at) VALUES (?, ?, ?)').bind(id, hash, now),
+      env.DB.prepare("INSERT INTO consents (user_id, kind, version, granted, at) VALUES (?, 'terms', ?, 1, ?), (?, 'privacy', ?, 1, ?)").bind(id, termsVersion, now, id, termsVersion, now)
     ]);
     await audit(env, 'register', {userId: id});
     const token = await issueToken(env, id, 'verify_email', VERIFY_HOURS * 3_600_000);
@@ -241,7 +244,8 @@ export async function maintain(env, now = new Date()) {
     env.DB.prepare('DELETE FROM sessions WHERE expires_at < ?').bind(t),
     env.DB.prepare('DELETE FROM email_tokens WHERE expires_at < ? OR used_at IS NOT NULL').bind(new Date(now.getTime() - 86_400_000).toISOString()),
     env.DB.prepare('DELETE FROM audit_log WHERE at < ?').bind(new Date(now.getTime() - 90 * 86_400_000).toISOString()),
-    env.DB.prepare('DELETE FROM users WHERE deleted_at IS NOT NULL AND deleted_at < ?').bind(new Date(now.getTime() - 30 * 86_400_000).toISOString())   // cascades to every row of that user
+    env.DB.prepare('DELETE FROM users WHERE deleted_at IS NOT NULL AND deleted_at < ?').bind(new Date(now.getTime() - 30 * 86_400_000).toISOString()),   // cascades to every row of that user
+    env.DB.prepare('DELETE FROM feedback WHERE created_at < ?').bind(new Date(now.getTime() - 365 * 86_400_000).toISOString())
   ]);
 }
 
