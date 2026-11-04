@@ -1,6 +1,6 @@
 # แผน Backend: ระบบสมัคร/เข้าสู่ระบบ (Google, LINE, Facebook + อีเมลรหัสผ่าน)
 
-สถานะ: แผน ยังไม่มีโค้ด เขียนบนฐานที่มีอยู่แล้ว คือ Cloudflare Workers + D1 (ดู `docs/DEPLOY_TH.md`)
+สถานะ: **เฟส 1-2 เขียนแล้ว** (โค้ดใน `api/` ล็อกอินอีเมล) ส่วน Google/LINE/Facebook ยังเป็นแผน เขียนบนฐานที่มีอยู่แล้ว คือ Cloudflare Workers + D1 (ดู `docs/DEPLOY_TH.md`)
 
 ไฟล์นี้ครอบคลุมเฉพาะระบบล็อกอิน ภาพรวม backend ทั้งหมดและการเก็บข้อมูลทุกประเภทอยู่ใน `docs/08_BACKEND_ARCHITECTURE_TH.md`
 
@@ -30,9 +30,9 @@ flowchart LR
 | โฮสต์ API | Worker ตัวใหม่ (`taro-api`) แยกจาก `taro-log` | ตัวเก็บคำถามเดิมเล็กและเปิดสาธารณะ ไม่ควรปนกับโค้ดที่แตะรหัสผ่าน |
 | โดเมน | `api.` ซับโดเมนของเว็บเดียวกัน | cookie เป็น same-site ทำให้ใช้ `SameSite=Lax` ได้ และไม่ต้องพึ่ง third-party cookie |
 | Session | cookie ทึบแสง (random 256 บิต) เก็บ hash ใน D1 | เพิกถอนได้ทันที ง่ายกว่า JWT ที่ต้องทำ blacklist |
-| Cookie | `HttpOnly; Secure; SameSite=Lax; Path=/; Domain=.ivoryrosetarot.online` | กัน XSS อ่าน token และกัน CSRF ระดับพื้นฐาน |
+| Cookie | `__Host-taro_session` แบบ `HttpOnly; Secure; SameSite=Lax; Path=/` และ **ไม่ตั้ง Domain** (host-only บน `api.`) | กัน XSS อ่าน token และกัน CSRF ระดับพื้นฐาน ใช้ได้เพราะ `api.` กับเว็บเป็น same-site ส่วนคำนำหน้า `__Host-` บังคับให้ cookie ผูกกับโฮสต์นี้โฮสต์เดียว |
 | OAuth | Authorization Code + PKCE + `state` + `nonce` | มาตรฐานปัจจุบัน ไม่ใช้ implicit flow |
-| แฮชรหัสผ่าน | PBKDF2-SHA256 ผ่าน WebCrypto (≥ 600,000 รอบ) + salt สุ่มรายคน | Argon2/bcrypt ไม่มีในรันไทม์ Workers แบบ native ถ้าต้องการ Argon2 ให้ใช้ WASM แล้วจ่ายค่า CPU เพิ่ม |
+| แฮชรหัสผ่าน | PBKDF2-SHA256 ผ่าน WebCrypto **100,000 รอบ** + salt สุ่มรายคน เก็บจำนวนรอบไว้ในค่าแฮช | ตามที่ผมทราบ WebCrypto ของ Workers รับ PBKDF2 ได้สูงสุด 100,000 รอบ (ต่ำกว่าคำแนะนำ OWASP ที่ 600,000 สำหรับ SHA-256 ต้องตรวจกับ `wrangler dev` และเอกสารล่าสุด) จึงชดเชยด้วย rate limit ต่ออีเมลและต่อ IP และเตรียมทางอัปเกรด: เมื่อเปลี่ยนจำนวนรอบหรืออัลกอริทึม (เช่น Argon2 ผ่าน WASM) ระบบแฮชใหม่ให้เองตอนผู้ใช้ล็อกอินครั้งถัดไป (มีเทสต์แล้ว) |
 | อีเมล | ผู้ให้บริการภายนอก (Resend/Postmark ฯลฯ) | Worker ส่งอีเมลเองไม่ได้ ต้องใช้สำหรับยืนยันอีเมลและรีเซ็ตรหัสผ่าน |
 
 ## 3. ผังฐานข้อมูล
@@ -234,7 +234,7 @@ sequenceDiagram
   W->>W: ตรวจรูปแบบ + ความยาวรหัส ≥ 10 + rate limit
   W->>W: PBKDF2 → credentials, users.email_verified=0
   W->>M: ส่งลิงก์ยืนยัน (token หมดอายุ 24 ชม.)
-  W-->>U: 201 + ตั้ง session ได้เลย (แต่ฟีเจอร์ที่ต้องใช้อีเมลรอยืนยัน)
+  W-->>U: 201 {ok} เหมือนกันเสมอ (ยังไม่ล็อกอินให้ ผู้ใช้ล็อกอินเองหลังสมัคร ล็อกอินได้แม้ยังไม่ยืนยันอีเมล ฟีเจอร์ที่ต้องใช้อีเมลรอยืนยัน)
   U->>W: POST /auth/verify-email {token}
   W->>W: email_verified=1, used_at=now
 ```

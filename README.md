@@ -67,7 +67,7 @@ wrangler d1 execute taro-log --remote --command "SELECT at, spread, q FROM quest
 
 ## ตรวจข้อมูลอีกครั้ง
 
-จากโฟลเดอร์นี้ รัน `python3 scripts/package_deck.py --check-only` เพื่อตรวจจำนวน ID ไฟล์ภาพ ขนาด และ checksum หรือ `node scripts/reading-core.test.mjs` เพื่อตรวจตรรกะการสุ่มแบบไม่ซ้ำ `python3 scripts/validate_data.py` ตรวจว่า `data/` กับ `docs/` ตรงกัน `node worker/index.test.mjs` และ `node worker/events.test.mjs` ตรวจ Worker (ตัวหลังรัน migration จริงบน SQLite) และ `node scripts/track.test.mjs` ตรวจตัวบันทึกลำดับการกด และ `node tests/e2e.mjs` เปิดเว็บจริงด้วย Playwright ทั้งมือถือและเดสก์ท็อป (ต้องมี `playwright`)
+จากโฟลเดอร์นี้ รัน `python3 scripts/package_deck.py --check-only` เพื่อตรวจจำนวน ID ไฟล์ภาพ ขนาด และ checksum หรือ `node scripts/reading-core.test.mjs` เพื่อตรวจตรรกะการสุ่มแบบไม่ซ้ำ `python3 scripts/validate_data.py` ตรวจว่า `data/` กับ `docs/` ตรงกัน `node worker/index.test.mjs` และ `node worker/events.test.mjs` ตรวจ Worker (ตัวหลังรัน migration จริงบน SQLite) `node api/test/auth.test.mjs` ตรวจระบบสมัคร/ล็อกอิน (`api/`, คู่มือ deploy ที่ `docs/DEPLOY_API_TH.md`) และ `node scripts/track.test.mjs` ตรวจตัวบันทึกลำดับการกด และ `node tests/e2e.mjs` เปิดเว็บจริงด้วย Playwright ทั้งมือถือและเดสก์ท็อป (ต้องมี `playwright`)
 
 ## ดาวน์โหลดจาก GitHub
 

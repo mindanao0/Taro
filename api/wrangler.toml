@@ -1,0 +1,30 @@
+# Deploy from this folder:  cd api && wrangler deploy   (see docs/DEPLOY_API_TH.md)
+name = "taro-api"
+main = "index.js"
+compatibility_date = "2026-10-01"
+
+# Serve the API on a subdomain of the site so the session cookie is same-site with the web page.
+# Uncomment after adding the domain in Cloudflare:
+# routes = [{ pattern = "api.ivoryrosetarot.online", custom_domain = true }]
+
+[vars]
+WEB_URL = "https://ivoryrosetarot.online"
+ALLOWED_ORIGINS = "https://ivoryrosetarot.online,https://www.ivoryrosetarot.online"
+EMAIL_FROM = "Ivory Rose Tarot <no-reply@ivoryrosetarot.online>"   # the domain must be verified in Resend (SPF/DKIM)
+# Secret (never in this file):  wrangler secret put RESEND_API_KEY
+
+[[d1_databases]]
+binding = "DB"
+database_name = "taro"
+database_id = "REPLACE_WITH_ID_FROM_wrangler_d1_create"
+migrations_dir = "migrations"
+
+# Register / login / password reset: 10 requests per 60 s per visitor IP (key only, never stored).
+[[ratelimits]]
+name = "AUTH_LIMITER"
+namespace_id = "1101"
+simple = { limit = 10, period = 60 }
+
+# Daily at 03:27 Thai time (20:27 UTC): delete expired sessions, used or expired email tokens, old audit rows.
+[triggers]
+crons = ["27 20 * * *"]
