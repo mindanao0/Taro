@@ -21,6 +21,8 @@ export function pointOf(e, el) {
   return p;
 }
 
+export const CONSENT_VERSION = 'analytics-1';
+
 export function createTracker({url, consent, send, now = () => performance.now(), sid, meta = {},
   flushMs = 10000, maxEvents = 500, batch = 100, setTimer = setInterval}) {
   const enabled = Boolean(url) && typeof send === 'function';
@@ -31,7 +33,7 @@ export function createTracker({url, consent, send, now = () => performance.now()
     if (!consent()) { buf.length = 0; return; }
     while (buf.length) {
       const events = buf.splice(0, batch);
-      send(url, JSON.stringify(metaSent ? {sid, events} : {sid, meta, events}));
+      send(url, JSON.stringify(metaSent ? {sid, consent: CONSENT_VERSION, events} : {sid, consent: CONSENT_VERSION, meta, events}));
       metaSent = true;
     }
   }

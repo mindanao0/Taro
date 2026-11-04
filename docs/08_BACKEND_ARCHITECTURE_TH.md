@@ -399,7 +399,8 @@ WHERE type='miss_tap' AND target='fan' GROUP BY col;
 - ไม่ส่งอะไรเลยจนกว่าผู้ใช้ยินยอม `analytics` และ `LOG_URL`/endpoint ถูกตั้งค่า (เหมือนพฤติกรรมเดิมของ `LOG_URL`)
 
 **ฝั่งเซิร์ฟเวอร์ (`POST /events`)**
-- ตรวจว่าผู้ส่งเคยบันทึก consent `analytics` (granted=1) ด้วย `anon_id`/user เดียวกัน
+- ต้องมี `consent: "analytics-1"` ในทุกคำขอ (เว็บส่งเฉพาะเมื่อผู้ใช้ติ๊กยินยอม) ไม่มีหรือเวอร์ชันไม่ตรงได้ 403 และเก็บเวอร์ชันที่ผู้ใช้เห็นไว้ใน `ui_sessions.consent_version` เป็นหลักฐาน โดยไม่ต้องมีรหัสผู้ใช้ถาวร (ถ้าแก้ข้อความขอความยินยอม ให้เพิ่มเลขเวอร์ชันใน `scripts/track.mjs`)
+- **สถานะ: ทำแล้ว** ใน `worker/index.js` (ใช้ `TYPES`/`OUTCOMES` ชุดเดียวกับฝั่งเว็บ) และ `migrations/0002_ui_events.sql` ทดสอบใน `worker/events.test.mjs`
 - รับ `type` และ `outcome` เฉพาะที่อยู่ในรายการ ค่าตัวเลขถูกจำกัดช่วง ฟิลด์ที่ไม่รู้จักถูกทิ้ง `data_json` ไม่เกิน 200 ไบต์
 - จำกัด: ไม่เกิน 100 events/คำขอ, 500 events/session, body ไม่เกิน 16 KB, rate limit ต่อ IP
 - เขียนแบบ batch (`DB.batch`) เพื่อประหยัดจำนวน query; `seq` ซ้ำถูกข้าม (ส่งซ้ำได้โดยไม่เบิ้ล)

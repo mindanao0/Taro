@@ -22,7 +22,7 @@ const mk = (o = {}) => {
   tr.track('unpick', {target: 'slot:0', outcome: 'undone'});
   tr.flush();
   assert.equal(sent.length, 2);
-  assert.deepEqual(sent[0].meta, {viewport_w: 390}); assert.equal(sent[1].meta, undefined);
+  assert.deepEqual(sent[0].meta, {viewport_w: 390}); assert.equal(sent[0].consent, 'analytics-1'); assert.equal(sent[1].consent, 'analytics-1'); assert.equal(sent[1].meta, undefined);
   const ev = sent.flatMap(b => b.events);
   assert.deepEqual(ev.map(e => e.seq), [1, 2, 3]);
   assert.deepEqual(ev.map(e => e.t_ms), [0, 250, 750]);
