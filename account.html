@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<title>บัญชี - Ivory Rose Tarot</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap">
+<style>
+:root{--bg:#0b0908;--text:#ece4d3;--dim:#9a8f7e;--line:#ffffff1c;--gold:#c8a25a;--bad:#e08a7a;--ok:#9fc79a;
+  --display:"Instrument Serif","IBM Plex Sans Thai",Georgia,serif;--sans:"IBM Plex Sans Thai","Noto Sans Thai",system-ui,sans-serif}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;min-height:100vh;color:var(--text);font:400 16px/1.7 var(--sans);background:radial-gradient(900px 520px at 50% -120px,#241a11 0,transparent 70%) no-repeat,var(--bg)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+[hidden]{display:none!important}
+a{color:var(--text)}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:16px;max-width:760px;margin:0 auto;padding:24px 20px 0}
+.mark{font:italic 400 1.6rem/1 var(--display);text-decoration:none}
+.top a.back{color:var(--dim);text-decoration:none;border-bottom:1px solid transparent;padding:8px 0}
+.top a.back:hover{color:var(--text);border-color:var(--gold)}
+main{max-width:760px;margin:0 auto;padding:12px 20px 100px}
+h1{font:400 2.1rem/1.2 var(--display);margin:24px 0 8px}
+h2{font:400 1.4rem/1.3 var(--display);margin:0 0 10px}
+section.box{border:1px solid var(--line);border-radius:14px;padding:20px;margin:18px 0}
+.msg{border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:16px 0}
+.msg.ok{border-color:#9fc79a66;color:var(--ok)} .msg.bad{border-color:#e08a7a66;color:var(--bad)}
+.note{font-size:.85rem;color:var(--dim);margin:6px 0 0}
+label{display:block;margin:12px 0 4px;color:var(--dim);font-size:.9rem}
+input[type=email],input[type=password],input[type=text],select,textarea{width:100%;background:#ffffff0a;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+textarea{min-height:84px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--gold)}
+.check{display:flex;gap:10px;align-items:flex-start;color:var(--text);font-size:1rem;margin:10px 0}
+.check input{margin-top:6px;accent-color:var(--gold);width:18px;height:18px;flex:none}
+.btn{display:inline-block;margin-top:14px;padding:10px 20px;border-radius:999px;border:1px solid var(--gold);background:#c8a25a22;color:var(--text);text-decoration:none;min-height:44px}
+.btn:hover{background:#c8a25a44}
+.btn.plain{border-color:var(--line);background:none;color:var(--dim)} .btn.plain:hover{color:var(--text);border-color:#ffffff50}
+.btn.danger{border-color:#e08a7a88;background:#e08a7a14;color:var(--bad)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}
+.tabs{display:flex;gap:24px;margin-bottom:8px}
+.tabs button{background:none;border:0;border-bottom:1px solid transparent;padding:8px 0;color:var(--dim);font-size:1.05rem}
+.tabs button[aria-selected=true]{color:var(--text);border-bottom-color:var(--gold)}
+.social{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.badge{font-size:.8rem;border:1px solid var(--line);border-radius:999px;padding:2px 10px;color:var(--dim)} .badge.ok{color:var(--ok);border-color:#9fc79a55}
+details{border-top:1px solid var(--line);padding:10px 0} details:first-of-type{border-top:0}
+summary{cursor:pointer;padding:6px 0;font-size:1.05rem}
+.item{border:1px solid var(--line);border-radius:10px;padding:14px;margin:10px 0}
+.item h3{margin:0 0 4px;font-size:1rem;font-weight:500}
+.item p{margin:2px 0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.inline{display:flex;gap:8px;flex-wrap:wrap} .inline select{width:auto}
+</style>
+</head>
+<body>
+<header class="top"><a class="mark" href="./">Ivory Rose Tarot</a><a class="back" href="./">← กลับไปเลือกไพ่</a></header>
+<main>
+<h1>บัญชีของฉัน</h1>
+<p id="msg" class="msg" role="status" aria-live="polite" hidden></p>
+
+<section id="off" class="box" hidden><p>ระบบสมาชิกยังไม่เปิดใช้งาน เว็บยังใช้เลือกไพ่ได้ตามปกติโดยไม่ต้องมีบัญชี</p></section>
+
+<section id="guest" class="box" hidden>
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" id="tab-login" aria-selected="true">เข้าสู่ระบบ</button>
+    <button type="button" role="tab" id="tab-register" aria-selected="false">สมัครสมาชิก</button>
+  </div>
+  <form id="f-login" autocomplete="on">
+    <label for="li-email">อีเมล</label><input id="li-email" type="email" name="email" autocomplete="username" required>
+    <label for="li-pw">รหัสผ่าน</label><input id="li-pw" type="password" name="password" autocomplete="current-password" required>
+    <button class="btn" type="submit">เข้าสู่ระบบ</button>
+    <p class="note"><button type="button" class="btn plain" id="to-forgot" style="margin:6px 0 0;min-height:0;padding:4px 14px">ลืมรหัสผ่าน</button></p>
+  </form>
+  <form id="f-register" autocomplete="on" hidden>
+    <label for="rg-name">ชื่อที่แสดง (ไม่บังคับ)</label><input id="rg-name" type="text" name="display_name" maxlength="60" autocomplete="nickname">
+    <label for="rg-email">อีเมล</label><input id="rg-email" type="email" name="email" autocomplete="email" required>
+    <label for="rg-pw">รหัสผ่าน (อย่างน้อย 10 ตัวอักษร)</label><input id="rg-pw" type="password" name="password" autocomplete="new-password" minlength="10" required>
+    <label class="check"><input type="checkbox" id="rg-terms" required><span>ฉันรับทราบว่าเว็บเก็บอีเมลและข้อมูลบัญชีของฉันเพื่อใช้งานระบบสมาชิก ข้อมูลอยู่ในบัญชีของฉัน ลบบัญชีได้ทุกเมื่อ และเว็บไม่ใช่คำทำนาย</span></label>
+    <button class="btn" type="submit">สมัครสมาชิก</button>
+  </form>
+  <form id="f-forgot" hidden>
+    <h2>ลืมรหัสผ่าน</h2>
+    <label for="fg-email">อีเมลที่ใช้สมัคร</label><input id="fg-email" type="email" required>
+    <button class="btn" type="submit">ส่งลิงก์ตั้งรหัสผ่านใหม่</button>
+    <button class="btn plain" type="button" id="from-forgot">กลับ</button>
+  </form>
+  <div id="social-box" hidden>
+    <p class="note" style="margin-top:22px">หรือเข้าสู่ระบบด้วย</p>
+    <div class="social" id="social-guest"></div>
+  </div>
+</section>
+
+<section id="reset" class="box" hidden>
+  <h2>ตั้งรหัสผ่านใหม่</h2>
+  <form id="f-reset">
+    <label for="rs-pw">รหัสผ่านใหม่ (อย่างน้อย 10 ตัวอักษร)</label><input id="rs-pw" type="password" autocomplete="new-password" minlength="10" required>
+    <button class="btn" type="submit">บันทึกรหัสผ่านใหม่</button>
+  </form>
+</section>
+
+<div id="member" hidden>
+  <section class="box" id="profile"></section>
+  <section class="box" id="methods"></section>
+  <section class="box" id="line" hidden></section>
+  <section class="box" id="privacy"></section>
+  <section class="box" id="mydata">
+    <h2>ประวัติและไพ่โปรด</h2>
+    <details id="d-history"><summary>ประวัติการอ่านไพ่</summary><div id="history"></div></details>
+    <details id="d-favs"><summary>ไพ่โปรด</summary><div id="favs"></div></details>
+  </section>
+  <section class="box">
+    <h2>ส่งความเห็น</h2>
+    <form id="f-feedback">
+      <label for="fb-kind">เรื่อง</label>
+      <select id="fb-kind"><option value="bug">แจ้งปัญหา</option><option value="content">เนื้อหาไม่ถูกต้อง</option><option value="idea">ข้อเสนอแนะ</option></select>
+      <label for="fb-body">ข้อความ</label><textarea id="fb-body" maxlength="1000" required></textarea>
+      <p class="note">ไม่ต้องใส่ข้อมูลส่วนตัวหรือรหัสผ่านในข้อความ</p>
+      <button class="btn" type="submit">ส่ง</button>
+    </form>
+  </section>
+  <p><button class="btn plain" type="button" id="logout">ออกจากระบบ</button></p>
+</div>
+</main>
+
+<script type="module">
+import {API_URL} from './scripts/config.mjs';
+import {createApi, errorText} from './scripts/api-client.mjs';
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+const PROVIDER_NAMES = {google: 'Google', line: 'LINE', facebook: 'Facebook'};
+const WEEKDAYS = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+let me = null, consents = {}, cardName = id => id, spreadName = id => id;
+
+function say(text, kind = 'ok') { const m = $('msg'); m.textContent = text; m.className = 'msg ' + kind; m.hidden = !text; if (text) m.scrollIntoView({block: 'nearest'}); }
+const busy = async (btn, fn) => { btn.disabled = true; try { return await fn(); } finally { btn.disabled = false; } };
+const fail = r => say(errorText(r.data?.error), 'bad');
+const form = f => Object.fromEntries(new FormData(f));
+
+if (!API_URL) { $('off').hidden = false; }
+else {
+  const api = createApi(API_URL);
+  const social = (p, mode) => `${API_URL}/auth/${p}/start?mode=${mode}&return=/account.html`;
+
+  /* ---- fragment from emailed links and social redirects; removed from the address bar straight away ---- */
+  const frag = new URLSearchParams(location.hash.slice(1));
+  history.replaceState(null, '', location.pathname);
+  let resetToken = null;
+
+  async function init() {
+    try {
+      const [c, s] = await Promise.all(['data/cards.public.json', 'data/spreads.json'].map(u => fetch(u).then(r => r.json())));
+      const cards = Object.fromEntries(c.cards.map(x => [x.id, x])), spreads = Object.fromEntries(s.spreads.map(x => [x.id, x]));
+      cardName = id => cards[id]?.name_th ?? id;
+      spreadName = id => spreads[id]?.name_th ?? id;
+      positionName = (sid, pid) => spreads[sid]?.positions.find(p => p.id === pid)?.label_th ?? pid;
+    } catch { /* names fall back to ids */ }
+
+    if (frag.get('verify')) { const r = await api.post('/auth/verify-email', {token: frag.get('verify')}); r.ok ? say('ยืนยันอีเมลเรียบร้อยแล้ว') : fail(r); }
+    else if (frag.get('reset')) { resetToken = frag.get('reset'); }
+    else if (frag.get('login') === 'ok') say('เข้าสู่ระบบแล้ว');
+    else if (frag.get('linked')) say(`ผูกบัญชี ${PROVIDER_NAMES[frag.get('linked')] || ''} แล้ว`);
+    else if (frag.get('error')) say(errorText(frag.get('error')), 'bad');
+    await render();
+  }
+
+  async function render() {
+    const r = await api.get('/me');
+    me = r.ok ? r.data : null;
+    $('guest').hidden = !!me || !!resetToken; $('reset').hidden = !resetToken; $('member').hidden = !me;
+    if (me) { await renderMember(); return; }
+    if (resetToken) return;
+    const p = await api.get('/auth/providers');
+    const list = p.ok ? p.data.providers : [];
+    $('social-box').hidden = !list.length;
+    $('social-guest').innerHTML = list.map(n => `<a class="btn plain" href="${social(n, 'login')}">${PROVIDER_NAMES[n]}</a>`).join('');
+  }
+
+  /* ---- guest forms ---- */
+  const tab = which => { for (const t of ['login', 'register']) { $('tab-' + t).setAttribute('aria-selected', t === which); $('f-' + t).hidden = t !== which; } $('f-forgot').hidden = true; };
+  $('tab-login').onclick = () => tab('login'); $('tab-register').onclick = () => tab('register');
+  $('to-forgot').onclick = () => { $('f-login').hidden = true; $('f-forgot').hidden = false; $('fg-email').value = $('li-email').value; };
+  $('from-forgot').onclick = () => tab('login');
+  $('f-login').onsubmit = async e => { e.preventDefault(); const b = e.submitter; await busy(b, async () => { const r = await api.post('/auth/login', form(e.target)); if (!r.ok) return fail(r); say(''); e.target.reset(); await render(); }); };
+  $('f-register').onsubmit = async e => {
+    e.preventDefault();
+    await busy(e.submitter, async () => {
+      const r = await api.post('/auth/register', form(e.target));
+      if (!r.ok) return fail(r);
+      e.target.reset(); tab('login');
+      say('ส่งอีเมลยืนยันให้แล้ว (ถ้าอีเมลนี้ยังไม่มีบัญชี) กรุณาตรวจกล่องจดหมายและโฟลเดอร์สแปม แล้วเข้าสู่ระบบ');
+    });
+  };
+  $('f-forgot').onsubmit = async e => { e.preventDefault(); await busy(e.submitter, async () => { const r = await api.post('/auth/forgot-password', {email: $('fg-email').value}); r.ok ? (say('ถ้าอีเมลนี้มีบัญชี เราส่งลิงก์ตั้งรหัสผ่านใหม่ให้แล้ว ลิงก์ใช้ได้ 30 นาที'), tab('login')) : fail(r); }); };
+  $('f-reset').onsubmit = async e => {
+    e.preventDefault();
+    await busy(e.submitter, async () => {
+      const r = await api.post('/auth/reset-password', {token: resetToken, password: $('rs-pw').value});
+      if (!r.ok) return fail(r);
+      resetToken = null; $('rs-pw').value = ''; say('ตั้งรหัสผ่านใหม่แล้ว เข้าสู่ระบบด้วยรหัสผ่านใหม่ได้เลย'); await render();
+    });
+  };
+
+  /* ---- signed-in view ---- */
+  async function renderMember() {
+    const [cons, line] = await Promise.all([api.get('/me/consents'), api.get('/me/line-notify')]);
+    consents = Object.fromEntries((cons.data?.consents ?? []).map(c => [c.kind, c]));
+    const u = me.user, providers = me.providers_available, linked = new Set(me.identities);
+
+    $('profile').innerHTML = `<h2>ข้อมูลบัญชี</h2>
+      <p><strong>${esc(u.display_name || 'สมาชิก')}</strong></p>
+      <p>${u.email ? `${esc(u.email)} <span class="badge ${u.email_verified ? 'ok' : ''}">${u.email_verified ? 'ยืนยันแล้ว' : 'ยังไม่ยืนยัน'}</span>` : '<span class="note">บัญชีนี้ยังไม่มีอีเมล (ถ้าไม่มีอีเมล จะกู้บัญชีด้วยการตั้งรหัสผ่านใหม่ไม่ได้)</span>'}</p>
+      ${u.email && !u.email_verified ? '<button class="btn plain" id="resend" type="button">ส่งอีเมลยืนยันอีกครั้ง</button>' : ''}
+      <details><summary>${u.email ? 'เปลี่ยนอีเมล' : 'เพิ่มอีเมล'}</summary>
+        <form id="f-email"><label for="em-new">อีเมลใหม่</label><input id="em-new" type="email" required>
+        ${me.has_password ? '<label for="em-pw">รหัสผ่านปัจจุบัน</label><input id="em-pw" type="password" autocomplete="current-password" required>' : ''}
+        <p class="note">เราจะส่งลิงก์ไปที่อีเมลใหม่ อีเมลจะเปลี่ยนเมื่อคุณกดลิงก์นั้น</p>
+        <button class="btn" type="submit">ส่งลิงก์ยืนยัน</button></form></details>`;
+
+    $('methods').innerHTML = `<h2>วิธีเข้าสู่ระบบ</h2>
+      <div class="row"><span>รหัสผ่าน ${me.has_password ? '<span class="badge ok">ตั้งไว้แล้ว</span>' : '<span class="badge">ยังไม่ได้ตั้ง</span>'}</span></div>
+      <details><summary>${me.has_password ? 'เปลี่ยนรหัสผ่าน' : 'ตั้งรหัสผ่าน'}</summary>
+        <form id="f-pw">${me.has_password ? '<label for="pw-cur">รหัสผ่านปัจจุบัน</label><input id="pw-cur" type="password" autocomplete="current-password" required>' : ''}
+        <label for="pw-new">รหัสผ่านใหม่ (อย่างน้อย 10 ตัวอักษร)</label><input id="pw-new" type="password" autocomplete="new-password" minlength="10" required>
+        <p class="note">เปลี่ยนแล้ว อุปกรณ์อื่นจะถูกออกจากระบบ</p><button class="btn" type="submit">บันทึก</button></form></details>
+      ${providers.map(p => `<div class="row"><span>${PROVIDER_NAMES[p]} ${linked.has(p) ? '<span class="badge ok">ผูกแล้ว</span>' : ''}</span>
+        ${linked.has(p) ? `<button class="btn plain" data-unlink="${p}" type="button" style="margin:0">เลิกผูก</button>` : `<a class="btn plain" href="${social(p, 'link')}" style="margin:0">ผูกบัญชี</a>`}</div>`).join('')}`;
+
+    const hasLine = linked.has('line'), l = line.data;
+    $('line').hidden = !(hasLine || providers.includes('line'));
+    if (!$('line').hidden) {
+      const sub = l?.subscription;
+      $('line').innerHTML = `<h2>แจ้งเตือนผ่าน LINE</h2>
+        ${hasLine ? `<form id="f-line">
+          <label class="check"><input type="checkbox" id="ln-consent" ${l?.consent ? 'checked' : ''}><span>ฉันยินยอมให้ส่งข้อความเตือนผ่าน LINE (เป็นข้อความทั่วไป เช่นไพ่ประจำวัน ไม่มีคำถามหรือผลอ่านของฉัน) หยุดได้ทุกเมื่อโดยพิมพ์ "หยุด" ในแชต</span></label>
+          <div class="inline"><select id="ln-sched" aria-label="ความถี่"><option value="weekly" ${sub?.schedule !== 'daily' ? 'selected' : ''}>ทุกสัปดาห์</option><option value="daily" ${sub?.schedule === 'daily' ? 'selected' : ''}>ทุกวัน</option></select>
+          <select id="ln-day" aria-label="วัน">${WEEKDAYS.map((d, i) => `<option value="${i}" ${(sub?.weekday ?? 0) === i ? 'selected' : ''}>วัน${d}</option>`).join('')}</select>
+          <select id="ln-hour" aria-label="เวลา (เวลาไทย)">${Array.from({length: 24}, (_, h) => `<option value="${h}" ${(sub?.hour ?? 19) === h ? 'selected' : ''}>${String(h).padStart(2, '0')}:00 น.</option>`).join('')}</select></div>
+          <p class="note">${sub ? (sub.friend ? 'เพิ่มบัญชี LINE ของเราเป็นเพื่อนแล้ว' : `ยังไม่ได้เพิ่มเพื่อน${l.add_friend_url ? ` <a href="${esc(l.add_friend_url)}" target="_blank" rel="noopener">เพิ่มเพื่อน</a>` : ''} (ต้องเพิ่มเพื่อนก่อนจึงจะได้รับข้อความ)`) : 'ตั้งค่าแล้วกดบันทึก'}${sub?.blocked ? ' · ถูกบล็อกอยู่ เพิ่มเพื่อนใหม่เพื่อเปิดอีกครั้ง' : ''}</p>
+          <button class="btn" type="submit">บันทึก</button> ${sub ? '<button class="btn plain" id="ln-off" type="button">ปิดการแจ้งเตือน</button>' : ''}</form>`
+          : '<p class="note">ผูกบัญชี LINE ในหัวข้อ "วิธีเข้าสู่ระบบ" ก่อน จึงจะตั้งการแจ้งเตือนได้</p>'}`;
+    }
+
+    const saveOn = consents.save_history?.granted;
+    $('privacy').innerHTML = `<h2>ความเป็นส่วนตัวและข้อมูลของฉัน</h2>
+      <label class="check"><input type="checkbox" id="c-history" ${saveOn ? 'checked' : ''}><span>บันทึกประวัติการอ่านไพ่ของฉันไว้ในบัญชี (ไม่ติ๊ก = ไม่มีปุ่มบันทึก ประวัติเดิมยังอยู่จนกว่าจะลบ)</span></label>
+      <p class="note">ประวัติ บันทึก และไพ่โปรดเห็นได้เฉพาะคุณ ลบเป็นรายการได้ หรือลบทั้งบัญชี ข้อมูลจะถูกลบถาวรหลังผ่านไป 30 วัน</p>
+      <button class="btn plain" id="export" type="button">ดาวน์โหลดข้อมูลทั้งหมดของฉัน</button>
+      <details><summary>ลบบัญชี</summary>
+        <form id="f-delete"><p class="note">ลบแล้วเข้าสู่ระบบไม่ได้ทันที และข้อมูลทั้งหมดจะถูกลบถาวรใน 30 วัน</p>
+        ${me.has_password ? '<label for="dl-pw">รหัสผ่าน</label><input id="dl-pw" type="password" autocomplete="current-password" required>' : ''}
+        <label for="dl-confirm">พิมพ์ DELETE เพื่อยืนยัน</label><input id="dl-confirm" type="text" autocomplete="off" required>
+        <button class="btn danger" type="submit">ลบบัญชีของฉัน</button></form></details>`;
+  }
+
+  /* ---- signed-in actions (delegated, so re-rendering never loses handlers) ---- */
+  $('member').addEventListener('submit', async e => {
+    e.preventDefault();
+    const id = e.target.id, btn = e.submitter;
+    await busy(btn, async () => {
+      if (id === 'f-email') { const r = await api.post('/me/email', {email: $('em-new').value, password: $('em-pw')?.value}); r.ok ? say('ส่งลิงก์ยืนยันไปที่อีเมลใหม่แล้ว กดลิงก์ในอีเมลเพื่อเปลี่ยน') : fail(r); }
+      else if (id === 'f-pw') { const r = await api.post('/me/password', {current: $('pw-cur')?.value, password: $('pw-new').value}); r.ok ? (say('เปลี่ยนรหัสผ่านแล้ว อุปกรณ์อื่นถูกออกจากระบบ'), await render()) : fail(r); }
+      else if (id === 'f-line') {
+        if ($('ln-consent').checked && !consents.line_notify?.granted) { const c = await api.post('/me/consents', {kind: 'line_notify', version: '1', granted: true}); if (!c.ok) return fail(c); }
+        if (!$('ln-consent').checked) { const c = await api.post('/me/consents', {kind: 'line_notify', version: '1', granted: false}); c.ok ? say('ปิดการแจ้งเตือนแล้ว') : fail(c); return render(); }
+        const r = await api.put('/me/line-notify', {enabled: true, schedule: $('ln-sched').value, hour: +$('ln-hour').value, weekday: +$('ln-day').value});
+        r.ok ? (say('บันทึกการแจ้งเตือนแล้ว'), await render()) : fail(r);
+      }
+      else if (id === 'f-delete') {
+        const r = await api.post('/me/delete', {confirm: $('dl-confirm').value, password: $('dl-pw')?.value});
+        if (!r.ok) return fail(r);
+        me = null; say('ลบบัญชีแล้ว ข้อมูลจะถูกลบถาวรใน 30 วัน'); await render();
+      }
+      else if (id === 'f-feedback') { const r = await api.post('/feedback', {kind: $('fb-kind').value, body: $('fb-body').value, page: '/account.html'}); r.ok ? (say('ขอบคุณสำหรับความเห็น'), e.target.reset()) : fail(r); }
+    });
+  });
+  $('member').addEventListener('click', async e => {
+    const t = e.target.closest('button'); if (!t) return;
+    if (t.id === 'resend') await busy(t, async () => { const r = await api.post('/me/resend-verification'); r.ok ? say('ส่งอีเมลยืนยันให้อีกครั้งแล้ว') : fail(r); });
+    else if (t.dataset.unlink) { if (!confirm(`เลิกผูก ${PROVIDER_NAMES[t.dataset.unlink]} ?`)) return; await busy(t, async () => { const r = await api.del('/me/identities/' + t.dataset.unlink); r.ok ? (say('เลิกผูกแล้ว'), await render()) : fail(r); }); }
+    else if (t.id === 'ln-off') await busy(t, async () => { const r = await api.del('/me/line-notify'); r.ok ? (say('ปิดการแจ้งเตือนแล้ว'), await render()) : fail(r); });
+    else if (t.id === 'export') await busy(t, async () => {
+      const res = await fetch(API_URL + '/me/export', {credentials: 'include'});
+      if (!res.ok) return say(errorText('network'), 'bad');
+      const a = Object.assign(document.createElement('a'), {href: URL.createObjectURL(await res.blob()), download: 'taro-my-data.json'});
+      document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+    else if (t.id === 'logout') await busy(t, async () => { await api.post('/auth/logout'); me = null; say('ออกจากระบบแล้ว'); await render(); });
+    else if (t.dataset.noteSave) { const id = t.dataset.noteSave; await busy(t, async () => { const r = await api.put(`/me/readings/${id}/note`, {body: document.querySelector(`[data-note="${id}"]`).value}); r.ok ? say('บันทึกโน้ตแล้ว') : fail(r); }); }
+    else if (t.dataset.rdel) { if (!confirm('ลบการอ่านนี้ออกจากประวัติ?')) return; await busy(t, async () => { const r = await api.del('/me/readings/' + t.dataset.rdel); r.ok ? (t.closest('.item').remove(), say('ลบแล้ว')) : fail(r); }); }
+    else if (t.dataset.fdel) await busy(t, async () => { const r = await api.del('/me/favorites/' + t.dataset.fdel); r.ok ? (await loadFavs()) : fail(r); });
+    else if (t.id === 'more') { await loadHistory(t.dataset.cursor); t.remove(); }
+  });
+  $('member').addEventListener('change', async e => {
+    if (e.target.id !== 'c-history') return;
+    const r = await api.post('/me/consents', {kind: 'save_history', version: '1', granted: e.target.checked});
+    r.ok ? (say(e.target.checked ? 'เปิดการบันทึกประวัติแล้ว' : 'ปิดการบันทึกประวัติแล้ว'), consents.save_history = {granted: e.target.checked}) : (fail(r), e.target.checked = !e.target.checked);
+  });
+
+  /* ---- history and favourites ---- */
+  let positionName = (s, p) => p;
+  const fmt = iso => new Date(iso).toLocaleString('th-TH', {dateStyle: 'medium', timeStyle: 'short'});
+  async function loadHistory(cursor) {
+    const r = await api.get('/me/readings?limit=10' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''));
+    if (!r.ok) return fail(r);
+    const box = $('history');
+    if (!cursor) box.innerHTML = '';
+    if (!cursor && !r.data.readings.length) box.innerHTML = '<p class="note">ยังไม่มีประวัติ เมื่อเปิดการบันทึกประวัติแล้ว จะมีปุ่ม "บันทึกลงประวัติ" ใต้ผลการอ่านในหน้าเลือกไพ่</p>';
+    box.insertAdjacentHTML('beforeend', r.data.readings.map(x => `<div class="item"><h3>${esc(spreadName(x.spread_id))} · ${esc(fmt(x.created_at))}</h3>
+      ${x.question ? `<p>“${esc(x.question)}”</p>` : ''}
+      <p class="note">${x.cards.map(c => `${esc(positionName(x.spread_id, c.position_id))}: ${esc(cardName(c.card_id))}${c.orientation === 'reversed' ? ' (กลับหัว)' : ''}`).join(' · ')}</p>
+      <label class="sr" for="n-${x.id}">โน้ตส่วนตัว</label><textarea id="n-${x.id}" data-note="${x.id}" maxlength="2000" placeholder="โน้ตส่วนตัว (ไม่บังคับ)">${esc(x.note ?? '')}</textarea>
+      <button class="btn plain" data-note-save="${x.id}" type="button">บันทึกโน้ต</button> <button class="btn plain" data-rdel="${x.id}" type="button">ลบ</button></div>`).join(''));
+    if (r.data.next_cursor) box.insertAdjacentHTML('beforeend', `<button class="btn plain" id="more" data-cursor="${esc(r.data.next_cursor)}" type="button">แสดงเพิ่ม</button>`);
+  }
+  async function loadFavs() {
+    const r = await api.get('/me/favorites');
+    if (!r.ok) return fail(r);
+    $('favs').innerHTML = r.data.favorites.length ? r.data.favorites.map(f => `<div class="row"><span>${esc(cardName(f.card_id))}</span><button class="btn plain" data-fdel="${esc(f.card_id)}" type="button" style="margin:0">เอาออก</button></div>`).join('')
+      : '<p class="note">ยังไม่มีไพ่โปรด กดดาวที่หน้ารายละเอียดไพ่ในแค็ตตาล็อกเพื่อเพิ่ม</p>';
+  }
+  $('d-history').addEventListener('toggle', e => { if (e.target.open) loadHistory(); });
+  $('d-favs').addEventListener('toggle', e => { if (e.target.open) loadFavs(); });
+
+  await init();
+}
+</script>
+</body>
+</html>

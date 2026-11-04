@@ -122,6 +122,31 @@ assert.equal(count(env, 'sessions'), 0); assert.equal((await web.get('/me')).sta
   assert.equal((await b.get('/me')).status, 401, 'other devices are signed out');
 }
 
+/* ---- resend verification + provider list ---- */
+{
+  const e = makeEnv({GOOGLE_CLIENT_ID: 'a', GOOGLE_CLIENT_SECRET: 'b', COOKIE_SECRET: 'c'.repeat(32)}), c = client(e);
+  const pr = await c.get('/auth/providers', {withOrigin: false});
+  assert.deepEqual(pr.data, {providers: ['google']}); assert.match(pr.headers.get('cache-control'), /public/);
+  assert.deepEqual((await client(makeEnv()).get('/auth/providers')).data, {providers: []});
+
+  assert.equal((await client(e).post('/me/resend-verification', {})).status, 401);
+  await c.post('/auth/register', {email: 'rv@example.com', password: 'resend long password'});
+  await c.post('/auth/login', {email: 'rv@example.com', password: 'resend long password'});
+  const first = tokenFrom(e.mails, 'verify');
+  assert.equal((await c.post('/me/resend-verification', {})).status, 202);
+  const second = tokenFrom(e.mails, 'verify');
+  assert.notEqual(first, second); assert.equal(e.mails.at(-1).to, 'rv@example.com');
+  assert.equal((await c.post('/auth/verify-email', {token: first})).status, 400, 'the older link stops working');
+  assert.equal((await c.post('/me/resend-verification', {})).status, 202);
+  assert.equal((await c.post('/me/resend-verification', {})).status, 202);
+  assert.equal((await c.post('/me/resend-verification', {})).status, 429, 'at most 3 per hour');
+  e.db.prepare("UPDATE audit_log SET at = '2000-01-01T00:00:00.000Z' WHERE event = 'verify_request'").run();
+  assert.equal((await c.post('/auth/verify-email', {token: tokenFrom(e.mails, 'verify')})).status, 204);
+  assert.equal((await c.post('/me/resend-verification', {})).data.error, 'already_verified');
+  e.db.prepare('UPDATE users SET email = NULL, email_verified = 0').run();
+  assert.equal((await c.post('/me/resend-verification', {})).data.error, 'no_email');
+}
+
 /* ---- throttling ---- */
 {
   const e2 = makeEnv(), c = client(e2);

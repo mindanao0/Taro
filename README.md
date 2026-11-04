@@ -65,9 +65,13 @@ wrangler d1 execute taro-log --remote --command "SELECT at, spread, q FROM quest
 
 คู่มือฉบับเต็มพร้อมตารางการป้องกัน: `docs/DEPLOY_TH.md`
 
+## ระบบสมาชิก (ไม่บังคับ)
+
+`account.html` และโฟลเดอร์ `api/` คือระบบสมัคร/ล็อกอิน (อีเมล, Google, LINE, Facebook), ประวัติการอ่านไพ่พร้อมโน้ตส่วนตัว, ไพ่โปรด, ไพ่ประจำวัน และแจ้งเตือนผ่าน LINE ทุกอย่างปิดอยู่จนกว่าจะตั้ง `API_URL` ใน `scripts/config.mjs` ตอนปิดอยู่เว็บทำงานเหมือนเดิมทุกอย่าง ไม่มีบัญชี ไม่ส่งข้อมูลออกไปไหน ลองในเครื่องได้โดยไม่ต้องมีบัญชีใด ๆ: `node api/dev/server.mjs` (ดู `docs/DEPLOY_API_TH.md` ข้อ 0) แผนและเหตุผลการออกแบบอยู่ใน `docs/07_AUTH_BACKEND_PLAN_TH.md` และ `docs/08_BACKEND_ARCHITECTURE_TH.md`
+
 ## ตรวจข้อมูลอีกครั้ง
 
-จากโฟลเดอร์นี้ รัน `python3 scripts/package_deck.py --check-only` เพื่อตรวจจำนวน ID ไฟล์ภาพ ขนาด และ checksum หรือ `node scripts/reading-core.test.mjs` เพื่อตรวจตรรกะการสุ่มแบบไม่ซ้ำ `python3 scripts/validate_data.py` ตรวจว่า `data/` กับ `docs/` ตรงกัน `node worker/index.test.mjs` และ `node worker/events.test.mjs` ตรวจ Worker (ตัวหลังรัน migration จริงบน SQLite) `node api/test/auth.test.mjs` ตรวจระบบสมัคร/ล็อกอิน (`api/`, คู่มือ deploy ที่ `docs/DEPLOY_API_TH.md`) และ `node scripts/track.test.mjs` ตรวจตัวบันทึกลำดับการกด และ `node tests/e2e.mjs` เปิดเว็บจริงด้วย Playwright ทั้งมือถือและเดสก์ท็อป (ต้องมี `playwright`)
+จากโฟลเดอร์นี้ รัน `python3 scripts/package_deck.py --check-only` เพื่อตรวจจำนวน ID ไฟล์ภาพ ขนาด และ checksum หรือ `node scripts/reading-core.test.mjs` เพื่อตรวจตรรกะการสุ่มแบบไม่ซ้ำ `python3 scripts/validate_data.py` ตรวจว่า `data/` กับ `docs/` ตรงกัน `node worker/index.test.mjs` และ `node worker/events.test.mjs` ตรวจ Worker (ตัวหลังรัน migration จริงบน SQLite) `node api/test/{auth,social,readings,line}.test.mjs` ตรวจระบบสมาชิก (`api/`: อีเมล, Google/LINE/Facebook, ประวัติ, ไพ่โปรด, ไพ่รายวัน, แจ้งเตือน LINE) และ `node scripts/api-client.test.mjs` ตรวจตัวเรียก API ฝั่งเว็บ คู่มือ deploy ที่ `docs/DEPLOY_API_TH.md` และ `node scripts/track.test.mjs` ตรวจตัวบันทึกลำดับการกด และ `node tests/e2e.mjs` เปิดเว็บจริงด้วย Playwright ทั้งมือถือและเดสก์ท็อป (ต้องมี `playwright`)
 
 ## ดาวน์โหลดจาก GitHub
 

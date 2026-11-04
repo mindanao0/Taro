@@ -48,6 +48,13 @@ button{cursor:pointer;background:none;border:0;padding:0}
 .top nav button{padding:4px 0;color:var(--dim);border-bottom:1px solid transparent}
 .top nav button:hover{color:var(--text)}
 .top nav button[aria-current=page]{color:var(--text);border-bottom-color:var(--gold)}
+.top nav a{padding:4px 0;color:var(--dim);text-decoration:none;border-bottom:1px solid transparent} .top nav a:hover{color:var(--text);border-color:var(--gold)}
+.daily{width:min(520px,100%)} .dailybtn{display:flex;align-items:center;gap:16px;width:100%;text-align:left;padding:10px 16px 10px 10px;border:1px solid var(--line);border-radius:14px;color:var(--text);transition:border-color .2s}
+.dailybtn:hover{border-color:#ffffff40} .dailybtn img{width:52px;height:auto;border-radius:4px;flex:none} .dailybtn small{display:block;color:var(--dim);line-height:1.4} .dailybtn b{font-weight:500}
+.savebar{margin:26px auto 0;max-width:640px;border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.savebar textarea{width:100%;min-height:72px;margin:8px 0;background:#ffffff0a;border:1px solid var(--line);border-radius:8px;padding:10px 12px;resize:vertical}
+.savebar textarea:focus{outline:0;border-color:var(--gold)} .savebar .go{padding:8px 20px;border:1px solid var(--gold);border-radius:999px;background:#c8a25a22;min-height:44px} .savebar .go:hover{background:#c8a25a44} .savebar .go[disabled]{opacity:.5}
+.fav{margin-top:14px;padding:8px 18px;border:1px solid var(--line);border-radius:999px;min-height:44px;color:var(--dim)} .fav[aria-pressed=true]{color:var(--gold);border-color:var(--gold)}
 main{max-width:1180px;margin:0 auto;padding:0 28px 100px}
 h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 
@@ -222,6 +229,7 @@ dialog::backdrop{background:#000c}
   <nav aria-label="เมนูหลัก">
     <button id="n-read" aria-current="page">เลือกไพ่</button>
     <button id="n-cat">ไพ่ทั้งสำรับ</button>
+    <a id="n-account" href="account.html" hidden>เข้าสู่ระบบ</a>
   </nav>
 </header>
 <main>
@@ -236,6 +244,7 @@ dialog::backdrop{background:#000c}
       <span class="deck" id="deckstage" aria-hidden="true"></span>
       <span class="t">เริ่มเลือกไพ่</span>
     </button>
+    <div class="daily" id="daily" hidden></div>
   </form>
 
   <section id="pick" hidden>
@@ -256,6 +265,7 @@ dialog::backdrop{background:#000c}
       <a class="link" id="toread" href="#chapters" hidden>ไปอ่านความหมาย</a>
       <button class="link" id="all" type="button">เปิดทั้งหมด</button>
     </div>
+    <div class="savebar" id="savebar" hidden></div>
     <div class="chaps" id="chapters"></div>
     <section class="pairs" id="pairs" hidden></section>
     <section class="overview" id="overview" hidden></section>
@@ -281,6 +291,8 @@ dialog::backdrop{background:#000c}
 import {meaningFor, randomBelow, shuffled} from './scripts/reading-core.mjs';
 import {frameFor, bridgeFor, pairReadings, POSITIONS} from './scripts/reading-guide.mjs';
 import {createTracker, pointOf} from './scripts/track.mjs';
+import {API_URL} from './scripts/config.mjs';
+import {createApi, errorText} from './scripts/api-client.mjs';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -536,11 +548,11 @@ function openCard(i) {
 }
 
 function begin(rd) {
-  reading = rd; shown = new Set();
+  reading = rd; shown = new Set(); saved = false;
   $('ask').hidden = true; $('pick').hidden = true; $('session').hidden = false;
   $('recap').innerHTML = `<p class="rq">${esc(rd.question) || 'ไม่ได้ตั้งคำถาม'}</p>
     <p class="rm"><span>${esc(spreadOf(rd.spread_id).name_th)}</span><button class="link" id="again" type="button">เลือกใหม่</button></p>`;
-  renderTable(true); renderChapters();
+  renderTable(true); renderChapters(); renderSaveBar();
   scrollTo(0, 0);
 }
 $('ask').onsubmit = e => { e.preventDefault(); startPick(); };
@@ -696,12 +708,68 @@ function detail(c) {
     <p class="en">${esc(c.name_en)}</p><h2>${esc(c.name_th)}</h2>
     <p class="kw">${esc(c.keywords_th.join(', '))}</p>
     <dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
-    <p class="qq">${esc(c.reflection_th)}</p></div></div>`;
+    <p class="qq">${esc(c.reflection_th)}</p>${account ? `<button type="button" class="fav" id="favbtn" aria-pressed="${favs.has(c.id)}">${favs.has(c.id) ? '★ ไพ่โปรด' : '☆ เพิ่มเป็นไพ่โปรด'}</button>` : ''}</div></div>`;
+  if (account) $('favbtn').onclick = async () => {
+    const on = !favs.has(c.id), r = on ? await api.put('/me/favorites/' + c.id) : await api.del('/me/favorites/' + c.id);
+    if (!r.ok) return;
+    on ? favs.add(c.id) : favs.delete(c.id);
+    $('favbtn').setAttribute('aria-pressed', on); $('favbtn').textContent = on ? '★ ไพ่โปรด' : '☆ เพิ่มเป็นไพ่โปรด';
+  };
   track('dialog_open', {view: 'cat', target: 'card:' + c.id});
   $('dlg').showModal();
 }
 $('dx').onclick = () => { track('dialog_close', {view: 'cat', target: 'x'}); $('dlg').close(); };
 $('dlg').onclick = e => { if (e.target === $('dlg')) { track('dialog_close', {view: 'cat', target: 'backdrop'}); $('dlg').close(); } };
+
+/* ---------- optional account features (only when API_URL is set in scripts/config.mjs) ---------- */
+const api = API_URL ? createApi(API_URL) : null;
+let account = null, saveConsent = false, saved = false;
+const favs = new Set();
+async function loadAccount() {
+  if (!api) return;
+  $('n-account').hidden = false;
+  const r = await api.get('/me');
+  account = r.ok ? r.data : null;
+  if (account) {
+    $('n-account').textContent = account.user.display_name || 'บัญชีของฉัน';
+    const [c, f] = await Promise.all([api.get('/me/consents'), api.get('/me/favorites')]);
+    saveConsent = !!c.data?.consents?.find(x => x.kind === 'save_history')?.granted;
+    favs.clear(); (f.data?.favorites ?? []).forEach(x => favs.add(x.card_id));
+  }
+  renderSaveBar();
+}
+function renderSaveBar() {
+  const bar = $('savebar');
+  bar.hidden = !api || !reading;
+  if (bar.hidden) return;
+  if (saved) { bar.innerHTML = '<p class="note" style="margin:0">บันทึกลงประวัติแล้ว ดูได้ที่ <a class="link" href="account.html">หน้าบัญชี</a></p>'; return; }
+  if (!account) { bar.innerHTML = '<p class="note" style="margin:0"><a class="link" href="account.html">เข้าสู่ระบบ</a> เพื่อบันทึกการอ่านนี้ลงประวัติและเขียนโน้ตส่วนตัว</p>'; return; }
+  bar.innerHTML = `<label for="rnote" class="note">โน้ตส่วนตัว (ไม่บังคับ)</label><textarea id="rnote" maxlength="2000"></textarea>
+    ${saveConsent ? '' : '<p class="note">การบันทึกประวัติต้องได้รับความยินยอมจากคุณ ข้อมูลอยู่ในบัญชีของคุณ เห็นได้เฉพาะคุณ ลบได้ทุกเมื่อ</p>'}
+    <button type="button" class="go" id="rsave">${saveConsent ? 'บันทึกลงประวัติ' : 'ยินยอมและบันทึก'}</button> <span class="note" id="rsay" role="status"></span>`;
+}
+$('savebar').onclick = async e => {
+  if (e.target.id !== 'rsave' || !reading) return;
+  const btn = e.target, say = t => { $('rsay').textContent = t; };
+  btn.disabled = true;
+  if (!saveConsent) {
+    const c = await api.post('/me/consents', {kind: 'save_history', version: '1', granted: true});
+    if (!c.ok) { say(errorText(c.data?.error)); btn.disabled = false; return; }
+    saveConsent = true;
+  }
+  const r = await api.post('/me/readings', {spread_id: reading.spread_id, question: reading.question, reversed_enabled: reading.reversed_enabled,
+    cards: reading.cards.map(c => ({position_id: c.position_id, card_id: c.card_id, orientation: c.orientation})), note: $('rnote').value});
+  if (r.ok) { saved = true; renderSaveBar(); } else { say(errorText(r.data?.error)); btn.disabled = false; }
+};
+async function showDaily() {
+  if (!api) return;
+  const r = await api.get('/content/daily');
+  const c = r.ok && byId[r.data.card_id];
+  if (!c) return;
+  $('daily').hidden = false;
+  $('daily').innerHTML = `<button type="button" class="dailybtn" id="dailybtn"><img src="${c.image_web}" alt="${esc(c.alt_th)}" width="52"><span><small>ไพ่ประจำวันนี้</small><b>${esc(c.name_th)}</b><small>${esc(c.name_en)}</small></span></button>`;
+  $('dailybtn').onclick = () => detail(c);
+}
 
 function renderCat() {
   const q = $('s').value.trim().toLowerCase();
@@ -720,6 +788,7 @@ $('s').oninput = () => {   // log only the length and result count, never the wo
   searchTimer = setTimeout(() => track('catalog_search', {view: 'cat', data: {len: $('s').value.trim().length, n: $('grid').querySelectorAll('.tile').length}}), 800);
 };
 renderCat();
+loadAccount(); showDaily();
 </script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "3dc834ed9fbf42e991ac307ddb9ada79"}'></script><!-- End Cloudflare Web Analytics -->
 </body>

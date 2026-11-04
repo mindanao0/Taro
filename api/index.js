@@ -166,6 +166,19 @@ async function resetPassword(req, env) {
   return json(204);
 }
 
+// Re-send the verification link to the signed-in user's own address (3 per hour).
+async function resendVerification(req, env, ctx, s) {
+  if (!s.user.email) return json(409, {error: 'no_email'});
+  if (s.user.email_verified) return json(409, {error: 'already_verified'});
+  const subject = await sha256Hex(s.user.id);
+  if (await countEvents(env, 'verify_request', subject, 3_600_000) >= 3) return json(429, {error: 'too_many_requests'});
+  await audit(env, 'verify_request', {userId: s.user.id, subject});
+  await env.DB.prepare("UPDATE email_tokens SET used_at = ? WHERE user_id = ? AND purpose = 'verify_email' AND used_at IS NULL").bind(iso(), s.user.id).run();
+  const token = await issueToken(env, s.user.id, 'verify_email', VERIFY_HOURS * 3_600_000);
+  ctx.waitUntil(sendMail(env, {to: s.user.email, ...verifyMail(`${webUrl(env)}/account.html#verify=${token}`)}));
+  return json(202, {ok: true});
+}
+
 async function me(req, env) {
   const s = await currentSession(env, req);
   if (!s) return json(401, {error: 'not_signed_in'});
@@ -197,6 +210,8 @@ const ROUTES = [
   ['POST', '/auth/register', register, {limit: true}], ['POST', '/auth/login', login, {limit: true}], ['POST', '/auth/logout', logout],
   ['POST', '/auth/verify-email', verifyEmail, {limit: true}], ['POST', '/auth/forgot-password', forgotPassword, {limit: true}], ['POST', '/auth/reset-password', resetPassword, {limit: true}],
   ['GET', '/auth/:provider/start', socialStart, {limit: true, csrf: false}], ['GET', '/auth/:provider/callback', socialCallback, {csrf: false}],
+  ['GET', '/auth/providers', async (req, env) => json(200, {providers: providerList(env)}, {'cache-control': 'public, max-age=300'})],
+  ['POST', '/me/resend-verification', authed(resendVerification), {limit: true}],
   ['GET', '/me', me], ['POST', '/me/password', changePassword], ['POST', '/me/email', authed(requestEmailChange), {limit: true}],
   ['DELETE', '/me/identities/:provider', authed(unlinkIdentity)],
   ['GET', '/me/consents', authed(getConsents)], ['POST', '/me/consents', authed(setConsent)],
