@@ -19,6 +19,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap">
 <style>
 :root{
+  --field:#ffffff66;   /* border of text fields: at least 3:1 against the page (WCAG 1.4.11) */
   --bg:#0b0908; --text:#ece4d3; --dim:#9a8f7e; --line:#ffffff1c; --gold:#c8a25a;
   --display:"Instrument Serif","IBM Plex Sans Thai",Georgia,serif;
   --sans:"IBM Plex Sans Thai","Noto Sans Thai",system-ui,sans-serif;
@@ -42,17 +43,17 @@ button{cursor:pointer;background:none;border:0;padding:0}
 .top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 32px;
   max-width:1180px;margin:0 auto;padding:24px 28px 0}
 .mark{font:italic 400 1.7rem/1 var(--display);margin:0}
-.mark button{font:inherit;color:inherit;padding:8px 0}
+.mark button{font:inherit;color:inherit;padding:9px 0}
 .mark button:hover{color:var(--gold)}
 .top nav{display:flex;gap:28px}
-.top nav button{padding:4px 0;color:var(--dim);border-bottom:1px solid transparent}
+.top nav button{padding:9px 0;color:var(--dim);border-bottom:1px solid transparent}
 .top nav button:hover{color:var(--text)}
 .top nav button[aria-current=page]{color:var(--text);border-bottom-color:var(--gold)}
-.top nav a{padding:4px 0;color:var(--dim);text-decoration:none;border-bottom:1px solid transparent} .top nav a:hover{color:var(--text);border-color:var(--gold)}
+.top nav a{padding:9px 0;color:var(--dim);text-decoration:none;border-bottom:1px solid transparent} .top nav a:hover{color:var(--text);border-color:var(--gold)}
 .daily{width:min(520px,100%)} .dailybtn{display:flex;align-items:center;gap:16px;width:100%;text-align:left;padding:10px 16px 10px 10px;border:1px solid var(--line);border-radius:14px;color:var(--text);transition:border-color .2s}
 .dailybtn:hover{border-color:#ffffff40} .dailybtn img{width:52px;height:auto;border-radius:4px;flex:none} .dailybtn small{display:block;color:var(--dim);line-height:1.4} .dailybtn b{font-weight:500}
 .savebar{margin:26px auto 0;max-width:640px;border:1px solid var(--line);border-radius:14px;padding:16px 18px}
-.savebar textarea{width:100%;min-height:72px;margin:8px 0;background:#ffffff0a;border:1px solid var(--line);border-radius:8px;padding:10px 12px;resize:vertical}
+.savebar textarea{width:100%;min-height:72px;margin:8px 0;background:#ffffff0a;border:1px solid var(--field);border-radius:8px;padding:10px 12px;resize:vertical}
 .savebar textarea:focus{outline:0;border-color:var(--gold)} .savebar .go{padding:8px 20px;border:1px solid var(--gold);border-radius:999px;background:#c8a25a22;min-height:44px} .savebar .go:hover{background:#c8a25a44} .savebar .go[disabled]{opacity:.5}
 .fav{margin-top:14px;padding:8px 18px;border:1px solid var(--line);border-radius:999px;min-height:44px;color:var(--dim)} .fav[aria-pressed=true]{color:var(--gold);border-color:var(--gold)}
 main{max-width:1180px;margin:0 auto;padding:0 28px 100px}
@@ -60,9 +61,9 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 
 /* ask */
 .ask{display:grid;justify-items:center;gap:30px;padding:64px 0 20px;text-align:center}
-.q{width:min(820px,100%);background:transparent;border:0;border-bottom:1px solid var(--line);padding:12px 4px;
+.q{width:min(820px,100%);background:transparent;border:0;border-bottom:1px solid var(--field);padding:12px 4px;
   font:400 clamp(1.7rem,4.2vw,3rem)/1.25 var(--display);text-align:center;color:var(--text)}
-.q::placeholder{color:#9a8f7e99;font-style:italic}
+.q::placeholder{color:#9a8f7ed9;font-style:italic}
 .q:focus{outline:0;border-bottom-color:var(--gold)}
 .picks{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;border:0;margin:0;padding:0;position:relative}
 .pick{display:inline-flex;align-items:center;gap:10px;padding:8px 20px 8px 14px;border:1px solid var(--line);border-radius:999px;color:var(--dim);cursor:pointer;line-height:1.4}
@@ -177,15 +178,16 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 
 /* catalog */
 .finder{display:flex;flex-wrap:wrap;gap:16px 40px;align-items:end;margin:18px 0 38px}
-.finder input{width:min(380px,100%);background:transparent;border:0;border-bottom:1px solid var(--line);padding:8px 2px;color:var(--text)}
-.finder input::placeholder{color:#9a8f7e99}
+.finder input{width:min(380px,100%);background:transparent;border:0;border-bottom:1px solid var(--field);padding:8px 2px;color:var(--text)}
+.finder input::placeholder{color:#9a8f7ed9}
 .finder input:focus{outline:0;border-bottom-color:var(--gold)}
 .cats{display:flex;flex-wrap:wrap;gap:6px 24px}
 .cats button{color:var(--dim);padding:2px 0;border-bottom:1px solid transparent}
 .cats button:hover{color:var(--text)}
 .cats button[aria-pressed=true]{color:var(--text);border-bottom-color:var(--gold)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:40px 26px}
-.tile{text-align:left;display:block;width:100%}
+.tile{text-align:left;display:block;width:100%;position:relative}
+.star{position:absolute;top:8px;right:10px;color:var(--gold);font-style:normal;font-size:1.3rem;text-shadow:0 1px 6px #000}
 .tile img{display:block;width:100%;aspect-ratio:937/1678;object-fit:contain;background:#14110f;box-shadow:0 22px 44px -18px #000}
 .tile:hover img{outline:1px solid var(--gold);outline-offset:4px}
 .tile span{display:block;margin-top:14px;font:400 1.4rem/1.2 var(--display)}
@@ -714,6 +716,7 @@ function detail(c) {
     if (!r.ok) return;
     on ? favs.add(c.id) : favs.delete(c.id);
     $('favbtn').setAttribute('aria-pressed', on); $('favbtn').textContent = on ? '★ ไพ่โปรด' : '☆ เพิ่มเป็นไพ่โปรด';
+    renderCat();   // stars on the grid behind the dialog follow
   };
   track('dialog_open', {view: 'cat', target: 'card:' + c.id});
   $('dlg').showModal();
@@ -737,6 +740,7 @@ async function loadAccount() {
     favs.clear(); (f.data?.favorites ?? []).forEach(x => favs.add(x.card_id));
   }
   renderSaveBar();
+  renderCat();   // adds the favourites filter and the stars
 }
 function renderSaveBar() {
   const bar = $('savebar');
@@ -773,12 +777,14 @@ async function showDaily() {
 
 function renderCat() {
   const q = $('s').value.trim().toLowerCase();
-  const list = cards.filter(c => (!cat || c.arcana === cat || c.suit === cat) &&
+  const list = cards.filter(c => (!cat || (cat === 'fav' ? favs.has(c.id) : c.arcana === cat || c.suit === cat)) &&
     (!q || [c.name_th, c.name_en, ...c.keywords_th].some(t => t.toLowerCase().includes(q))));
-  $('cats').innerHTML = CATS.map(([k, n]) => `<button data-k="${k}" aria-pressed="${k === cat}">${n}</button>`).join('');
+  const chips = account ? [...CATS, ['fav', '★ ไพ่โปรด']] : CATS;   // the favourites filter exists only for signed-in visitors
+  if (cat === 'fav' && !account) cat = '';
+  $('cats').innerHTML = chips.map(([k, n]) => `<button data-k="${k}" aria-pressed="${k === cat}">${n}</button>`).join('');
   $('grid').innerHTML = list.map(c => `<button class="tile" data-id="${c.id}">
-    <img loading="lazy" src="${c.image_web}" alt="${esc(c.alt_th)}"><span>${esc(c.name_en)}</span><b>${esc(c.name_th)}</b></button>`).join('')
-    || '<p class="empty">ไม่พบไพ่ที่ตรงกับคำค้น ลองใช้ชื่อสั้นลงหรือเลือกหมวดทั้งหมด</p>';
+    <img loading="lazy" src="${c.image_web}" alt="${esc(c.alt_th)}">${account && favs.has(c.id) ? '<i class="star" aria-hidden="true">★</i><span class="sr">ไพ่โปรด</span>' : ''}<span>${esc(c.name_en)}</span><b>${esc(c.name_th)}</b></button>`).join('')
+    || `<p class="empty">${cat === 'fav' ? 'ยังไม่มีไพ่โปรด เปิดรายละเอียดไพ่แล้วกดดาวเพื่อเพิ่ม' : 'ไม่พบไพ่ที่ตรงกับคำค้น ลองใช้ชื่อสั้นลงหรือเลือกหมวดทั้งหมด'}</p>`;
 }
 $('cats').onclick = e => { if (e.target.dataset.k != null) { cat = e.target.dataset.k; track('catalog_filter', {view: 'cat', target: 'cat:' + (cat || 'all'), point: pointOf(e, e.target)}); renderCat(); } };
 $('grid').onclick = e => { const b = e.target.closest('.tile'); if (b) detail(byId[b.dataset.id]); };

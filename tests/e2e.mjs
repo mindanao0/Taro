@@ -223,6 +223,10 @@ for (const [label, ctxOpts] of [['phone', devices['iPhone 13']], ['desktop', {vi
       await page.click('#favbtn');
       await page.waitForFunction(() => document.getElementById('favbtn').getAttribute('aria-pressed') === 'true');
       await page.keyboard.press('Escape');
+      assert.equal(await page.locator('#grid .tile .star').count(), 1, 'the favourite shows a star in the catalogue');
+      await page.click('#cats [data-k=fav]');
+      assert.equal(await page.locator('#grid .tile').count(), 1, 'the favourites filter lists only the starred card');
+      await page.click('#cats [data-k=""]');
       await page.goto(web + 'account.html'); await page.waitForSelector('#member:not([hidden])');
       await page.click('#d-history summary');
       await page.waitForSelector('#history .item');
