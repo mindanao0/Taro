@@ -329,18 +329,13 @@ const F = (id, extra = {}) => ({fb: {id, name: 'Fon Face', picture: {data: {url:
   assert.equal((await client(env, {origin: 'https://evil.test'}).post('/me/delete', {confirm: 'DELETE'})).status, 403);
   assert.equal((await c.post('/me/delete', {confirm: 'DELETE', password: 'zoes long password'})).status, 204);
   assert.equal((await c.get('/me')).status, 401);
-  assert.equal((await client(env).post('/auth/login', {email: 'zoe@example.com', password: 'zoes long password'})).status, 401, 'deleted accounts cannot sign in');
   assert.equal(count(env, 'sessions'), 0);
   assert.equal(count(env, 'users'), 1, 'kept for the 30-day grace period');
   env.db.prepare("UPDATE users SET deleted_at = '2000-01-01T00:00:00.000Z'").run();
   await maintain(env);
   for (const t of ['users', 'identities', 'consents', 'credentials']) assert.equal(count(env, t), 0, t + ' purged');
 
-  // a deleted account's social identity can't be used to sign back in during the grace period
-  const e2 = fresh(), s1 = client(e2);
-  await social(s1, 'google', G('del-g'));
-  assert.equal((await s1.post('/me/delete', {confirm: 'DELETE'})).status, 204);
-  assert.equal((await social(client(e2), 'google', G('del-g'))).result.error, 'account_deleted');
+  // (restoring a deleted account is covered in account.test.mjs)
 }
 
 console.log('PASS: Google/LINE/Facebook login (RS256, PKCE, state, nonce), merge rules incl. pre-hijacking, link/unlink, email change, consents, export, deletion');

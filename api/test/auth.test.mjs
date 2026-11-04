@@ -244,7 +244,8 @@ async function worker_fetch(env, method, origin) {
 
   e.db.prepare("UPDATE users SET deleted_at = '2026-01-01T00:00:00.000Z'").run();
   assert.equal((await c.get('/me')).status, 401, 'deleted users cannot use an old session');
-  assert.equal((await c.post('/auth/login', {email: 'eve@example.com', password: 'eves long password'})).status, 401);
+  assert.equal((await c.post('/auth/login', {email: 'eve@example.com', password: 'wrong wrong wrong'})).status, 401, 'a wrong password does not restore anything');
+  assert.ok(row(e, 'SELECT deleted_at FROM users').deleted_at);
   e.db.prepare('UPDATE users SET deleted_at = NULL').run();
 
   e.db.prepare("UPDATE sessions SET expires_at = '2000-01-01T00:00:00.000Z'").run();

@@ -112,8 +112,11 @@ export async function resolveSocial(env, provider, p, {linkUserId = null} = {}) 
   const found = await db.prepare(
     'SELECT i.user_id, u.deleted_at FROM identities i JOIN users u ON u.id = i.user_id WHERE i.provider = ? AND i.provider_user_id = ?').bind(provider, p.sub).first();
   if (found) {
-    if (found.deleted_at) return {error: 'account_deleted'};
     if (linkUserId && found.user_id !== linkUserId) return {error: 'identity_in_use'};
+    if (found.deleted_at) {   // deleted within the 30-day grace period: proving control of the login method brings the account back
+      await db.prepare('UPDATE users SET deleted_at = NULL WHERE id = ?').bind(found.user_id).run();
+      return {userId: found.user_id, restored: true};
+    }
     return {userId: found.user_id};
   }
   const addIdentity = userId => db.prepare('INSERT INTO identities (id, user_id, provider, provider_user_id, email, created_at) VALUES (?, ?, ?, ?, ?, ?)')
@@ -125,9 +128,9 @@ export async function resolveSocial(env, provider, p, {linkUserId = null} = {}) 
     return {userId: linkUserId, linked: true};
   }
   if (p.email && p.emailVerified) {
-    const same = await db.prepare('SELECT id, email_verified FROM users WHERE email = ? AND deleted_at IS NULL').bind(p.email.toLowerCase()).first();
+    const same = await db.prepare('SELECT id, email_verified, deleted_at FROM users WHERE email = ?').bind(p.email.toLowerCase()).first();   // includes accounts deleted within the grace period
     if (same) {
-      const stmts = [addIdentity(same.id), fillProfile(same.id), db.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').bind(same.id)];
+      const stmts = [addIdentity(same.id), fillProfile(same.id), db.prepare('UPDATE users SET email_verified = 1, deleted_at = NULL WHERE id = ?').bind(same.id)];
       if (!same.email_verified) {
         // Whoever set a password on this never-verified address may not be its owner (pre-hijacking), so that password and
         // its sessions and pending links are revoked now that the real owner has proved control through the provider.
@@ -136,7 +139,7 @@ export async function resolveSocial(env, provider, p, {linkUserId = null} = {}) 
           db.prepare('DELETE FROM email_tokens WHERE user_id = ?').bind(same.id));
       }
       await db.batch(stmts);
-      return {userId: same.id, merged: true};
+      return {userId: same.id, merged: true, restored: !!same.deleted_at};
     }
   } else if (p.email) {
     const taken = await db.prepare('SELECT 1 AS x FROM users WHERE email = ?').bind(p.email.toLowerCase()).first();
@@ -213,9 +216,9 @@ export async function socialCallback(req, env, _ctx, params) {
   }
   const res = await resolveSocial(env, name, profile, {linkUserId});
   if (res.error) return fail(res.error);
-  await audit(env, jar.mode === 'link' ? 'link' : 'login', {userId: res.userId, provider: name});
+  await audit(env, jar.mode === 'link' ? 'link' : res.restored ? 'restore' : 'login', {userId: res.userId, provider: name});
   if (jar.mode === 'link') return back(env, ret, `linked=${name}`, [clear]);
   await env.DB.prepare('UPDATE users SET last_login_at = ? WHERE id = ?').bind(iso(), res.userId).run();
   const token = await createSession(env, res.userId, req.headers.get('user-agent'));
-  return back(env, ret, 'login=ok', [clear, sessionCookie(token, SESSION_SECONDS)]);
+  return back(env, ret, res.restored ? 'login=restored' : 'login=ok', [clear, sessionCookie(token, SESSION_SECONDS)]);
 }

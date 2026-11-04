@@ -5,7 +5,7 @@ import {existsMail, resetMail, sendMail, verifyMail} from './lib/mail.mjs';
 import {SESSION_SECONDS, createSession, currentSession, deleteSession, deleteUserSessions} from './lib/session.mjs';
 import {audit, countEvents, iso, webUrl} from './lib/util.mjs';
 import {providerList, socialCallback, socialStart} from './lib/social.mjs';
-import {deleteAccount, exportData, getConsents, requestEmailChange, setConsent, unlinkIdentity} from './lib/account.mjs';
+import {deleteAccount, exportData, getConsents, listSessions, requestEmailChange, revokeOtherSessions, revokeSession, setConsent, unlinkIdentity, updateProfile} from './lib/account.mjs';
 import {authed} from './lib/util.mjs';
 import {addFavorite, deleteReading, getReading, listFavorites, listReadings, removeFavorite, saveReading, setNote} from './lib/readings.mjs';
 import {dailyCard} from './lib/daily.mjs';
@@ -65,7 +65,7 @@ async function register(req, env, ctx) {
   if (pwErr) return json(400, {error: pwErr});
   const termsVersion = typeof b.terms_version === 'string' && /^[\w.-]{1,20}$/.test(b.terms_version) ? b.terms_version : null;
   if (!termsVersion) return json(400, {error: 'terms_required'});   // signing up means accepting the terms and privacy policy, and we keep proof of which version
-  const display = typeof b.display_name === 'string' ? b.display_name.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim().slice(0, 60) || null : null;
+  const display = typeof b.display_name === 'string' ? b.display_name.replace(/\s+/g, ' ').replace(/[\u0000-\u001f\u007f]+/g, ' ').trim().slice(0, 60) || null : null;
 
   const hash = await hashPassword(b.password, iterationsOf(env));   // computed on both paths so timing does not reveal existing accounts
   const existing = await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first();
@@ -95,8 +95,8 @@ async function login(req, env) {
   if (await countEvents(env, 'login_fail', subject, LOGIN_WINDOW_MIN * 60_000) >= LOGIN_FAILS) return json(429, {error: 'too_many_attempts'});
 
   const row = await env.DB.prepare(
-    `SELECT u.id, u.email, u.email_verified, u.display_name, u.avatar_url, c.password_hash
-     FROM users u JOIN credentials c ON c.user_id = u.id WHERE u.email = ? AND u.deleted_at IS NULL`).bind(email).first();
+    `SELECT u.id, u.email, u.email_verified, u.display_name, u.avatar_url, u.deleted_at, c.password_hash
+     FROM users u JOIN credentials c ON c.user_id = u.id WHERE u.email = ?`).bind(email).first();
   const {ok, needsRehash} = await verifyPassword(b.password, row?.password_hash ?? await dummyFor(env), iterationsOf(env));
   if (!row || !ok) {
     await audit(env, 'login_fail', {userId: row?.id ?? null, subject});
@@ -106,10 +106,11 @@ async function login(req, env) {
     await env.DB.prepare('UPDATE credentials SET password_hash = ?, updated_at = ? WHERE user_id = ?')
       .bind(await hashPassword(b.password, iterationsOf(env)), iso(), row.id).run();
   }
-  await env.DB.prepare('UPDATE users SET last_login_at = ? WHERE id = ?').bind(iso(), row.id).run();
-  await audit(env, 'login', {userId: row.id});
+  const restored = !!row.deleted_at;   // the right password within the 30-day grace period brings a deleted account back
+  await env.DB.prepare('UPDATE users SET last_login_at = ?, deleted_at = NULL WHERE id = ?').bind(iso(), row.id).run();
+  await audit(env, restored ? 'restore' : 'login', {userId: row.id});
   const token = await createSession(env, row.id, req.headers.get('user-agent'));
-  return json(200, {user: publicUser(row)}, {'set-cookie': sessionCookie(token, SESSION_SECONDS)});
+  return json(200, {user: publicUser(row), restored}, {'set-cookie': sessionCookie(token, SESSION_SECONDS)});
 }
 
 async function logout(req, env) {
@@ -141,7 +142,7 @@ async function forgotPassword(req, env, ctx) {
   // Always the same answer, whether or not the address has an account.
   if (await countEvents(env, 'reset_request', subject, 3_600_000) < RESETS_PER_HOUR) {
     await audit(env, 'reset_request', {subject});
-    const user = await env.DB.prepare('SELECT id FROM users WHERE email = ? AND deleted_at IS NULL').bind(email).first();
+    const user = await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first();   // deleted accounts too: the reset link also restores them
     if (user) {
       await env.DB.prepare("UPDATE email_tokens SET used_at = ? WHERE user_id = ? AND purpose = 'reset_password' AND used_at IS NULL").bind(iso(), user.id).run();
       const token = await issueToken(env, user.id, 'reset_password', RESET_MINUTES * 60_000);
@@ -162,7 +163,7 @@ async function resetPassword(req, env) {
   await env.DB.batch([
     env.DB.prepare('INSERT INTO credentials (user_id, password_hash, updated_at) VALUES (?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET password_hash = excluded.password_hash, updated_at = excluded.updated_at')
       .bind(userId, await hashPassword(b.password, iterationsOf(env)), now),
-    env.DB.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').bind(userId)   // the link went to this address, so it proves control of it
+    env.DB.prepare('UPDATE users SET email_verified = 1, deleted_at = NULL WHERE id = ?').bind(userId)   // the link went to this address, so it proves control of it (and restores an account deleted within the grace period)
   ]);
   await deleteUserSessions(env, userId);   // every device is signed out
   await audit(env, 'pw_reset', {userId});
@@ -217,6 +218,8 @@ const ROUTES = [
   ['POST', '/me/resend-verification', authed(resendVerification), {limit: true}],
   ['GET', '/me', me], ['POST', '/me/password', changePassword], ['POST', '/me/email', authed(requestEmailChange), {limit: true}],
   ['DELETE', '/me/identities/:provider', authed(unlinkIdentity)],
+  ['POST', '/me/profile', authed(updateProfile)],
+  ['GET', '/me/sessions', authed(listSessions)], ['POST', '/me/sessions/revoke-others', authed(revokeOtherSessions)], ['DELETE', '/me/sessions/:id', authed(revokeSession)],
   ['GET', '/me/consents', authed(getConsents)], ['POST', '/me/consents', authed(setConsent)],
   ['GET', '/me/export', authed(exportData)], ['POST', '/me/delete', authed(deleteAccount)],
   ['GET', '/content/daily', dailyCard],

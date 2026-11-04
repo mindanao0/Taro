@@ -265,8 +265,25 @@ for (const [label, ctxOpts] of [['phone', devices['iPhone 13']], ['desktop', {vi
       await page.waitForFunction(() => /รหัสผ่านไม่ถูกต้อง/.test(document.getElementById('msg').textContent));
       await page.fill('#dl-pw', pw2); await page.click('#f-delete button[type=submit]');
       await page.waitForSelector('#guest:not([hidden])');
-      await page.fill('#li-email', email); await page.fill('#li-pw', pw2); await page.click('#f-login button[type=submit]');
+      // within the 30-day grace period the right password brings the account back, with its data
+      await page.fill('#li-email', email); await page.fill('#li-pw', 'wrong wrong wrong'); await page.click('#f-login button[type=submit]');
       await page.waitForFunction(() => /ไม่ถูกต้อง/.test(document.getElementById('msg').textContent));
+      await page.fill('#li-pw', pw2); await page.click('#f-login button[type=submit]');
+      await page.waitForSelector('#member:not([hidden])');
+      await page.waitForFunction(() => /กู้คืนบัญชี/.test(document.getElementById('msg').textContent));
+      await page.click('#d-history summary'); await page.waitForSelector('#history .item');
+    });
+
+    await step(`account ${label}: change the display name and see the devices that are signed in`, async () => {
+      await page.click('#profile summary:has-text("เปลี่ยนชื่อที่แสดง")');
+      await page.fill('#nm-new', 'ชื่อใหม่'); await page.click('#f-name button[type=submit]');
+      await page.waitForFunction(() => /เปลี่ยนชื่อที่แสดงแล้ว/.test(document.getElementById('msg').textContent));
+      assert.match(await page.locator('#profile').innerText(), /ชื่อใหม่/);
+      await page.click('#d-devices summary'); await page.waitForSelector('#devices .row');
+      assert.equal(await page.locator('#devices .row').count(), 1, 'only this browser is signed in');
+      assert.match(await page.locator('#devices').innerText(), /เครื่องนี้/);
+      assert.equal(await page.locator('#devices [data-revoke]').count(), 0, 'no button to revoke the current device here (use sign out)');
+      await noHScroll();
     });
 
     await step(`account ${label}: no page or console errors`, async () => assert.deepEqual(problems, []));

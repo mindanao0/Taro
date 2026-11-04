@@ -3,7 +3,7 @@ import {sha256Hex, randomToken, verifyPassword, PBKDF2_ITERATIONS} from './crypt
 import {json, readJson} from './http.mjs';
 import {existsMail, sendMail, verifyMail} from './mail.mjs';
 import {deleteSession, deleteUserSessions} from './session.mjs';
-import {audit, iso, webUrl} from './util.mjs';
+import {audit, cleanText, iso, webUrl} from './util.mjs';
 
 const iterationsOf = env => Number(env.PBKDF2_ITERATIONS) || PBKDF2_ITERATIONS;
 export const CONSENT_KINDS = new Set(['terms', 'privacy', 'save_history', 'line_notify']);
@@ -97,4 +97,27 @@ export async function deleteAccount(req, env, _ctx, s) {
   ]);
   await audit(env, 'delete_account', {userId: s.user.id});
   return json(204, undefined, {'set-cookie': '__Host-taro_session=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0'});
+}
+
+/* ---- devices that are signed in, and the display name ---- */
+export async function listSessions(req, env, _ctx, s) {
+  const rows = (await env.DB.prepare('SELECT id, created_at, last_seen_at, user_agent FROM sessions WHERE user_id = ? AND expires_at > ? ORDER BY last_seen_at DESC').bind(s.user.id, iso()).all()).results;
+  return json(200, {sessions: rows.map(r => ({id: r.id, created_at: r.created_at, last_seen_at: r.last_seen_at, user_agent: r.user_agent, current: r.id === s.sessionId}))});
+}
+export async function revokeSession(req, env, _ctx, s, params) {
+  const res = await env.DB.prepare('DELETE FROM sessions WHERE id = ? AND user_id = ?').bind(params.id, s.user.id).run();   // only your own devices
+  if (!(res.meta?.changes ?? res.changes)) return json(404, {error: 'not_found'});
+  await audit(env, 'session_revoke', {userId: s.user.id});
+  return json(204, undefined, params.id === s.sessionId ? {'set-cookie': '__Host-taro_session=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0'} : {});
+}
+export async function revokeOtherSessions(req, env, _ctx, s) {
+  await deleteUserSessions(env, s.user.id, s.sessionId);
+  await audit(env, 'session_revoke', {userId: s.user.id});
+  return json(204);
+}
+export async function updateProfile(req, env, _ctx, s) {
+  const b = await readJson(req);
+  if (typeof b?.display_name !== 'string' || b.display_name.length > 200) return json(400, {error: 'invalid_request'});
+  await env.DB.prepare('UPDATE users SET display_name = ? WHERE id = ?').bind(cleanText(b.display_name, 200).replace(/\s+/g, ' ').trim().slice(0, 60) || null, s.user.id).run();
+  return json(204);
 }

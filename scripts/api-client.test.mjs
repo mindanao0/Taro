@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {createApi, errorText} from './api-client.mjs';
+import {createApi, deviceLabel, errorText} from './api-client.mjs';
 
 const seen = [];
 const res = (status, body, type = 'application/json') => ({ok: status < 400, status, headers: {get: () => type}, json: async () => { if (body === 'bad') throw new Error('x'); return body; }});
@@ -15,6 +15,12 @@ r = await api.get('/badjson'); assert.equal(r.data, null, 'unparseable body does
 const down = createApi('https://api.test', async () => { throw new Error('offline'); });
 r = await down.get('/me'); assert.deepEqual([r.ok, r.status, r.data.error], [false, 0, 'network']);
 assert.match(errorText('invalid_credentials'), /ไม่ถูกต้อง/); assert.match(errorText('???'), /ข้อผิดพลาด/);
+assert.equal(deviceLabel('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'), 'Safari · iOS');
+assert.equal(deviceLabel('Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'), 'Chrome · Android');
+assert.equal(deviceLabel('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36 Edg/120.0'), 'Edge · Windows');
+assert.equal(deviceLabel('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7; rv:121.0) Gecko/20100101 Firefox/121.0'), 'Firefox · macOS');
+assert.equal(deviceLabel('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605 (KHTML, like Gecko) CriOS/120.0 Mobile/15E148 Safari/604.1'), 'Chrome · iOS');
+assert.equal(deviceLabel(''), 'อุปกรณ์ที่ไม่ทราบชนิด'); assert.equal(deviceLabel(null), 'อุปกรณ์ที่ไม่ทราบชนิด'); assert.equal(deviceLabel('<script>alert(1)</script>'), 'อุปกรณ์ที่ไม่ทราบชนิด');
 // every error code the API can return has a Thai message
 import {readFileSync, readdirSync} from 'node:fs';
 const codes = new Set();

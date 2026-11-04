@@ -43,4 +43,12 @@ const MESSAGES = {
   account_deleted: 'บัญชีนี้ถูกลบแล้ว',
   email_exists_login_first: 'มีบัญชีที่ใช้อีเมลนี้อยู่แล้ว เข้าสู่ระบบด้วยวิธีเดิมก่อน แล้วผูกบัญชีนี้ได้จากหน้าตั้งค่า'
 };
+// Short, human label for a stored User-Agent string, e.g. "Chrome · Android".
+export function deviceLabel(ua) {
+  ua = String(ua || '');
+  const os = /iPhone|iPad|iPod/.test(ua) ? 'iOS' : /Android/.test(ua) ? 'Android' : /Windows/.test(ua) ? 'Windows' : /Mac OS X|Macintosh/.test(ua) ? 'macOS' : /CrOS/.test(ua) ? 'ChromeOS' : /Linux/.test(ua) ? 'Linux' : '';
+  const browser = /Edg\//.test(ua) ? 'Edge' : /OPR\/|Opera/.test(ua) ? 'Opera' : /Firefox\//.test(ua) || /FxiOS/.test(ua) ? 'Firefox' : /CriOS|Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : '';
+  return [browser, os].filter(Boolean).join(' · ') || 'อุปกรณ์ที่ไม่ทราบชนิด';
+}
+
 export const errorText = code => MESSAGES[code] || 'เกิดข้อผิดพลาด ลองใหม่อีกครั้ง';
