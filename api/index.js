@@ -7,6 +7,8 @@ import {audit, countEvents, iso, webUrl} from './lib/util.mjs';
 import {providerList, socialCallback, socialStart} from './lib/social.mjs';
 import {deleteAccount, exportData, getConsents, requestEmailChange, setConsent, unlinkIdentity} from './lib/account.mjs';
 import {authed} from './lib/util.mjs';
+import {addFavorite, deleteReading, getReading, listFavorites, listReadings, removeFavorite, saveReading, setNote} from './lib/readings.mjs';
+import {dailyCard} from './lib/daily.mjs';
 
 const VERIFY_HOURS = 24, RESET_MINUTES = 30;
 const LOGIN_FAILS = 10, LOGIN_WINDOW_MIN = 15;     // per email, on top of the per-IP limiter
@@ -196,7 +198,11 @@ const ROUTES = [
   ['GET', '/me', me], ['POST', '/me/password', changePassword], ['POST', '/me/email', authed(requestEmailChange), {limit: true}],
   ['DELETE', '/me/identities/:provider', authed(unlinkIdentity)],
   ['GET', '/me/consents', authed(getConsents)], ['POST', '/me/consents', authed(setConsent)],
-  ['GET', '/me/export', authed(exportData)], ['POST', '/me/delete', authed(deleteAccount)]
+  ['GET', '/me/export', authed(exportData)], ['POST', '/me/delete', authed(deleteAccount)],
+  ['GET', '/content/daily', dailyCard],
+  ['POST', '/me/readings', authed(saveReading)], ['GET', '/me/readings', authed(listReadings)], ['GET', '/me/readings/:id', authed(getReading)],
+  ['PUT', '/me/readings/:id/note', authed(setNote)], ['DELETE', '/me/readings/:id', authed(deleteReading)],
+  ['GET', '/me/favorites', authed(listFavorites)], ['PUT', '/me/favorites/:card_id', authed(addFavorite)], ['DELETE', '/me/favorites/:card_id', authed(removeFavorite)]
 ];
 export const addRoutes = list => ROUTES.push(...list);
 
