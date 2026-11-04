@@ -7,7 +7,7 @@ import {apiUrl, audit, iso, restoreStatement, webUrl} from './util.mjs';
 
 const OAUTH_COOKIE = '__Host-taro_oauth';
 const OAUTH_TTL = 600;
-const FB_VERSION = 'v21.0';   // Graph API version; check Meta's current supported versions before deploying
+const FB_VERSION = 'v25.0';   // Graph API; expires 2028-07-29 (checked 2026-11-04), bump before then
 const dec = new TextDecoder();
 
 const form = o => new URLSearchParams(o).toString();

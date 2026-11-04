@@ -97,7 +97,7 @@ wrangler deploy
 1. Meta for Developers → Create App → ชนิด Consumer → เพิ่มผลิตภัณฑ์ **Facebook Login**
 2. Valid OAuth Redirect URI: `https://api.ivoryrosetarot.online/auth/facebook/callback`
 3. ตั้งค่า Privacy Policy URL และช่องทางลบข้อมูลผู้ใช้ (Meta บังคับก่อนเปิดแอปให้สาธารณะ) แล้วสลับแอปเป็น Live
-4. ตรวจเวอร์ชัน Graph API ที่ Meta รองรับ ค่าในโค้ดคือ `v21.0` (ตัวแปร `FB_VERSION` ใน `api/lib/social.mjs`)
+4. ตรวจเวอร์ชัน Graph API ที่ Meta รองรับ ค่าในโค้ดคือ `v25.0` (ตัวแปร `FB_VERSION` ใน `api/lib/social.mjs`)
 5. ```bash
    cd api
    wrangler secret put FACEBOOK_APP_ID

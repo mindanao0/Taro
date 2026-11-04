@@ -47,8 +47,8 @@ const fetcher = async (url, init = {}) => {
     assert.equal(body.client_id, 'l-id'); assert.equal(body.id_token, 'opaque-line-token');
     return ok({iss: 'https://access.line.me', aud: 'l-id', exp: Math.floor(Date.now() / 1000) + 600, nonce: mock.badNonce ? 'wrong' : body.nonce, ...mock.profile.claims});
   }
-  if (url.startsWith('https://graph.facebook.com/v21.0/oauth/access_token')) { mock.tokenReq.push(body); return ok({access_token: 'fb-token'}); }
-  if (url.startsWith('https://graph.facebook.com/v21.0/me?')) {
+  if (url.startsWith('https://graph.facebook.com/v25.0/oauth/access_token')) { mock.tokenReq.push(body); return ok({access_token: 'fb-token'}); }
+  if (url.startsWith('https://graph.facebook.com/v25.0/me?')) {
     assert.equal(new URL(url).searchParams.get('access_token'), 'fb-token');
     return ok(mock.profile.fb);
   }
