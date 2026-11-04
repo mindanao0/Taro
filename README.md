@@ -22,6 +22,7 @@ python3 -m http.server 8000
 - `docs/02_CARD_MEANINGS_TH.md` ความหมายครบ 78 ใบและตัวอย่างประเด็นความรัก
 - `docs/03_ART_DIRECTION_TH.md` แนวภาพ กรอบ สัญลักษณ์ และการเปลี่ยนจาก RWS
 - `docs/07_AUTH_BACKEND_PLAN_TH.md` แผน backend ระบบสมัคร/ล็อกอิน (Google, LINE, Facebook, อีเมล) พร้อมผัง database
+- `docs/08_BACKEND_ARCHITECTURE_TH.md` แผน backend ทั้งระบบ ข้อมูลทุกประเภทเก็บที่ไหน ผังตารางทั้งหมด งานเบื้องหลัง และหลังบ้านผู้ดูแล
 - `docs/04_WEB_HANDOFF_TH.md` โครงข้อมูลและข้อกำหนดสำหรับผู้พัฒนาเว็บ
 - `docs/05_SOURCES_AND_PROVENANCE.md` แหล่งอ้างอิงและที่มาของเนื้อหา
 - `docs/06_QA_AND_PRINT_TH.md` ผลตรวจและสิ่งที่ต้องตรวจเพิ่มก่อนพิมพ์
