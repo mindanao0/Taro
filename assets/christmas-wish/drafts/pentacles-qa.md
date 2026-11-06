@@ -1,4 +1,3 @@
 # Pentacles draft status
 
-- Six, Nine and Ten have corrected previews in `../previews/`; older drafts remain for comparison.
-- Eight draft shows nine pentacles (eight on display and one in hand); correct before final use.
+Corrected previews for Six, Eight, Nine and Ten are in `../previews/`. Older drafts are retained for comparison. All previews require a final consistency and visual review before use.
