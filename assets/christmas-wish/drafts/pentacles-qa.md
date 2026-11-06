@@ -1,7 +1,4 @@
-# Pentacles drafts requiring correction
+# Pentacles draft status
 
-- Six: six large pentacles plus extra foreground pentacle coins.
-- Eight: eight displayed pentacles plus one in the artisan's hands.
-- Nine and Ten: correct principal coin counts, but each shows the incorrect numeral II at the top.
-
-These are not final cards.
+- Six, Nine and Ten have corrected previews in `../previews/`; older drafts remain for comparison.
+- Eight draft shows nine pentacles (eight on display and one in hand); correct before final use.
