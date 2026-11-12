@@ -17,12 +17,20 @@ h1{font:400 clamp(1.9rem,4vw,2.8rem)/1.25 "Instrument Serif","IBM Plex Sans Thai
 img{max-width:100%;height:auto;border-radius:8px;display:block}.kw{color:#9a8f7e}nav.p{display:flex;justify-content:space-between;gap:12px;margin-top:2.5em}.cta{display:inline-block;margin:1.5em 0;padding:.6em 1.2em;border:1px solid #c8a25a;border-radius:99px;text-decoration:none}.cta:hover{background:#c8a25a22}
 .cl{display:grid;grid-template-columns:minmax(260px,400px) minmax(0,1fr);gap:48px;align-items:start}.cl-img{position:sticky;top:24px}.cl-img img{width:100%}
 .pairimgs{display:flex;gap:16px;flex-wrap:wrap}.pairimgs img{width:200px}
-ul.g{columns:3;padding-left:1.2em}@media(max-width:900px){ul.g{columns:2}}@media(max-width:720px){.cl{grid-template-columns:1fr;gap:16px}.cl-img{position:static}.cl-img img{width:min(260px,100%)}ul.g{columns:1}}</style>'''
+ul.g{columns:3;padding-left:1.2em}@media(max-width:900px){ul.g{columns:2}}@media(max-width:720px){.cl{grid-template-columns:1fr;gap:16px}.cl-img{position:static}.cl-img img{width:min(260px,100%)}ul.g{columns:1}}
+/* same card grid and section colours as the app (index.html) */
+.k-up{--k:#9cc59a}.k-rev{--k:#dc9380}.k-love{--k:#e591a8}.k-work{--k:#8db6d9}.k-money{--k:#c9c27a}.k-health{--k:#7fc8b8}.k-advice{--k:#c8a25a}
+.sec{margin:1.5em 0 0;padding-left:14px;border-left:2px solid var(--k)}.sec h2{margin:0;font-size:.95rem;font-weight:500;color:var(--k)}.sec p{margin:.25em 0 0}
+.refl{margin:2em 0 0;padding-top:20px;border-top:1px solid #ffffff1c}.refl h2{margin:0;font-size:.85rem;font-weight:500;color:#9a8f7e}.refl p{margin:.3em 0 0;color:#c8a25a;font-size:1.2rem;line-height:1.6}
+h2.grp{margin:2.2em 0 1em;padding-bottom:.5em;border-bottom:1px solid #ffffff1c;font-weight:500}h2.grp small{color:#9a8f7e;font-weight:400;margin-left:.6em}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:40px 26px}.tiles.wide{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+a.tile{display:block;color:inherit;text-decoration:none}a.tile img{width:100%;aspect-ratio:560/1003;object-fit:contain;background:#14110f;border-radius:0;box-shadow:0 22px 44px -18px #000}a.tile:hover img{outline:1px solid #c8a25a;outline-offset:4px}
+a.tile strong{display:block;margin-top:14px;font:400 1.4rem/1.2 "Instrument Serif",Georgia,serif}a.tile span{display:block;color:#9a8f7e;font-size:.9rem;line-height:1.5}a.tile small{display:block;margin-top:6px;color:#9a8f7e;font-size:.85rem;line-height:1.6}.tiles.wide a.tile small{color:#ece4d3;font-size:.95rem}@media(max-width:720px){.tiles,.tiles.wide{grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 16px}a.tile strong{font-size:1.15rem}}</style>'''
 HEADER = '<header class="site"><a class="brand" href="/">Ivory Rose Tarot</a><nav><a href="/">เลือกไพ่</a><a href="/cards/">ไพ่ทั้งสำรับ</a><a href="/pairs/">ไพ่คู่</a><a href="/articles/">บทความ</a></nav></header>'
 def page(title, desc, path, body, ld=None, img=None):
     ld = ld if isinstance(ld, list) or ld is None else [ld]
     url = f'{SITE}/{path}'
-    if 'class="cl"' not in body and 'class="g"' not in body: body = f'<div class="txt">{body}</div>'  # long text: keep a readable line length
+    if 'class="cl"' not in body and 'class="g"' not in body and 'class="tiles' not in body: body = f'<div class="txt">{body}</div>'  # long text: keep a readable line length
     og = img or f'{SITE}/assets/share.jpg'
     ldj = ''.join(f'<script type="application/ld+json">{json.dumps(x,ensure_ascii=False)}</script>\n' for x in (ld or []))
     return f'''<!doctype html>
@@ -40,6 +48,10 @@ def page(title, desc, path, body, ld=None, img=None):
 </main></body></html>
 '''
 crumbs = lambda items: {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": n + 1, "name": name, "item": SITE + href} for n, (name, href) in enumerate(items)]}
+def tiles(cs, note=None):
+    # note: callable(card) -> text under the tile (default: the card's keywords)
+    items = ''.join(f'<a class="tile" href="/cards/{slug(c)}.html"><img src="/assets/seo/thumb/{c["id"]}.webp" alt="" width="560" height="1003" loading="lazy"><strong>{e(c["name_en"])}</strong><span>{e(c["name_th"])}</span><small>{e(note(c) if note else " · ".join(c["keywords_th"]))}</small></a>' for c in cs)
+    return f'<div class="tiles{" wide" if note else ""}">{items}</div>'
 out = ROOT/'cards'; out.mkdir(exist_ok=True)
 urls = [f'{SITE}/', f'{SITE}/cards/']
 for i, c in enumerate(cards):
@@ -48,7 +60,7 @@ for i, c in enumerate(cards):
     desc = f"ความหมายไพ่ทาโร่ {c['name_en']} ({c['name_th']}): {kw} อ่านไพ่ตั้ง ไพ่กลับ ความรัก การงาน และคำถามชวนคิด"
     prev, nxt = cards[i-1], cards[(i+1) % len(cards)]
     c = {**c, **extra[c['id']]}
-    sections = [('ไพ่ตั้ง', 'upright_th'), ('ไพ่กลับ', 'reversed_th'), ('ความรัก', 'love_th'), ('การงาน', 'work_th'), ('การเงิน', 'money_th'), ('สุขภาพและพลังใจ', 'health_th'), ('คำแนะนำ', 'advice_th'), ('คำถามชวนคิด', 'reflection_th')]
+    sections = [('ไพ่ตั้ง', 'upright_th', 'up'), ('ไพ่กลับ', 'reversed_th', 'rev'), ('ความรัก', 'love_th', 'love'), ('การงาน', 'work_th', 'work'), ('การเงิน', 'money_th', 'money'), ('สุขภาพและพลังใจ', 'health_th', 'health'), ('คำแนะนำ', 'advice_th', 'advice'), ('คำถามชวนคิด', 'reflection_th', '')]
     same = [x for x in cards if x['id'] != c['id'] and (x['suit'] == c['suit'] if c['suit'] else x['arcana'] == 'major')]
     rel = [same[(i + k) % len(same)] for k in (3, 7, 11)]
     faq = [(f"ไพ่ {c['name_en']} ({c['name_th']}) หมายถึงอะไร", c['upright_th']), (f"ไพ่ {c['name_en']} กลับหัวหมายถึงอะไร", c['reversed_th']), (f"ไพ่ {c['name_en']} เรื่องความรักหมายถึงอะไร", c['love_th']), (f"ไพ่ {c['name_en']} เรื่องการงานและการเงินหมายถึงอะไร", c['work_th'] + ' ' + c['money_th'])]
@@ -57,7 +69,7 @@ for i, c in enumerate(cards):
 <div class="cl"><div class="cl-img"><img src="/assets/seo/thumb/{c['id']}.webp" alt="{e(c['alt_th'])}" width="340" height="609" fetchpriority="high"></div><div class="txt">
 <h1>ไพ่ {e(c['name_en'])} ({e(c['name_th'])}) ความหมาย</h1>
 <p class="kw">{e(kw)}</p>
-''' + ''.join(f"<h2>{e(c['name_en'])} {h}</h2><p>{e(c[k])}</p>\n" for h, k in sections) + f'''<p class="kw">เรื่องสุขภาพเป็นการสะท้อนมุมมองเท่านั้น ไม่ใช่คำวินิจฉัยหรือคำแนะนำทางการแพทย์ หากมีอาการควรปรึกษาแพทย์</p>
+''' + ''.join((f"<div class=\"refl\"><h2>{e(c['name_en'])} {h}</h2><p>{e(c[k])}</p></div>\n" if k == 'reflection_th' else f"<div class=\"sec k-{kc}\"><h2>{e(c['name_en'])} {h}</h2><p>{e(c[k])}</p></div>\n") for h, k, kc in sections) + f'''<p class="kw">เรื่องสุขภาพเป็นการสะท้อนมุมมองเท่านั้น ไม่ใช่คำวินิจฉัยหรือคำแนะนำทางการแพทย์ หากมีอาการควรปรึกษาแพทย์</p>
 <h2>ไพ่ที่เกี่ยวข้อง</h2>{relh}
 <p>อ่านทุกใบแยกตามเรื่อง: <a href="/topics/love.html">ความรัก</a> · <a href="/topics/work.html">การงาน</a> · <a href="/topics/money.html">การเงิน</a> · <a href="/topics/health.html">สุขภาพ</a></p>
 <a class="cta" href="/">เปิดไพ่ทาโร่ด้วยตัวเอง →</a>
@@ -69,7 +81,7 @@ for i, c in enumerate(cards):
     urls.append(f'{SITE}/cards/{s}.html')
 groups = [('ไพ่เมเจอร์อาร์คานา', [c for c in cards if c['arcana'] == 'major'])] + [(n, [c for c in cards if c['suit'] == k]) for k, n in (('wands', 'ไพ่ชุดไม้เท้า (Wands)'), ('cups', 'ไพ่ชุดถ้วย (Cups)'), ('swords', 'ไพ่ชุดดาบ (Swords)'), ('pentacles', 'ไพ่ชุดเหรียญ (Pentacles)'))]
 body = '<a href="/">← เปิดไพ่</a><h1>ความหมายไพ่ทาโร่ทั้ง 78 ใบ</h1><p>ความหมายไพ่ตั้งและไพ่กลับ ความรัก การงาน ของสำรับ Gothic Ivory Rose แยกตามชุด</p><p>อ่านแยกตามเรื่อง: <a href="/topics/love.html">ความรัก</a> · <a href="/topics/work.html">การงาน</a> · <a href="/topics/money.html">การเงิน</a> · <a href="/topics/health.html">สุขภาพ</a> · <a href="/pairs/">ไพ่ออกคู่กัน</a> · <a href="/articles/">บทความ</a></p>' + ''.join(
-    f'<h2>{e(n)}</h2><ul class="g">' + ''.join(f"<li><a href=\"/cards/{slug(c)}.html\">{e(c['name_en'])} ({e(c['name_th'])})</a></li>" for c in cs) + '</ul>' for n, cs in groups)
+    f'<h2 class="grp">{e(n)}<small>{len(cs)} ใบ</small></h2>' + tiles(cs) for n, cs in groups)
 (out/'index.html').write_text(page('ความหมายไพ่ทาโร่ทั้ง 78 ใบ ไพ่ตั้ง ไพ่กลับ ความรัก การงาน - Ivory Rose Tarot', 'รวมความหมายไพ่ทาโร่ครบ 78 ใบ เมเจอร์และไมเนอร์อาร์คานา ไพ่ตั้ง ไพ่กลับ ความรัก การงาน เรียบเรียงเป็นภาษาไทย', 'cards/', body), encoding='utf-8')
 TOPICS = [('love', 'ความรัก', 'love_th'), ('work', 'การงาน', 'work_th'), ('money', 'การเงิน', 'money_th'), ('health', 'สุขภาพและพลังใจ', 'health_th')]
 (ROOT/'topics').mkdir(exist_ok=True)
@@ -78,10 +90,7 @@ for key, name, field in TOPICS:
     desc = f'รวมความหมายไพ่ทาโร่ทั้ง 78 ใบในเรื่อง{name} แยกตามชุด อ่านสั้น ๆ แล้วกดดูรายละเอียดแต่ละใบ'
     body = f'<a href="/cards/">← ไพ่ทั้ง 78 ใบ</a><h1>ความหมายไพ่ทาโร่เรื่อง{name}</h1><p>ไพ่แต่ละใบสะท้อนเรื่อง{name}ต่างกัน อ่านเป็นมุมมองให้ทบทวนตัวเอง ไม่ใช่คำทำนายที่แน่นอน</p><p>' + ' · '.join(f'<a href="/topics/{k}.html">{n}</a>' for k, n, _ in TOPICS if k != key) + '</p>'
     for gname, cs in groups:
-        body += f'<h2>{e(gname)}</h2>'
-        for c in cs:
-            x = {**c, **extra[c['id']]}
-            body += f"<h3><a href=\"/cards/{slug(c)}.html\">{e(c['name_en'])} ({e(c['name_th'])})</a></h3><p>{e(x[field])}</p>"
+        body += f'<h2 class="grp">{e(gname)}<small>{len(cs)} ใบ</small></h2>' + tiles(cs, lambda c: {**c, **extra[c['id']]}[field])
     body += '<a class="cta" href="/">เปิดไพ่ทาโร่ด้วยตัวเอง →</a>'
     ld = [crumbs((('หน้าแรก', '/'), ('ไพ่ทั้ง 78 ใบ', '/cards/'), (f'ไพ่เรื่อง{name}', f'/topics/{key}.html')))]
     (ROOT/'topics'/f'{key}.html').write_text(page(title, desc, f'topics/{key}.html', body, ld), encoding='utf-8')
