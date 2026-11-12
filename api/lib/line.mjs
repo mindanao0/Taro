@@ -7,6 +7,9 @@ import {dailyCardId, bangkokDate} from './daily.mjs';
 import {CARDS} from './deck.mjs';
 import {json, readBody, readJson} from './http.mjs';
 import {iso, webUrl} from './util.mjs';
+import {answer, MAX_ASKS} from '../../scripts/line-ask.mjs';
+import topicModel from '../../data/topic_model.json' with {type: 'json'};
+import cardExtras from '../../data/seo_extra.json' with {type: 'json'};
 
 const API = 'https://api.line.me/v2/bot';
 export const HOURLY_CRON = '7 * * * *';
@@ -60,7 +63,32 @@ export async function deleteLineNotify(req, env, _ctx, s) {
   return json(204);
 }
 
-// Webhook from LINE: friend added / removed, and "หยุด" typed in the chat.
+const reply = async (env, replyToken, text) => {
+  if (!env.LINE_MESSAGING_TOKEN || !replyToken) return;
+  try { await doFetch(env)(`${API}/message/reply`, {method: 'POST', headers: bearer(env), body: JSON.stringify({replyToken, messages: [{type: 'text', text: String(text).slice(0, 4900)}]})}); } catch { /* a failed reply is not retried: the reply token is single-use */ }
+};
+
+/** A member who got today's daily card can ask up to MAX_ASKS questions in the chat. The text is answered on the spot from the card's own
+ *  texts (scripts/line-ask.mjs) and is never stored; the database only gets a counter for the day. */
+async function followUp(env, uid, text, replyToken, nowMs = Date.now()) {
+  if (!env.DAILY_SECRET) return;
+  const sub = await env.DB.prepare('SELECT s.user_id, s.enabled, s.friend, s.last_sent_at FROM line_subscriptions s JOIN users u ON u.id = s.user_id WHERE s.line_user_id = ? AND u.deleted_at IS NULL').bind(uid).first();
+  if (!sub || !sub.enabled || !sub.friend) return;   // not a member, or they asked to stop: stay quiet (the Official Account's own auto-reply, if any, handles the rest)
+  const today = bangkokDate(nowMs);
+  if (!sub.last_sent_at || bangkokDate(Date.parse(sub.last_sent_at)) !== today)
+    return reply(env, replyToken, `ถามต่อได้หลังได้รับไพ่ประจำวันในแชตนี้ ได้รับแล้วถามได้วันละ ${MAX_ASKS} ข้อ หรือเปิดไพ่เองได้ที่ ${webUrl(env)}/`);
+  const cardId = await dailyCardId(env.DAILY_SECRET, today), card = CARDS.find(c => c.id === cardId);
+  const ctx = {card, extra: cardExtras[card?.id], question: text, model: topicModel, webUrl: webUrl(env)};
+  const first = answer({...ctx, n: 1});
+  if (first.kind !== 'reading') return reply(env, replyToken, first.text);   // safety and "not for cards" replies do not use up a question
+  const used = await env.DB.prepare(
+    `UPDATE line_subscriptions SET ask_count = CASE WHEN ask_date = ? THEN ask_count + 1 ELSE 1 END, ask_date = ?
+     WHERE user_id = ? AND (ask_date IS NOT ? OR ask_count < ?) RETURNING ask_count`).bind(today, today, sub.user_id, today, MAX_ASKS).first();
+  if (!used) return reply(env, replyToken, `วันนี้ถามครบ ${MAX_ASKS} ข้อแล้ว พรุ่งนี้มีไพ่ใบใหม่ หรือเปิดไพ่เองได้ที่ ${webUrl(env)}/`);
+  return reply(env, replyToken, answer({...ctx, n: used.ask_count}).text);
+}
+
+// Webhook from LINE: friend added / removed, "หยุด" typed in the chat, and follow-up questions after the daily card.
 export async function lineWebhook(req, env) {
   if (!env.LINE_MESSAGING_SECRET) return json(503, {error: 'not_configured'});
   const text = await readBody(req, 65536);   // capped while reading: the body is not trusted until its signature checks out
@@ -77,7 +105,10 @@ export async function lineWebhook(req, env) {
     if (typeof uid !== 'string' || uid.length > 64) continue;
     if (ev.type === 'follow') await env.DB.prepare('UPDATE line_subscriptions SET friend = 1, fail_count = 0, blocked_at = NULL WHERE line_user_id = ?').bind(uid).run();
     else if (ev.type === 'unfollow') await env.DB.prepare('UPDATE line_subscriptions SET friend = 0, blocked_at = ? WHERE line_user_id = ?').bind(now, uid).run();
-    else if (ev.type === 'message' && ev.message?.type === 'text' && ['หยุด', 'stop'].includes(String(ev.message.text).trim().toLowerCase())) {
+    else if (ev.type === 'message' && ev.message?.type === 'text' && !['หยุด', 'stop'].includes(String(ev.message.text).trim().toLowerCase())) {
+      if (!ev.deliveryContext?.isRedelivery) await followUp(env, uid, ev.message.text, ev.replyToken);   // LINE re-sends events it thinks failed: answering twice would use up two questions
+    }
+    else if (ev.type === 'message' && ev.message?.type === 'text') {
       const sub = await env.DB.prepare('SELECT user_id FROM line_subscriptions WHERE line_user_id = ?').bind(uid).first();
       if (sub) {
         await env.DB.batch([
@@ -112,7 +143,7 @@ export async function messageText(env, nowMs) {
     const id = await dailyCardId(env.DAILY_SECRET, bangkokDate(nowMs)), card = CARDS.find(c => c.id === id);
     if (card) line = `ไพ่ประจำวันนี้: ${card.name_th} (${card.name_en})`;   // public, same for everyone: never the visitor's own question or reading
   }
-  return `${line}\nเปิดอ่านความหมาย ${link}\n\nไม่อยากรับอีก พิมพ์ "หยุด" ในแชตนี้ได้เลย`;
+  return `${line}\nเปิดอ่านความหมาย ${link}\n\nอยากถามต่อ พิมพ์คำถามในแชตนี้ได้ ${MAX_ASKS} ข้อ\nไม่อยากรับอีก พิมพ์ "หยุด" ในแชตนี้ได้เลย`;
 }
 
 const CHUNK = 5, STRIKES = 3;   // pushes in flight at once; consecutive refusals before a user is switched off

@@ -102,7 +102,8 @@ const webhook = (env, events, {sig, secret = SECRET} = {}) => {
 
   net.replies.length = 0;
   await webhook(env, [{type: 'message', replyToken: 'rt1', message: {type: 'text', text: 'hello'}, source: {userId: lineId}}]);
-  assert.equal(sub().enabled, 1, 'other chat messages do nothing'); assert.equal(net.replies.length, 0);
+  assert.equal(sub().enabled, 1, 'chatting does not change the subscription'); assert.equal(net.replies.length, 1, 'a member who has no daily card yet today gets a hint, not an answer'); assert.match(net.replies[0].messages[0].text, /ถามต่อได้หลังได้รับไพ่ประจำวัน/);
+  net.replies.length = 0;
   await webhook(env, [{type: 'message', replyToken: 'rt2', message: {type: 'text', text: ' หยุด '}, source: {userId: lineId}}]);
   assert.equal(sub().enabled, 0, 'typing "หยุด" stops reminders'); assert.equal(net.replies.length, 1); assert.equal(net.replies[0].replyToken, 'rt2');
   const last = row(env, "SELECT granted, version FROM consents WHERE kind = 'line_notify' ORDER BY id DESC LIMIT 1");
@@ -256,4 +257,51 @@ const webhook = (env, events, {sig, secret = SECRET} = {}) => {
   assert.equal(count(env, 'feedback'), 2);
 }
 
-console.log('PASS: LINE reminders (consent, friend check, signed webhook, stop-by-chat, Thai-time schedule, retries, caps) and feedback');
+
+/* ---- follow-up questions after the daily card ---- */
+{
+  const env = mk(), {c, uid, lineId} = await lineUser(env, 7);
+  net.friends.add(lineId); net.pushes.length = 0;
+  await c.put('/me/line-notify', {enabled: true, schedule: 'daily', hour: 0});
+  const sub = () => row(env, 'SELECT enabled, ask_date, ask_count, last_sent_at FROM line_subscriptions WHERE user_id = ?', uid);
+  const say = async (text, {from = lineId, ...more} = {}) => {
+    net.replies.length = 0;
+    await webhook(env, [{type: 'message', replyToken: 'rt' + Math.random(), message: {type: 'text', text}, source: {userId: from}, ...more}]);
+    return net.replies.map(r => r.messages[0].text);
+  };
+  assert.deepEqual(await say('สวัสดี', {from: 'U-not-a-member'}), [], 'strangers get no answer');
+  assert.match((await say('ขอถามหน่อย'))[0], /ถามต่อได้หลังได้รับไพ่ประจำวัน/, 'before the daily card has been sent');
+  assert.equal(sub().ask_count, 0);
+
+  await sendDue(env);
+  const pushed = net.pushes.at(-1).text, [, name] = pushed.match(/ไพ่ประจำวันนี้: .+ \((.+)\)/);
+  assert.match(pushed, /พิมพ์คำถามในแชตนี้ได้ 3 ข้อ/, 'the daily message says questions are welcome');
+  const secret = 'ชื่อลับ-เลขบัตร-9876543210';
+  const [a1] = await say(`${secret} ความรักเป็นยังไง`); assert.ok(a1.includes(name) && a1.includes('ถามต่อได้อีก 2 ข้อ'), 'answers from today\'s card');
+  const [a2] = await say('แล้วเรื่องงานล่ะ'); assert.ok(a2.includes('อีกมุมหนึ่ง') && a2.includes('ถามต่อได้อีก 1 ข้อ'));
+  const [a3] = await say('อีกข้อ'); assert.ok(a3.includes('นี่เป็นข้อสุดท้าย'));
+  assert.match((await say('ขออีกข้อ'))[0], /ถามครบ 3 ข้อแล้ว/); assert.equal(sub().ask_count, 3, 'the fourth does not count');
+  const dump = env.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map(t => JSON.stringify(env.db.prepare(`SELECT * FROM ${t.name}`).all())).join('');
+  assert.ok(!dump.includes(secret) && !dump.includes('ความรักเป็นยังไง'), 'the question text is nowhere in the database');
+
+  env.db.prepare('UPDATE line_subscriptions SET ask_date = ?, ask_count = 3 WHERE user_id = ?').run('2000-01-01', uid);
+  assert.ok((await say('วันใหม่'))[0].includes('ถามต่อได้อีก 2 ข้อ'), 'the counter starts again on a new Thai day'); assert.equal(sub().ask_count, 1);
+
+  env.db.prepare('UPDATE line_subscriptions SET ask_count = 0 WHERE user_id = ?').run(uid);
+  const safe = await say('อยากตาย'); assert.ok(safe[0].includes('1323')); assert.equal(sub().ask_count, 0, 'a safety reply does not use up a question');
+  assert.ok((await say('ขอเลขเด็ดหน่อย'))[0].includes('ไม่ใช่เครื่องมือเลือกเลข')); assert.equal(sub().ask_count, 0);
+  assert.deepEqual(await say('ซ้ำ', {deliveryContext: {isRedelivery: true}}), [], 'a message LINE re-sends is not answered twice'); assert.equal(sub().ask_count, 0);
+  net.replies.length = 0; await webhook(env, [{type: 'message', replyToken: 'rt-sticker', message: {type: 'sticker'}, source: {userId: lineId}}]); assert.equal(net.replies.length, 0, 'only text is answered');
+
+  net.replies.length = 0;   // five questions in one delivery: the counter allows exactly three
+  await webhook(env, Array.from({length: 5}, (_, i) => ({type: 'message', replyToken: 'burst' + i, message: {type: 'text', text: 'ข้อ ' + i}, source: {userId: lineId}})));
+  assert.equal(net.replies.filter(r => /ถามต่อได้อีก|ข้อสุดท้าย/.test(r.messages[0].text)).length, 3); assert.equal(sub().ask_count, 3);
+
+  env.db.prepare('UPDATE line_subscriptions SET last_sent_at = ? WHERE user_id = ?').run(new Date(Date.now() - 2 * 86_400_000).toISOString(), uid);
+  assert.match((await say('เมื่อวานได้ไพ่'))[0], /ถามต่อได้หลังได้รับไพ่ประจำวัน/, 'only today\'s card can be asked about');
+  env.db.prepare('UPDATE line_subscriptions SET last_sent_at = ? WHERE user_id = ?').run(new Date().toISOString(), uid);
+  await webhook(env, [{type: 'message', replyToken: 'rt-stop', message: {type: 'text', text: 'หยุด'}, source: {userId: lineId}}]);
+  assert.deepEqual(await say('ยังอยู่ไหม'), [], 'after "หยุด" the bot stays quiet');
+  net.friends.clear();
+}
+console.log('PASS: LINE reminders and follow-up questions (consent, friend check, signed webhook, stop-by-chat, Thai-time schedule, retries, caps) and feedback');
