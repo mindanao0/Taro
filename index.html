@@ -39,6 +39,7 @@
   --wrap:1680px; --gut:clamp(20px,3.5vw,64px);   /* page width: wide screens use the space, text blocks keep their own max-width */
   --field:#ffffff66;   /* border of text fields: at least 3:1 against the page (WCAG 1.4.11) */
   --bg:#0b0908; --text:#ece4d3; --dim:#9a8f7e; --line:#ffffff1c; --gold:#c8a25a;
+  --c-up:#9cc59a; --c-rev:#dc9380; --c-love:#e591a8; --c-work:#8db6d9; --c-advice:#c8a25a;   /* one colour per kind of reading, all >7:1 on --bg */
   --display:"Instrument Serif","IBM Plex Sans Thai",Georgia,serif;
   --sans:"IBM Plex Sans Thai","Noto Sans Thai",system-ui,sans-serif;
   --back:url("assets/card-back-sm.webp");   /* 280px copy (60KB) of card-back.webp (512KB): cards are drawn at most ~132px wide */
@@ -183,10 +184,13 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 .bridge{margin:6px 0 0;color:var(--gold);font-size:.98rem}
 .more{margin:14px 0 0;color:var(--dim);font-size:.92rem;line-height:1.7;max-width:36em}
 .more span{display:block;font-size:.78rem;letter-spacing:.04em;margin-bottom:2px;color:var(--gold);opacity:.8}
+.tag+.lead{margin-top:4px}
 .lead{margin:8px 0 0;font-size:1.4rem;line-height:1.6;max-width:30em}
 .trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:26px;margin:36px 0 0}
-.trio dt{color:var(--dim);font-size:.85rem;margin:0 0 4px}
-.trio .em dt{color:var(--gold)}
+.k-up{--k:var(--c-up)} .k-rev{--k:var(--c-rev)} .k-love{--k:var(--c-love)} .k-work{--k:var(--c-work)} .k-advice{--k:var(--c-advice)}
+.tag{margin:22px 0 0;font-size:.85rem;letter-spacing:.03em;color:var(--k)} .tag::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--k);margin-right:8px}
+.trio>div{border-top:2px solid var(--k);padding-top:10px}
+.trio dt{color:var(--k);font-size:.9rem;font-weight:500;margin:0 0 4px}
 .trio .em dd{font-weight:500}
 .trio dd{margin:0;font-size:.98rem;line-height:1.7}
 .qq{margin:36px 0 0;padding-top:22px;border-top:1px solid var(--line);color:var(--gold);font-size:1.2rem;line-height:1.6;max-width:32em}
@@ -227,7 +231,8 @@ dialog::backdrop{background:#000c}
 .det h2{font:500 1.1rem/1.5 var(--sans);margin:6px 0 0}
 .det .kw{margin:6px 0 0;color:var(--dim);font-size:.9rem}
 .det dl{margin:24px 0 0}
-.det dt{color:var(--dim);font-size:.85rem;margin-top:14px}
+.det dl>div{margin-top:14px;padding-left:12px;border-left:2px solid var(--k)}
+.det dt{color:var(--k);font-size:.9rem;font-weight:500}
 .det dd{margin:0}
 .det .qq{margin-top:26px}
 .x{position:absolute;top:10px;right:14px;font-size:1.2rem;line-height:1;padding:8px;color:var(--dim)}
@@ -359,6 +364,7 @@ try {
 }
 const spreadOf = id => spreads.find(s => s.id === id);
 const oriTh = o => o === 'reversed' ? 'กลับหัว' : 'ตั้งตรง';
+const kOri = r => r.orientation === 'reversed' ? 'k-rev' : 'k-up';
 const nameOf = c => `${c.name_en} ${c.name_th}`;
 
 /* ---------- views ---------- */
@@ -492,11 +498,11 @@ function renderChapters() {
         <h3 class="name">${esc(c.name_en)}</h3>
         <p class="th">${esc(c.name_th)}<span class="ori">${oriTh(r.orientation)}</span></p>
         <p class="frame">${esc(frameFor(reading.spread_id, r.position_id, r.orientation))}</p>
-        ${here ? `<p class="lead">${esc(here)}</p>
+        ${here ? `<p class="tag ${kOri(r)}">ความหมายในตำแหน่งนี้ · ไพ่${oriTh(r.orientation)}</p><p class="lead">${esc(here)}</p>
         <p class="more"><span>ความหมายทั่วไปของไพ่ใบนี้</span>${esc(meaningFor(c, r.orientation))}</p>`
           : `<p class="bridge">${esc(bridgeFor(reading.spread_id, r.position_id, r.orientation, c))}</p>
-        <p class="lead">${esc(meaningFor(c, r.orientation))}</p>`}
-        <dl class="trio">${items.map(([k, label, text]) => `<div class="${use === k ? 'em' : ''}"><dt>${label}</dt><dd>${esc(text)}</dd></div>`).join('')}</dl>
+        <p class="tag ${kOri(r)}">ความหมายของไพ่ · ${oriTh(r.orientation)}</p><p class="lead">${esc(meaningFor(c, r.orientation))}</p>`}
+        <dl class="trio">${items.map(([k, label, text]) => `<div class="k-${k} ${use === k ? 'em' : ''}"><dt>${label}</dt><dd>${esc(text)}</dd></div>`).join('')}</dl>
         <p class="qq">${esc(c.reflection_th)}</p>
         <a class="up" href="#table">กลับไปที่โต๊ะ</a>
       </div></article>`;
@@ -765,11 +771,11 @@ let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() 
 
 /* ---------- catalog ---------- */
 function detail(c) {
-  const rows = [['ตั้งตรง', c.upright_th], ['กลับหัว', c.reversed_th], ['ความรัก', c.love_th], ['การงาน', c.work_th], ['คำแนะนำ', c.advice_th]];
+  const rows = [['up', 'ตั้งตรง', c.upright_th], ['rev', 'กลับหัว', c.reversed_th], ['love', 'ความรัก', c.love_th], ['work', 'การงาน', c.work_th], ['advice', 'คำแนะนำ', c.advice_th]];
   $('dbody').innerHTML = `<div class="det"><img src="${c.image_web}" alt="${esc(c.alt_th)}"><div>
     <p class="en">${esc(c.name_en)}</p><h2>${esc(c.name_th)}</h2>
     <p class="kw">${esc(c.keywords_th.join(', '))}</p>
-    <dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
+    <dl>${rows.map(([k, label, v]) => `<div class="k-${k}"><dt>${label}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
     <p class="qq">${esc(c.reflection_th)}</p>${account ? `<button type="button" class="fav" id="favbtn" aria-pressed="${favs.has(c.id)}">${favs.has(c.id) ? '★ ไพ่โปรด' : '☆ เพิ่มเป็นไพ่โปรด'}</button>` : ''}</div></div>`;
   if (account) $('favbtn').onclick = async () => {
     const on = !favs.has(c.id), r = on ? await api.put('/me/favorites/' + c.id) : await api.del('/me/favorites/' + c.id);
