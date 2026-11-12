@@ -50,9 +50,9 @@ export function answer({card, extra = {}, question, n, model, webUrl, lastTopic}
     : topic === 'love' ? 'love' : MONEY.test(q) ? 'money' : topic === 'work' ? 'work' : HEALTH.test(q) ? 'health' : 'advice';
   const field = {love: card.love_th, work: card.work_th, money: extra.money_th, health: extra.health_th, advice: card.advice_th};
   const again = lead === lastTopic;   // same topic as the thread so far: show another side of the card instead of repeating
-  const [head, body] = n >= MAX_ASKS ? ['ไว้ชวนคิดต่อ', `${card.reflection_th}\nคำสำคัญของไพ่ใบนี้: ${card.keywords_th.join(' · ')}`]
+  const [head, body] = again && n >= MAX_ASKS ? ['ไว้ชวนคิดต่อ', `${card.reflection_th}\nคำสำคัญของไพ่ใบนี้: ${card.keywords_th.join(' · ')}`]   // the last one closes the thread with the card's own question, unless they just asked about something new
     : again ? ['อีกมุมหนึ่ง', lead === 'advice' ? card.upright_th : card.advice_th]
-    : [`ถ้ามองเรื่อง${NAME[lead]}`, field[lead]];
+    : [`ถ้ามองเรื่อง${NAME[lead]}`, n >= MAX_ASKS ? `${field[lead]}\nคำสำคัญของไพ่ใบนี้: ${card.keywords_th.join(' · ')}` : field[lead]];
   const name = `${card.name_th} (${card.name_en})`, seed = n + q.length;
   const opener = n <= 1 ? pick([`ขอดูจากไพ่ประจำวัน ${name} นะ`, `ไพ่ของวันนี้คือ ${name} ลองดูในมุมที่ถามนะ`, `ได้เลย ไพ่ใบของวันนี้คือ ${name}`], seed)
     : pick([`ยังเป็นใบเดิม ${card.name_th} นะ`, `กลับมาที่ ${card.name_th} อีกครั้ง`, `ใบเดิมของวันนี้ ${card.name_th}`], seed);

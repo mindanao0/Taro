@@ -25,6 +25,7 @@ assert.ok(a2.text.includes(card.advice_th) && a2.text.includes('อีกมุ�
 assert.ok(a3.text.includes(card.reflection_th) && a3.text.includes(card.keywords_th[0]) && a3.text.includes(web) && !a3.text.includes('ถามต่อได้') && !a3.quick, 'the last one says it is the last, no more buttons');
 assert.equal(new Set([a1.text, a2.text, a3.text]).size, 3); assert.equal(MAX_ASKS, 3);
 assert.ok(ask('แล้วเรื่องงานล่ะ', 2, 'love').text.includes(card.work_th), 'a new topic leads with that topic');
+const last = ask('ถามเรื่องการงาน', 3, 'love'); assert.ok(last.text.includes(card.work_th) && last.text.includes(card.keywords_th[0]) && last.text.includes('นี่เป็นข้อสุดท้าย') && !last.quick, 'the last question still answers a new topic, then closes');
 for (const more of ['ทำไม', 'ขอมุมอื่น', 'อธิบายเพิ่ม', 'แล้วไงต่อ?']) { const r = ask(more, 2, 'work'); assert.equal(r.kind, 'reading', more); assert.equal(r.topic, 'work', 'stays on the thread\'s topic'); assert.ok(r.text.includes('อีกมุมหนึ่ง'), more); }
 assert.equal(ask('ทำไม', 1).topic, 'advice', 'nothing to continue: the card\'s own advice');
 
