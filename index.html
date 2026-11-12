@@ -25,6 +25,7 @@
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap"></noscript>
 <style>
 :root{
+  --wrap:1680px; --gut:clamp(20px,3.5vw,64px);   /* page width: wide screens use the space, text blocks keep their own max-width */
   --bg:#0b0908; --text:#ece4d3; --dim:#9a8f7e; --line:#ffffff1c; --gold:#c8a25a;
   --display:"Instrument Serif","IBM Plex Sans Thai",Georgia,serif;
   --sans:"IBM Plex Sans Thai","Noto Sans Thai",system-ui,sans-serif;
@@ -46,7 +47,7 @@ button{cursor:pointer;background:none;border:0;padding:0}
 
 /* top */
 .top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 32px;
-  max-width:1180px;margin:0 auto;padding:24px 28px 0}
+  max-width:var(--wrap);margin:0 auto;padding:24px var(--gut) 0}
 .mark{font:italic 400 1.7rem/1 var(--display);margin:0}
 .mark button{font:inherit;color:inherit;padding:0}
 .mark button:hover{color:var(--gold)}
@@ -54,7 +55,7 @@ button{cursor:pointer;background:none;border:0;padding:0}
 .top nav button{padding:4px 0;color:var(--dim);border-bottom:1px solid transparent}
 .top nav button:hover{color:var(--text)}
 .top nav button[aria-current=page]{color:var(--text);border-bottom-color:var(--gold)}
-main{max-width:1180px;margin:0 auto;padding:0 28px 100px}
+main{max-width:var(--wrap);margin:0 auto;padding:0 var(--gut) 100px}
 h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 
 /* ask */
@@ -575,7 +576,7 @@ function startPick() {
 function fitFan() {
   const W = $('fanwrap').clientWidth, n = cards.length, step = 2 * Math.PI / n;
   if (!W) return;   // hidden (e.g. user is in the catalog); refit when shown again
-  const cw = Math.max(64, Math.min(92, W / 9)), ch = cw * 1.79, R = cw * 0.5 / step;
+  const cw = Math.max(64, Math.min(132, W / 13)), ch = cw * 1.79, R = cw * 0.5 / step;
   const max = Math.min(Math.asin(Math.min(1, (W / 2 - cw / 2) / R)), 1.08);
   Object.assign(wheel, {W, step, cw, R, max});
   $('fan').style.cssText = `width:${W}px;height:${R * (1 - Math.cos(max)) + ch + 44}px;--cw:${cw}px`;
