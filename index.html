@@ -19,9 +19,12 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="preload" as="image" href="assets/card-back-sm.webp">
+<link rel="preload" as="image" href="assets/card-back-sm.webp" fetchpriority="high">
 <link rel="preload" as="fetch" href="data/cards.public.json" crossorigin>
 <link rel="preload" as="fetch" href="data/spreads.json" crossorigin>
+<link rel="preload" as="fetch" href="data/position_meanings_major.json" crossorigin fetchpriority="low">
+<link rel="modulepreload" href="scripts/reading-core.mjs">
+<link rel="modulepreload" href="scripts/reading-guide.mjs">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap">
@@ -87,6 +90,11 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
   transform:translate(var(--x),calc(var(--y) + var(--l,0px))) rotate(var(--r));transition:transform .65s cubic-bezier(.2,.9,.2,1) var(--d,0ms),opacity .3s}
 .dc.gather{transition:transform .3s ease-in,opacity .3s}
 .deck-btn:hover .dc:not(.stack){--l:-7px}
+/* The deck is in the HTML as a stack, placed by CSS to match what dealDeck() computes (card 96px, stage 196px tall), so it paints without waiting for scripts and data;
+   dealDeck() then replaces it and sets the same values inline. */
+.deck{container-type:inline-size;--w:96px}
+.dc.stack{--x:calc(50cqw - 48px + var(--o,0) * 3px);--y:calc(12px + var(--o,0) * 2px);--r:calc(var(--o,0) * 2.5deg)}
+.dc.stack:nth-child(3n+1){--o:-1}.dc.stack:nth-child(3n){--o:1}
 .deck-btn span.t{color:var(--gold);font-weight:500}
 
 /* session */
@@ -245,7 +253,7 @@ dialog::backdrop{background:#000c}
     <fieldset class="picks" id="spreads"><legend class="sr">รูปแบบการวาง</legend></fieldset>
     <label class="switch"><input type="checkbox" id="rev"> ให้มีไพ่กลับหัว</label>
     <button class="deck-btn" type="submit" id="deckbtn">
-      <span class="deck" id="deckstage" aria-hidden="true"></span>
+      <span class="deck" id="deckstage" aria-hidden="true"><i class="dc stack"></i><i class="dc stack"></i><i class="dc stack"></i><i class="dc stack"></i><i class="dc stack"></i><i class="dc stack"></i><i class="dc stack"></i><i class="dc stack"></i><i class="dc stack"></i><i class="dc stack"></i></span>
       <span class="t">เริ่มเลือกไพ่</span>
     </button>
   </form>
@@ -370,7 +378,10 @@ const chosen = () => spreadOf(document.querySelector('input[name=spread]:checked
 
 /* ---------- the deck on the home page: gathers into a stack, then deals out the chosen spread ---------- */
 const stage = $('deckstage');
-stage.innerHTML = Array.from({length: Math.max(...spreads.map(x => x.positions.length))}, (_, k) => `<i class="dc stack"></i>`).join('');
+// keep the stack that is already in the HTML (it painted before this script ran); only add or drop cards if the number of positions changed
+for (let n = Math.max(...spreads.map(x => x.positions.length)); stage.children.length !== n;) {
+  if (stage.children.length < n) stage.insertAdjacentHTML('beforeend', '<i class="dc stack"></i>'); else stage.lastElementChild.remove();
+}
 let dealT = 0;
 function dealDeck(animate) {
   const W = stage.clientWidth; if (!W) return;
