@@ -36,3 +36,8 @@ simple = { limit = 10, period = 60 }
 # Hourly at :07: send due LINE reminders (must match HOURLY_CRON in lib/line.mjs).
 [triggers]
 crons = ["27 20 * * *", "7 * * * *"]
+
+# Optional language-model rewrite of the LINE chat answers (docs/DEPLOY_API_TH.md section 9, item 8). Off: nothing below is set.
+# To turn on: uncomment [ai], set LINE_CHAT_MODEL (a Workers AI model id you have checked for Thai) and LINE_CHAT_AI = "1" under [vars], and update privacy.html first.
+# [ai]
+# binding = "AI"

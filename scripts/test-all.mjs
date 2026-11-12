@@ -3,7 +3,7 @@
 import {spawnSync} from 'node:child_process';
 
 const root = new URL('..', import.meta.url).pathname;
-const node = ['scripts/reading-core.test.mjs', 'scripts/reading-guide.test.mjs', 'scripts/position-meanings.test.mjs', 'scripts/topic-model.test.mjs', 'scripts/all-spreads.test.mjs', 'scripts/track.test.mjs', 'scripts/api-client.test.mjs', 'scripts/policy.test.mjs', 'scripts/seo.test.mjs', 'scripts/line-ask.test.mjs',
+const node = ['scripts/reading-core.test.mjs', 'scripts/reading-guide.test.mjs', 'scripts/position-meanings.test.mjs', 'scripts/topic-model.test.mjs', 'scripts/all-spreads.test.mjs', 'scripts/track.test.mjs', 'scripts/api-client.test.mjs', 'scripts/policy.test.mjs', 'scripts/seo.test.mjs', 'scripts/line-ask.test.mjs', 'scripts/line-model.test.mjs',
   'worker/index.test.mjs', 'worker/events.test.mjs', 'worker/click-events.test.mjs', 'api/test/auth.test.mjs', 'api/test/social.test.mjs', 'api/test/account.test.mjs', 'api/test/hardening.test.mjs', 'api/test/readings.test.mjs', 'api/test/line.test.mjs'];
 const python = [['scripts/validate_data.py'], ['scripts/package_deck.py', '--check-only']];
 

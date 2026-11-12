@@ -8,6 +8,7 @@ import {CARDS} from './deck.mjs';
 import {json, readBody, readJson} from './http.mjs';
 import {iso, webUrl} from './util.mjs';
 import {answer, MAX_ASKS} from '../../scripts/line-ask.mjs';
+import {buildMessages, checkReply, DISCLOSURE} from '../../scripts/line-model.mjs';
 import topicModel from '../../data/topic_model.json' with {type: 'json'};
 import cardExtras from '../../data/seo_extra.json' with {type: 'json'};
 
@@ -63,29 +64,46 @@ export async function deleteLineNotify(req, env, _ctx, s) {
   return json(204);
 }
 
-const reply = async (env, replyToken, text) => {
+const reply = async (env, replyToken, text, quick) => {
   if (!env.LINE_MESSAGING_TOKEN || !replyToken) return;
-  try { await doFetch(env)(`${API}/message/reply`, {method: 'POST', headers: bearer(env), body: JSON.stringify({replyToken, messages: [{type: 'text', text: String(text).slice(0, 4900)}]})}); } catch { /* a failed reply is not retried: the reply token is single-use */ }
+  const message = {type: 'text', text: String(text).slice(0, 4900)};
+  if (quick?.length) message.quickReply = {items: quick.slice(0, 13).map(label => ({type: 'action', action: {type: 'message', label, text: label}}))};   // tap buttons: sending the label is just another message
+  try { await doFetch(env)(`${API}/message/reply`, {method: 'POST', headers: bearer(env), body: JSON.stringify({replyToken, messages: [message]})}); } catch { /* a failed reply is not retried: the reply token is single-use */ }
 };
 
+// Optional language-model polish (scripts/line-model.mjs): off unless LINE_CHAT_AI=1 with an AI binding and a model name; any problem returns null and the rule-based text is used.
+async function polish(env, ctx, topic) {
+  if (env.LINE_CHAT_AI !== '1' || !env.AI || !env.LINE_CHAT_MODEL) return null;
+  try {
+    const run = env.AI.run(env.LINE_CHAT_MODEL, {messages: buildMessages({card: ctx.card, extra: ctx.extra, question: ctx.question, topic}), max_tokens: 350});
+    const out = await Promise.race([run, new Promise((_, no) => setTimeout(() => no(new Error('timeout')), Number(env.LINE_CHAT_TIMEOUT_MS) || 6000))]);
+    return checkReply(out?.response ?? out);
+  } catch { return null; }
+}
+
 /** A member who got today's daily card can ask up to MAX_ASKS questions in the chat. The text is answered on the spot from the card's own
- *  texts (scripts/line-ask.mjs) and is never stored; the database only gets a counter for the day. */
+ *  texts (scripts/line-ask.mjs) and is never stored; the database only gets a counter for the day and the topic of the thread (a word like "love"). */
 async function followUp(env, uid, text, replyToken, nowMs = Date.now()) {
   if (!env.DAILY_SECRET) return;
-  const sub = await env.DB.prepare('SELECT s.user_id, s.enabled, s.friend, s.last_sent_at FROM line_subscriptions s JOIN users u ON u.id = s.user_id WHERE s.line_user_id = ? AND u.deleted_at IS NULL').bind(uid).first();
+  const sub = await env.DB.prepare('SELECT s.user_id, s.enabled, s.friend, s.last_sent_at, s.ask_date, s.ask_count, s.ask_topic FROM line_subscriptions s JOIN users u ON u.id = s.user_id WHERE s.line_user_id = ? AND u.deleted_at IS NULL').bind(uid).first();
   if (!sub || !sub.enabled || !sub.friend) return;   // not a member, or they asked to stop: stay quiet (the Official Account's own auto-reply, if any, handles the rest)
-  const today = bangkokDate(nowMs);
+  const today = bangkokDate(nowMs), web = webUrl(env);
   if (!sub.last_sent_at || bangkokDate(Date.parse(sub.last_sent_at)) !== today)
-    return reply(env, replyToken, `ถามต่อได้หลังได้รับไพ่ประจำวันในแชตนี้ ได้รับแล้วถามได้วันละ ${MAX_ASKS} ข้อ หรือเปิดไพ่เองได้ที่ ${webUrl(env)}/`);
+    return reply(env, replyToken, `ถามต่อได้หลังได้รับไพ่ประจำวันในแชตนี้ ได้รับแล้วถามได้วันละ ${MAX_ASKS} ข้อ หรือเปิดไพ่เองได้ที่ ${web}/`);
   const cardId = await dailyCardId(env.DAILY_SECRET, today), card = CARDS.find(c => c.id === cardId);
-  const ctx = {card, extra: cardExtras[card?.id], question: text, model: topicModel, webUrl: webUrl(env)};
-  const first = answer({...ctx, n: 1});
-  if (first.kind !== 'reading') return reply(env, replyToken, first.text);   // safety and "not for cards" replies do not use up a question
+  const used0 = sub.ask_date === today ? sub.ask_count : 0;
+  const ctx = {card, extra: cardExtras[card?.id], question: text, model: topicModel, webUrl: web, lastTopic: used0 ? sub.ask_topic : undefined};
+  const first = answer({...ctx, n: used0 + 1});
+  if (first.kind !== 'reading') return reply(env, replyToken, first.text, first.quick);   // safety, "not for cards" and small talk do not use up a question
+  const full = `วันนี้ถามครบ ${MAX_ASKS} ข้อแล้ว พรุ่งนี้มีไพ่ใบใหม่ หรือเปิดไพ่เองได้ที่ ${web}/`;
+  if (used0 >= MAX_ASKS) return reply(env, replyToken, full);
   const used = await env.DB.prepare(
-    `UPDATE line_subscriptions SET ask_count = CASE WHEN ask_date = ? THEN ask_count + 1 ELSE 1 END, ask_date = ?
-     WHERE user_id = ? AND (ask_date IS NOT ? OR ask_count < ?) RETURNING ask_count`).bind(today, today, sub.user_id, today, MAX_ASKS).first();
-  if (!used) return reply(env, replyToken, `วันนี้ถามครบ ${MAX_ASKS} ข้อแล้ว พรุ่งนี้มีไพ่ใบใหม่ หรือเปิดไพ่เองได้ที่ ${webUrl(env)}/`);
-  return reply(env, replyToken, answer({...ctx, n: used.ask_count}).text);
+    `UPDATE line_subscriptions SET ask_count = CASE WHEN ask_date = ? THEN ask_count + 1 ELSE 1 END, ask_date = ?, ask_topic = ?
+     WHERE user_id = ? AND (ask_date IS NOT ? OR ask_count < ?) RETURNING ask_count`).bind(today, today, first.topic, sub.user_id, today, MAX_ASKS).first();
+  if (!used) return reply(env, replyToken, full);   // another message of the same delivery got there first
+  const final = used.ask_count === used0 + 1 ? first : answer({...ctx, n: used.ask_count});
+  const ai = await polish(env, ctx, final.topic);
+  return reply(env, replyToken, ai ? `${ai}\n${DISCLOSURE}\n\n${final.foot}` : final.text, final.quick);
 }
 
 // Webhook from LINE: friend added / removed, "หยุด" typed in the chat, and follow-up questions after the daily card.

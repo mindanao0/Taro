@@ -3,6 +3,7 @@ import {createHmac} from 'node:crypto';
 import {client, makeEnv} from './helpers.mjs';
 import worker from '../index.js';
 import {isDue, messageText, sendDue} from '../lib/line.mjs';
+import {DISCLOSURE} from '../../scripts/line-model.mjs';
 
 const SECRET = 'line-messaging-secret', TOKEN = 'line-messaging-token';
 const row = (env, sql, ...a) => env.db.prepare(sql).get(...a);
@@ -263,12 +264,13 @@ const webhook = (env, events, {sig, secret = SECRET} = {}) => {
   const env = mk(), {c, uid, lineId} = await lineUser(env, 7);
   net.friends.add(lineId); net.pushes.length = 0;
   await c.put('/me/line-notify', {enabled: true, schedule: 'daily', hour: 0});
-  const sub = () => row(env, 'SELECT enabled, ask_date, ask_count, last_sent_at FROM line_subscriptions WHERE user_id = ?', uid);
+  const sub = () => row(env, 'SELECT enabled, ask_date, ask_count, ask_topic, last_sent_at FROM line_subscriptions WHERE user_id = ?', uid);
   const say = async (text, {from = lineId, ...more} = {}) => {
     net.replies.length = 0;
     await webhook(env, [{type: 'message', replyToken: 'rt' + Math.random(), message: {type: 'text', text}, source: {userId: from}, ...more}]);
     return net.replies.map(r => r.messages[0].text);
   };
+  const buttons = () => net.replies.at(-1)?.messages[0].quickReply?.items.map(i => i.action.text);
   assert.deepEqual(await say('สวัสดี', {from: 'U-not-a-member'}), [], 'strangers get no answer');
   assert.match((await say('ขอถามหน่อย'))[0], /ถามต่อได้หลังได้รับไพ่ประจำวัน/, 'before the daily card has been sent');
   assert.equal(sub().ask_count, 0);
@@ -276,16 +278,21 @@ const webhook = (env, events, {sig, secret = SECRET} = {}) => {
   await sendDue(env);
   const pushed = net.pushes.at(-1).text, [, name] = pushed.match(/ไพ่ประจำวันนี้: .+ \((.+)\)/);
   assert.match(pushed, /พิมพ์คำถามในแชตนี้ได้ 3 ข้อ/, 'the daily message says questions are welcome');
-  const secret = 'ชื่อลับ-เลขบัตร-9876543210';
-  const [a1] = await say(`${secret} ความรักเป็นยังไง`); assert.ok(a1.includes(name) && a1.includes('ถามต่อได้อีก 2 ข้อ'), 'answers from today\'s card');
-  const [a2] = await say('แล้วเรื่องงานล่ะ'); assert.ok(a2.includes('อีกมุมหนึ่ง') && a2.includes('ถามต่อได้อีก 1 ข้อ'));
-  const [a3] = await say('อีกข้อ'); assert.ok(a3.includes('นี่เป็นข้อสุดท้าย'));
+  const secret = 'ลับ-98765';
+  const [a1] = await say(`${secret} ความรัก`); assert.ok(a1.includes(name) && a1.includes('ถามต่อได้อีก 2 ข้อ'), 'answers from today\'s card');
+  assert.ok(buttons().includes('ขอมุมอื่น') && buttons().includes('ถามเรื่องการงาน') && !buttons().includes('ถามเรื่องความรัก'), 'tap buttons: another angle and the other topics');
+  assert.equal(sub().ask_topic, 'love', 'only the topic of the thread is remembered');
+  const [a2] = await say('ขอมุมอื่น'); assert.ok(a2.includes('อีกมุมหนึ่ง') && a2.includes('ถามต่อได้อีก 1 ข้อ'), 'a button is just a message, and "another angle" follows the thread');
+  assert.ok((await say('ขอบคุณนะ'))[0].includes('ถามได้อีก 1 ข้อ'), 'small talk is answered kindly, with what is left'); assert.equal(sub().ask_count, 2, 'and costs nothing');
+  const [a3] = await say('อีกข้อ'); assert.ok(a3.includes('นี่เป็นข้อสุดท้าย')); assert.equal(buttons(), undefined, 'no buttons after the last question');
   assert.match((await say('ขออีกข้อ'))[0], /ถามครบ 3 ข้อแล้ว/); assert.equal(sub().ask_count, 3, 'the fourth does not count');
   const dump = env.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map(t => JSON.stringify(env.db.prepare(`SELECT * FROM ${t.name}`).all())).join('');
-  assert.ok(!dump.includes(secret) && !dump.includes('ความรักเป็นยังไง'), 'the question text is nowhere in the database');
+  assert.ok(!dump.includes(secret) && !dump.includes('ความรัก ') && !dump.includes('ขอมุมอื่น'), 'the question text is nowhere in the database');
 
   env.db.prepare('UPDATE line_subscriptions SET ask_date = ?, ask_count = 3 WHERE user_id = ?').run('2000-01-01', uid);
   assert.ok((await say('วันใหม่'))[0].includes('ถามต่อได้อีก 2 ข้อ'), 'the counter starts again on a new Thai day'); assert.equal(sub().ask_count, 1);
+  env.db.prepare('UPDATE line_subscriptions SET ask_topic = ? WHERE user_id = ?').run('work', uid);
+  assert.ok((await say('ทำไม'))[0].includes('อีกมุมหนึ่ง'), 'a short "why?" continues the remembered topic'); env.db.prepare('UPDATE line_subscriptions SET ask_date = ? WHERE user_id = ?').run('2000-01-01', uid);
 
   env.db.prepare('UPDATE line_subscriptions SET ask_count = 0 WHERE user_id = ?').run(uid);
   const safe = await say('อยากตาย'); assert.ok(safe[0].includes('1323')); assert.equal(sub().ask_count, 0, 'a safety reply does not use up a question');
@@ -304,4 +311,32 @@ const webhook = (env, events, {sig, secret = SECRET} = {}) => {
   assert.deepEqual(await say('ยังอยู่ไหม'), [], 'after "หยุด" the bot stays quiet');
   net.friends.clear();
 }
-console.log('PASS: LINE reminders and follow-up questions (consent, friend check, signed webhook, stop-by-chat, Thai-time schedule, retries, caps) and feedback');
+/* ---- optional language-model slot: off by default, grounded, and never trusted ---- */
+{
+  const env = mk(), {c, uid, lineId} = await lineUser(env, 8);
+  net.friends.add(lineId); net.pushes.length = 0;
+  await c.put('/me/line-notify', {enabled: true, schedule: 'daily', hour: 0}); await sendDue(env);
+  const calls = [], good = 'วันนี้ใจอาจต้องการความอ่อนโยนมากกว่าการเร่งตัวเอง ลองเริ่มจากสิ่งเล็ก ๆ ที่ทำได้จริง แล้วสังเกตว่าอะไรช่วยให้รู้สึกเบาลง คุณคิดว่าอะไรคือก้าวเล็กที่สุดที่ทำได้วันนี้';
+  env.AI = {run: async (model, input) => { calls.push({model, input}); return {response: good}; }}; env.LINE_CHAT_MODEL = 'test-model';
+  const say = async text => { env.db.prepare('UPDATE line_subscriptions SET ask_count = 0, ask_date = NULL WHERE user_id = ?').run(uid); net.replies.length = 0;
+    await webhook(env, [{type: 'message', replyToken: 'rt' + Math.random(), message: {type: 'text', text}, source: {userId: lineId}}]); return net.replies.at(-1)?.messages[0].text; };
+
+  assert.ok(!(await say('ความรักเป็นยังไง')).includes(DISCLOSURE) && calls.length === 0, 'not called until LINE_CHAT_AI=1');
+  env.LINE_CHAT_AI = '1';
+  const t = await say('ความรักเป็นยังไง');
+  assert.equal(calls.length, 1); assert.equal(calls[0].model, 'test-model'); assert.ok(calls[0].input.messages[1].content.includes('ความรักเป็นยังไง'), 'the question reaches the model only as quoted data');
+  assert.ok(t.startsWith(good) && t.includes(DISCLOSURE) && t.includes('ถามต่อได้อีก 2 ข้อ'), 'the model text, then the disclosure and the count, both added by the code');
+
+  const rules = r => r.includes('ถ้ามองเรื่อง') && !r.includes(DISCLOSURE);
+  env.AI.run = async () => ({response: 'เรื่องนี้จะเกิดขึ้นแน่นอน ' + good}); assert.ok(rules(await say('ความรักเป็นยังไง')), 'certainty language: the rule-based text is sent instead');
+  env.AI.run = async () => { throw new Error('model down'); }; assert.ok(rules(await say('ความรักเป็นยังไง')), 'a failing model: rules');
+  env.AI.run = () => new Promise(() => {}); env.LINE_CHAT_TIMEOUT_MS = '30'; assert.ok(rules(await say('ความรักเป็นยังไง')), 'a model that hangs: rules'); delete env.LINE_CHAT_TIMEOUT_MS;
+  env.AI.run = async () => ({response: 'short'}); assert.ok(rules(await say('ความรักเป็นยังไง')), 'unusable output: rules');
+
+  calls.length = 0; env.AI.run = async (...a) => { calls.push(a); return {response: good}; };
+  assert.ok((await say('อยากตาย')).includes('1323'), 'safety'); await say('ขอเลขเด็ด'); await say('ขอบคุณ'); await say('สวัสดี');
+  assert.equal(calls.length, 0, 'safety, boundary and small talk replies never reach the model');
+  env.LINE_CHAT_AI = '0'; await say('ความรักเป็นยังไง'); assert.equal(calls.length, 0, 'switched off again');
+  net.friends.clear();
+}
+console.log('PASS: LINE reminders and the follow-up chat (consent, friend check, signed webhook, stop-by-chat, Thai-time schedule, retries, caps) and feedback');
