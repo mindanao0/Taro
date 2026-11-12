@@ -7,13 +7,22 @@ payload = json.loads((ROOT/'data/cards.public.json').read_text()); cards = paylo
 extra = json.loads((ROOT/'data/seo_extra.json').read_text())  # per-card money/health text (hand-written)
 slug = lambda c: re.sub(r'[^a-z0-9]+', '-', c['name_en'].lower()).strip('-')
 e = html.escape
-CSS = '''<style>:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0b0908;color:#ece4d3;font:400 17px/1.75 "IBM Plex Sans Thai","Noto Sans Thai",system-ui,sans-serif}
-main{max-width:760px;margin:0 auto;padding:24px 16px 64px}a{color:#c8a25a}h1{font:400 2rem/1.3 "Instrument Serif","IBM Plex Sans Thai",Georgia,serif;margin:.3em 0}h2{font-size:1.15rem;color:#c8a25a;margin:1.6em 0 .2em}h3{font-size:1rem;margin:1em 0 0}
-img{width:min(280px,100%);height:auto;border-radius:8px;display:block}.kw{color:#9a8f7e}nav.p{display:flex;justify-content:space-between;gap:12px;margin-top:2em}.cta{display:inline-block;margin:1.5em 0;padding:.6em 1.2em;border:1px solid #c8a25a;border-radius:99px;text-decoration:none}
-ul.g{columns:2;padding-left:1.2em}@media(max-width:520px){ul.g{columns:1}}</style>'''
+CSS = '''<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap">
+<style>:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;min-height:100vh;color:#ece4d3;font:400 17px/1.75 "IBM Plex Sans Thai","Noto Sans Thai",system-ui,sans-serif;background:radial-gradient(900px 520px at 50% -120px,#241a11 0,transparent 70%) no-repeat,#0b0908}
+a{color:#c8a25a}header.site{max-width:1180px;margin:0 auto;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+header.site .brand{font:italic 400 1.6rem/1 "Instrument Serif",Georgia,serif;color:#ece4d3;text-decoration:none}header.site nav{display:flex;gap:22px}header.site nav a{color:#9a8f7e;text-decoration:none}header.site nav a:hover{color:#ece4d3}
+main{max-width:1180px;margin:0 auto;padding:8px 24px 72px}.txt{max-width:760px}
+h1{font:400 clamp(1.9rem,4vw,2.8rem)/1.25 "Instrument Serif","IBM Plex Sans Thai",Georgia,serif;margin:.3em 0}h2{font-size:1.15rem;color:#c8a25a;margin:1.6em 0 .2em}h3{font-size:1rem;margin:1em 0 0}
+img{max-width:100%;height:auto;border-radius:8px;display:block}.kw{color:#9a8f7e}nav.p{display:flex;justify-content:space-between;gap:12px;margin-top:2.5em}.cta{display:inline-block;margin:1.5em 0;padding:.6em 1.2em;border:1px solid #c8a25a;border-radius:99px;text-decoration:none}.cta:hover{background:#c8a25a22}
+.cl{display:grid;grid-template-columns:minmax(240px,340px) minmax(0,1fr);gap:48px;align-items:start}.cl-img{position:sticky;top:24px}.cl-img img{width:100%}
+.pairimgs{display:flex;gap:16px;flex-wrap:wrap}.pairimgs img{width:200px}
+ul.g{columns:3;padding-left:1.2em}@media(max-width:900px){ul.g{columns:2}}@media(max-width:720px){.cl{grid-template-columns:1fr;gap:16px}.cl-img{position:static}.cl-img img{width:min(260px,100%)}ul.g{columns:1}main,header.site{padding-left:16px;padding-right:16px}}</style>'''
+HEADER = '<header class="site"><a class="brand" href="/">Ivory Rose Tarot</a><nav><a href="/">เลือกไพ่</a><a href="/cards/">ไพ่ทั้งสำรับ</a><a href="/pairs/">ไพ่คู่</a><a href="/articles/">บทความ</a></nav></header>'
 def page(title, desc, path, body, ld=None, img=None):
     ld = ld if isinstance(ld, list) or ld is None else [ld]
     url = f'{SITE}/{path}'
+    if 'class="cl"' not in body and 'class="g"' not in body: body = f'<div class="txt">{body}</div>'  # long text: keep a readable line length
     og = img or f'{SITE}/assets/share.jpg'
     ldj = ''.join(f'<script type="application/ld+json">{json.dumps(x,ensure_ascii=False)}</script>\n' for x in (ld or []))
     return f'''<!doctype html>
@@ -26,7 +35,7 @@ def page(title, desc, path, body, ld=None, img=None):
 <meta property="og:title" content="{e(title)}"><meta property="og:description" content="{e(desc)}"><meta property="og:url" content="{url}"><meta property="og:image" content="{og}">
 <meta name="twitter:card" content="summary_large_image">
 {ldj}{CSS}
-</head><body><main>
+</head><body>{HEADER}<main>
 {body}
 </main></body></html>
 '''
@@ -45,15 +54,15 @@ for i, c in enumerate(cards):
     faq = [(f"ไพ่ {c['name_en']} ({c['name_th']}) หมายถึงอะไร", c['upright_th']), (f"ไพ่ {c['name_en']} กลับหัวหมายถึงอะไร", c['reversed_th']), (f"ไพ่ {c['name_en']} เรื่องความรักหมายถึงอะไร", c['love_th']), (f"ไพ่ {c['name_en']} เรื่องการงานและการเงินหมายถึงอะไร", c['work_th'] + ' ' + c['money_th'])]
     relh = '<ul>' + ''.join(f'<li><a href="/cards/{slug(x)}.html">{e(x["name_en"])} ({e(x["name_th"])})</a></li>' for x in rel) + '</ul>'
     body = f'''<a href="/cards/">← ไพ่ทั้ง 78 ใบ</a>
+<div class="cl"><div class="cl-img"><img src="/assets/seo/thumb/{c['id']}.webp" alt="{e(c['alt_th'])}" width="340" height="609" fetchpriority="high"></div><div class="txt">
 <h1>ไพ่ {e(c['name_en'])} ({e(c['name_th'])}) ความหมาย</h1>
 <p class="kw">{e(kw)}</p>
-<img src="/assets/seo/thumb/{c['id']}.webp" alt="{e(c['alt_th'])}" width="280" height="501" fetchpriority="high">
 ''' + ''.join(f"<h2>{e(c['name_en'])} {h}</h2><p>{e(c[k])}</p>\n" for h, k in sections) + f'''<p class="kw">เรื่องสุขภาพเป็นการสะท้อนมุมมองเท่านั้น ไม่ใช่คำวินิจฉัยหรือคำแนะนำทางการแพทย์ หากมีอาการควรปรึกษาแพทย์</p>
 <h2>ไพ่ที่เกี่ยวข้อง</h2>{relh}
 <p>อ่านทุกใบแยกตามเรื่อง: <a href="/topics/love.html">ความรัก</a> · <a href="/topics/work.html">การงาน</a> · <a href="/topics/money.html">การเงิน</a> · <a href="/topics/health.html">สุขภาพ</a></p>
 <a class="cta" href="/">เปิดไพ่ทาโร่ด้วยตัวเอง →</a>
 <p class="kw">{e(payload['meaning_policy'])}</p>
-<nav class="p"><a href="/cards/{slug(prev)}.html">← {e(prev['name_en'])}</a><a href="/cards/{slug(nxt)}.html">{e(nxt['name_en'])} →</a></nav>'''
+<nav class="p"><a href="/cards/{slug(prev)}.html">← {e(prev['name_en'])}</a><a href="/cards/{slug(nxt)}.html">{e(nxt['name_en'])} →</a></nav></div></div>'''
     ld = [{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in faq]}, {"@context": "https://schema.org", "@type": "Article", "headline": title, "inLanguage": "th", "image": f"{SITE}/assets/seo/share/{c['id']}.jpg", "mainEntityOfPage": f"{SITE}/cards/{s}.html", "publisher": {"@type": "Organization", "name": "Ivory Rose Tarot", "url": SITE + "/"}}]
     ld.append(crumbs((('หน้าแรก', '/'), ('ไพ่ทั้ง 78 ใบ', '/cards/'), (c['name_en'], f'/cards/{s}.html'))))
     (out/f'{s}.html').write_text(page(title, desc, f'cards/{s}.html', body, ld, f"{SITE}/assets/seo/share/{c['id']}.jpg"), encoding='utf-8')
@@ -100,7 +109,7 @@ for ia, ib, why in PAIRS:
     desc = f"ความหมายไพ่ทาโร่ {a['name_en']} ({a['name_th']}) คู่กับ {b['name_en']} ({b['name_th']}): {why}"
     sec = ''.join(f"<h2>{e(c['name_en'])} ({e(c['name_th'])})</h2><p>{e(c['upright_th'])}</p><p class=\"kw\">คำสำคัญ: {e(' · '.join(c['keywords_th']))}</p><p><a href=\"/cards/{slug(c)}.html\">อ่านความหมายเต็มของ {e(c['name_en'])}</a></p>" for c in (a, b))
     body = f'''<a href="/cards/">← ไพ่ทั้ง 78 ใบ</a><h1>ไพ่ {e(a['name_en'])} + {e(b['name_en'])} เมื่อออกคู่กัน</h1><p>{e(why)}</p>
-<img src="/assets/seo/thumb/{a['id']}.webp" alt="{e(a['alt_th'])}" width="200" height="358"> <img src="/assets/seo/thumb/{b['id']}.webp" alt="{e(b['alt_th'])}" width="200" height="358">
+<div class="pairimgs"><img src="/assets/seo/thumb/{a['id']}.webp" alt="{e(a['alt_th'])}" width="200" height="358"><img src="/assets/seo/thumb/{b['id']}.webp" alt="{e(b['alt_th'])}" width="200" height="358"></div>
 <h2>ธาตุของสองใบนี้</h2><p>{e(relation_th(a, b))}</p>{sec}
 <h2>ถ้าเป็นเรื่องความรักและการงาน</h2><p><b>ความรัก:</b> {e(a['love_th'])} ส่วนอีกใบ: {e(b['love_th'])}</p><p><b>การงาน:</b> {e(a['work_th'])} ส่วนอีกใบ: {e(b['work_th'])}</p>
 <p class="kw">การอ่านเป็นคู่ขึ้นกับคำถาม ตำแหน่งในการวางไพ่ และว่าใบไหนกลับหัว ใช้เป็นแนวคิดเพื่อทบทวนตัวเอง ไม่ใช่คำทำนายที่แน่นอน</p>
