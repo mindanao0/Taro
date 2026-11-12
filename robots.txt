@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /account.html
+Disallow: /club-preview.html
+
+Sitemap: https://ivoryrosetarot.online/sitemap.xml
