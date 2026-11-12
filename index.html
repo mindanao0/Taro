@@ -25,6 +25,7 @@
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap"></noscript>
 <style>
 :root{
+  --wrap:1680px; --gut:clamp(20px,3.5vw,64px);   /* page width: wide screens use the space, text blocks keep their own max-width */
   --field:#ffffff66;   /* border of text fields: at least 3:1 against the page (WCAG 1.4.11) */
   --bg:#0b0908; --text:#ece4d3; --dim:#9a8f7e; --line:#ffffff1c; --gold:#c8a25a;
   --display:"Instrument Serif","IBM Plex Sans Thai",Georgia,serif;
@@ -47,7 +48,7 @@ button{cursor:pointer;background:none;border:0;padding:0}
 
 /* top */
 .top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 32px;
-  max-width:1180px;margin:0 auto;padding:24px 28px 0}
+  max-width:var(--wrap);margin:0 auto;padding:24px var(--gut) 0}
 .mark{font:italic 400 1.7rem/1 var(--display);margin:0}
 .mark button{font:inherit;color:inherit;padding:9px 0}
 .mark button:hover{color:var(--gold)}
@@ -62,7 +63,7 @@ button{cursor:pointer;background:none;border:0;padding:0}
 .savebar textarea{width:100%;min-height:72px;margin:8px 0;background:#ffffff0a;border:1px solid var(--field);border-radius:8px;padding:10px 12px;resize:vertical}
 .savebar textarea:focus{outline:0;border-color:var(--gold)} .savebar .go{padding:8px 20px;border:1px solid var(--gold);border-radius:999px;background:#c8a25a22;min-height:44px} .savebar .go:hover{background:#c8a25a44} .savebar .go[disabled]{opacity:.5}
 .fav{margin-top:14px;padding:8px 18px;border:1px solid var(--line);border-radius:999px;min-height:44px;color:var(--dim)} .fav[aria-pressed=true]{color:var(--gold);border-color:var(--gold)}
-main{max-width:1180px;margin:0 auto;padding:0 28px 100px}
+main{max-width:var(--wrap);margin:0 auto;padding:0 var(--gut) 100px}
 h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 
 /* ask */
@@ -614,7 +615,7 @@ function startPick() {
 function fitFan() {
   const W = $('fanwrap').clientWidth, n = cards.length, step = 2 * Math.PI / n;
   if (!W) return;   // hidden (e.g. user is in the catalog); refit when shown again
-  const cw = Math.max(64, Math.min(92, W / 9)), ch = cw * 1.79, R = cw * 0.5 / step;
+  const cw = Math.max(64, Math.min(132, W / 13)), ch = cw * 1.79, R = cw * 0.5 / step;
   const max = Math.min(Math.asin(Math.min(1, (W / 2 - cw / 2) / R)), 1.08);
   Object.assign(wheel, {W, step, cw, R, max});
   $('fan').style.cssText = `width:${W}px;height:${R * (1 - Math.cos(max)) + ch + 44}px;--cw:${cw}px`;
