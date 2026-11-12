@@ -79,6 +79,7 @@ for (const [label, ctxOpts] of [['phone', devices['iPhone 13']], ['desktop', {vi
       await page.keyboard.press('Enter');
       assert.equal(await page.locator('#fan .fc.picked').count(), 1, 'Enter picks the focused card');
       assert.match(await page.locator('#pstep').innerText(), /ตำแหน่งที่ 2/, 'the step text moves on (read out as a live region)');
+      await page.waitForFunction(() => document.activeElement?.classList.contains('picked'));   // CI is slower: let focus settle on the picked card before undoing
       await page.keyboard.press('Enter');
       assert.equal(await page.locator('#fan .fc.picked').count(), 0, 'Enter on a picked card puts it back');
       console.log('ok   desktop: keyboard-only pick and undo');

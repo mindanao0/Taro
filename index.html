@@ -19,6 +19,9 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="preload" as="image" href="assets/card-back-sm.webp">
+<link rel="preload" as="fetch" href="data/cards.public.json" crossorigin>
+<link rel="preload" as="fetch" href="data/spreads.json" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap">
@@ -30,7 +33,7 @@
   --bg:#0b0908; --text:#ece4d3; --dim:#9a8f7e; --line:#ffffff1c; --gold:#c8a25a;
   --display:"Instrument Serif","IBM Plex Sans Thai",Georgia,serif;
   --sans:"IBM Plex Sans Thai","Noto Sans Thai",system-ui,sans-serif;
-  --back:url("assets/card-back.webp");
+  --back:url("assets/card-back-sm.webp");   /* 280px copy (60KB) of card-back.webp (512KB): cards are drawn at most ~132px wide */
 }
 *{box-sizing:border-box}
 html{color-scheme:dark;scroll-behavior:smooth}
@@ -47,12 +50,12 @@ button{cursor:pointer;background:none;border:0;padding:0}
 .empty{margin:0;color:var(--dim)}
 
 /* top */
-.top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 32px;
+.top{display:flex;flex-wrap:nowrap;align-items:baseline;justify-content:space-between;gap:6px clamp(12px,4vw,32px);   /* one row at every width, with either font, so the font swap cannot re-wrap the menu and move the page */
   max-width:var(--wrap);margin:0 auto;padding:24px var(--gut) 0}
-.mark{font:italic 400 1.7rem/1 var(--display);margin:0}
-.mark button{font:inherit;color:inherit;padding:9px 0}
+.mark{font:italic 400 clamp(1.2rem,5.6vw,1.7rem)/1 var(--display);margin:0;white-space:nowrap}
+.mark button{font:inherit;color:inherit;padding:9px 0;min-height:44px}
 .mark button:hover{color:var(--gold)}
-.top nav{display:flex;gap:28px}
+.top nav{display:flex;gap:clamp(12px,4vw,28px);white-space:nowrap;font-size:clamp(.82rem,3.6vw,1rem)}
 .top nav button{padding:9px 0;color:var(--dim);border-bottom:1px solid transparent}
 .top nav button:hover{color:var(--text)}
 .top nav button[aria-current=page]{color:var(--text);border-bottom-color:var(--gold)}
@@ -73,6 +76,8 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 .q::placeholder{color:#9a8f7ed9;font-style:italic}
 .q:focus{outline:0;border-bottom-color:var(--gold)}
 .picks{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;border:0;margin:0;padding:0;position:relative}
+/* #spreads is filled by JS after spreads.json loads; reserve its height per wrap count (4/3/2/1 rows of 44px pills + 10px gaps) so the page below does not jump */
+#spreads{min-height:206px}@media(min-width:560px){#spreads{min-height:152px}}@media(min-width:640px){#spreads{min-height:98px}}@media(min-width:1100px){#spreads{min-height:44px}}
 .pick{display:inline-flex;align-items:center;gap:10px;padding:8px 20px 8px 14px;border:1px solid var(--line);border-radius:999px;color:var(--dim);cursor:pointer;line-height:1.4}
 .pick:hover{color:var(--text);border-color:#ffffff40}
 .pick input{position:absolute;opacity:0}
@@ -85,7 +90,7 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 .switch{display:inline-flex;gap:10px;align-items:center;color:var(--dim);cursor:pointer;min-height:44px}
 .switch input{accent-color:var(--gold);width:18px;height:18px}
 .deck-btn{display:flex;flex-direction:column;align-items:center;gap:22px;margin-top:10px}
-.deck{position:relative;display:block;width:min(560px,88vw);height:260px}
+.deck{position:relative;display:block;width:min(560px,88vw);height:196px}   /* 196 = what dealDeck() computes for the default 3-card spread (60*1.6*1.79+24); JS overrides it, so starting here avoids a 64px jump on load */
 .dc{position:absolute;left:0;top:0;width:var(--w);aspect-ratio:937/1678;background:var(--back) center/100% 100%;box-shadow:0 12px 20px -10px #000;will-change:transform;backface-visibility:hidden;
   transform:translate(var(--x),calc(var(--y) + var(--l,0px))) rotate(var(--r));transition:transform .65s cubic-bezier(.2,.9,.2,1) var(--d,0ms),opacity .3s}
 .dc.gather{transition:transform .3s ease-in,opacity .3s}
