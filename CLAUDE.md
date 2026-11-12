@@ -29,7 +29,7 @@ Python: Pillow only (`pip install -r requirements.txt`). Node >=22.13: `npm inst
 - `enrich_data.py`, `finalize_editorial.py`, `add_thai_symbols.py` → post-process `cards.json` and regenerate `cards.public.json` (the trimmed copy the site loads), `art_revisions.json`, `sources.json`
 - `package_deck.py` → `manifest.json`, `cards.csv`, `docs/02_CARD_MEANINGS_TH.md`, `previews/catalog.html`, `SHA256SUMS.txt`; `--check-only` only validates (78 unique IDs, 22 major / 56 minor, image sizes, checksums)
 - `build_guide.py` → `START_HERE.html`
-- `build_seo.py` → `cards/*.html` (one static, indexable page per card + hub), `sitemap.xml`; reads `cards.public.json` plus hand-written `data/seo_extra.json` (money/health text per card); rerun after changing either
+- `build_seo_images.py` → `assets/seo/thumb|share/` (560px card thumbnails and 1200x630 social previews; needs raqm + Noto fonts in `/usr/share/fonts/google-noto-vf`). Then `build_seo.py` → `cards/*.html` (one static, indexable page per card + hub), `topics/*.html` (love/work/money/health), `sitemap.xml`; reads `cards.public.json` plus hand-written `data/seo_extra.json` (money/health text per card). Rerun both after changing card data; `scripts/seo.test.mjs` checks the output
 
 If you edit `data/cards.json` or any card image, `cards.public.json` and `SHA256SUMS.txt` must be regenerated, otherwise the site and the check go out of sync. Card IDs look like `major-13`; `major-13` and `major-18` are excluded from `generation_jobs.json` (they are the approved reference cards).
 
