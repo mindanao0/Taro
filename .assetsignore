@@ -4,7 +4,7 @@ wrangler.uat.jsonc
 .assetsignore
 CLAUDE.md
 assets/cards
-previews
+/previews/
 docs
 .git
 .gitignore
