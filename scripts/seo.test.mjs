@@ -19,7 +19,9 @@ for (const f of pages) {
   for (const m of h.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/g)) JSON.parse(m[1]);
 }
 const christmas = read('christmas-wish/index.html');
-assert.match(christmas, /href="\/\?deck=christmas-wish"/, 'Christmas Wish CTA must select the seasonal deck');
+assert.ok(christmas.includes('class="cta" href="/"'), 'seasonal landing CTA must lead to the main reader');
+assert.match(christmas, /2026-12-01.*2026-12-31/, 'season dates must be readable and machine-compatible');
+assert.doesNotMatch(christmas, /[?]deck=/, 'seasonal landing must not expose a theme switch');
 const og = christmas.match(/<meta property="og:image" content="([^"]+)"/)?.[1];
 const ogUrl = new URL(og);
 assert.equal(ogUrl.origin, SITE);
@@ -46,7 +48,8 @@ for (const [sourceName, source] of [['seasonal landing', christmas], ['articles 
   assert.ok(source.includes(`href="/${guidePath}"`), `${sourceName} must link to the guide`);
 }
 assert.match(guide, /href="\/christmas-wish\/"/, 'guide must link back to seasonal landing');
-assert.match(guide, /href="\/\?deck=christmas-wish"/, 'guide CTA must select the seasonal deck');
+assert.ok(guide.includes('class="cta" href="/"'), 'guide CTA must lead to the main reader');
+assert.doesNotMatch(guide, /[?]deck=/, 'guide must not expose a theme switch');
 assert.equal([...guide.matchAll(/<h1>/g)].length, 1, 'guide must have a single descriptive h1');
 assert.doesNotMatch(guide, /"@type":\s*"FAQPage"/, 'reader questions are not a rich-results claim');
 const sitemap = [...read('sitemap.xml').matchAll(/<loc>([^<]+)/g)].map(m => m[1]).sort();

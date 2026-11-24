@@ -10,8 +10,11 @@ export const DECKS = Object.freeze({
 const MAJORS = Object.freeze(["fool", "magician", "high-priestess", "empress", "emperor", "hierophant", "lovers", "chariot", "strength", "hermit", "wheel-of-fortune", "justice", "hanged-man", "death", "temperance", "devil", "tower", "star", "moon", "sun", "judgement", "world"]);
 const RANKS = 'ace two three four five six seven eight nine ten page knight queen king'.split(' ');
 export const isDeck = value => typeof value === 'string' && Object.hasOwn(DECKS, value);
-export function initialDeck(queryValue, savedValue) {
-  return isDeck(queryValue) ? queryValue : isDeck(savedValue) ? savedValue : DEFAULT_DECK;
+// Explicit +07:00: Bangkok midnight, independent of browser locale and DST.
+const CHRISTMAS_START = Date.parse('2026-12-01T00:00:00+07:00');
+const CHRISTMAS_END = Date.parse('2027-01-01T00:00:00+07:00');
+export function seasonalDeck(now = Date.now()) {
+  return now >= CHRISTMAS_START && now < CHRISTMAS_END ? CHRISTMAS_DECK : DEFAULT_DECK;
 }
 export function artFor(deck, card) {
   if (deck === DEFAULT_DECK) return card;

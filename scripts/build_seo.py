@@ -147,16 +147,17 @@ body = '<a href="/">← เปิดไพ่</a><h1>บทความไพ่
 urls.append(f'{SITE}/articles/')
 # ---- /christmas-wish/: one seasonal landing page, not 78 duplicate card pages
 christmas_path = 'christmas-wish/'
-christmas_title = 'Christmas Wish Tarot | เปิดไพ่ทาโร่ธีมคริสต์มาสฟรี'
-christmas_desc = 'ลองเปิดไพ่ Christmas Wish Tarot สำรับ 78 ใบในภาพวาดสีน้ำธีมคริสต์มาส เลือกไพ่ 1 หรือ 3 ใบฟรี เพื่อทบทวนปีที่ผ่านมาและสิ่งที่อยากพาไปสู่ปีใหม่'
+christmas_title = 'Christmas Wish Tarot | ธีมไพ่คริสต์มาส 1–31 ธ.ค. 2569'
+christmas_desc = 'รู้จัก Christmas Wish Tarot ไพ่สีน้ำ 78 ใบที่ใช้บนหน้าเปิดไพ่ช่วง 1–31 ธันวาคม 2569 ตามเวลาไทย พร้อมตัวอย่างอ่านไพ่ทบทวนปลายปี'
 christmas_share = '/assets/seo/share/christmas-wish.jpg'
 christmas_img = '/assets/christmas-wish/previews/major-17-star.webp'
-christmas_body = f'''<h1>เปิดไพ่ทาโร่ธีมคริสต์มาส: Christmas Wish Tarot</h1>
+christmas_body = f'''<h1>Christmas Wish Tarot: ธีมไพ่รับเดือนธันวาคม</h1>
 <div class="cl">
   <figure class="cl-img" style="margin:0"><img src="{christmas_img}" alt="ไพ่ The Star ในสำรับ Christmas Wish Tarot" width="900" height="1350" fetchpriority="high"><figcaption class="kw">The Star · Christmas Wish Tarot</figcaption></figure>
   <div class="txt">
     <p>ถ้าปลายปีทำให้คุณอยากหยุดคิดสักครู่ ลองใช้ไพ่หนึ่งใบเป็นจุดเริ่มต้น Christmas Wish Tarot เป็นสำรับ 78 ใบตามโครงสร้างทาโร่ดั้งเดิม ในภาพวาดสีน้ำธีมคริสต์มาส โครงคำอ่านใช้ร่วมกับสำรับ Gothic Ivory Rose แต่ภาพหน้าและหลังไพ่เป็นของชุด Christmas Wish</p>
-    <a class="cta" href="/?deck=christmas-wish">เปิดไพ่ Christmas Wish ฟรี →</a>
+    <p><strong><time datetime="2026-12-01">1 ธันวาคม</time> ถึง <time datetime="2026-12-31">31 ธันวาคม 2569</time> (เวลาไทย)</strong> หน้าเปิดไพ่ใช้ภาพ Christmas Wish อัตโนมัติ หลังจากนั้นจะกลับเป็นสำรับ Gothic Ivory Rose ค่ะ</p>
+    <a class="cta" href="/">ไปหน้าเปิดไพ่ →</a>
     <h2>เริ่มอ่านไพ่คริสต์มาสยังไง?</h2>
     <ol>
       <li>นึกถึงคำถามที่อยากทบทวน เช่น ปีนี้มีอะไรที่ฉันอยากขอบคุณตัวเอง?</li>
@@ -208,8 +209,8 @@ guide_body = f'''<a href="/articles/">← บทความไพ่ทาโ�
 <p>เลือก 1 ใบเมื่ออยากได้คำถามเดียวให้คิดต่อ เลือก 3 ใบเมื่อต้องการแยกสิ่งที่กำลังเกิด สิ่งที่ยังไม่เข้าใจ และก้าวที่ลองได้</p>
 <h3>ถ้าอ่านไม่เข้ากับสถานการณ์ ต้องจั่วซ้ำไหม?</h3>
 <p>ไม่ต้องค่ะ ลองเขียนแยกว่าสิ่งไหนมาจากข้อเท็จจริงและสิ่งไหนเป็นเพียงสมมติฐาน ถ้ายังไม่เห็นประโยชน์ก็หยุดได้ ไม่ต้องใช้ไพ่เพื่อยืนยันคำตอบที่อยากได้</p>
-<p><a class="cta" href="/?deck=christmas-wish">ลองเปิดไพ่ Christmas Wish ฟรี →</a></p>
-<p>ดู <a href="/christmas-wish/">ภาพและรายละเอียดสำรับ Christmas Wish Tarot</a> ก่อนเลือกไพ่ได้ค่ะ</p>
+<p><a class="cta" href="/">ไปหน้าเปิดไพ่เพื่อทดลองอ่าน →</a></p>
+<p>คู่มือนี้ใช้กับสำรับหลักได้ตลอดปี ส่วนภาพธีม <a href="/christmas-wish/">Christmas Wish Tarot</a> จะขึ้นอัตโนมัติในช่วง 1–31 ธันวาคม 2569 ตามเวลาไทยค่ะ</p>
 <p class="kw">นี่คือตัวอย่างการทบทวนตัวเอง ไม่ใช่เหตุการณ์จริง คำทำนาย หรือคำแนะนำด้านสุขภาพ กฎหมาย หรือการเงิน</p>'''
 guide_url = f'{SITE}/{christmas_guide_path}'
 guide_ld = [{"@context": "https://schema.org", "@type": "Article",

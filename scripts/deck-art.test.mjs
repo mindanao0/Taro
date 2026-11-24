@@ -1,10 +1,18 @@
 import assert from 'node:assert/strict';
 import {readFileSync, statSync} from 'node:fs';
 import {createReading} from './reading-core.mjs';
-import {DECKS, DEFAULT_DECK, CHRISTMAS_DECK, initialDeck, artFor} from './deck-art.mjs';
+import {DECKS, DEFAULT_DECK, CHRISTMAS_DECK, seasonalDeck, artFor} from './deck-art.mjs';
 const root = new URL('../', import.meta.url);
 const {cards} = JSON.parse(readFileSync(new URL('data/cards.public.json', root)));
-for (const [q, saved, expect] of [[null,null,DEFAULT_DECK],[null,CHRISTMAS_DECK,CHRISTMAS_DECK],[DEFAULT_DECK,CHRISTMAS_DECK,DEFAULT_DECK],['__proto__','constructor',DEFAULT_DECK],['../private',CHRISTMAS_DECK,CHRISTMAS_DECK]]) assert.equal(initialDeck(q,saved),expect);
+for (const [ts, expected] of [
+ ['2026-11-30T16:59:59.999Z', DEFAULT_DECK],
+ ['2026-11-30T17:00:00.000Z', CHRISTMAS_DECK],
+ ['2026-12-31T16:59:59.999Z', CHRISTMAS_DECK],
+ ['2026-12-31T17:00:00.000Z', DEFAULT_DECK],
+ ['2027-12-20T12:00:00.000Z', DEFAULT_DECK],
+ ['2025-12-20T12:00:00.000Z', DEFAULT_DECK]
+]) assert.equal(seasonalDeck(Date.parse(ts)), expected, ts);
+assert.equal(seasonalDeck(NaN), DEFAULT_DECK);
 const spread = JSON.parse(readFileSync(new URL('data/spreads.json', root))).spreads[0];
 assert.equal(createReading(cards,spread,{deckId:CHRISTMAS_DECK}).deck_id,CHRISTMAS_DECK);
 assert.equal(createReading(cards,spread).deck_id,DEFAULT_DECK);
@@ -23,4 +31,4 @@ for (const c of cards) {
 assert.equal(images.size,78);
 assert.ok(statSync(new URL(DECKS[CHRISTMAS_DECK].back,root)).size < 60_000);
 assert.throws(()=>artFor(CHRISTMAS_DECK,{id:'major-22'}));assert.throws(()=>artFor(CHRISTMAS_DECK,{id:'cups-00'}));
-console.log('PASS: 78 unique Christmas Wish WebP cards, unchanged common meanings, default and URL handling, optimized seasonal back');
+console.log('PASS: 78 unique Christmas Wish WebP cards, unchanged common meanings, Bangkok launch/end boundaries, optimized seasonal back');

@@ -35,6 +35,7 @@ const step = async (name, fn) => { try { await fn(); console.log('ok  ', name); 
 for (const [label, ctxOpts] of [['phone', devices['iPhone 13']], ['desktop', {viewport: {width: 1280, height: 800}}]]) {
   const ctx = await browser.newContext(ctxOpts);
   const page = await ctx.newPage();
+  await page.clock.setFixedTime(new Date("2026-11-30T16:59:59.999Z"));
   const problems = [];
   page.on('pageerror', e => problems.push('pageerror: ' + e.message));
   page.on('requestfailed', r => { if (!/fonts\.g|cloudflareinsights/.test(r.url())) problems.push('requestfailed: ' + r.url()); });
@@ -86,12 +87,16 @@ for (const [label, ctxOpts] of [['phone', devices['iPhone 13']], ['desktop', {vi
     await noHScroll();
   });
 
-  await step(`${label}: Christmas Wish selection, catalog, complete reading and safe deck links`, async () => {
+  await step(`${label}: Bangkok season boundaries, catalog, safe reading across rollover, no manual override`, async () => {
     await page.goto(base); await page.waitForSelector('#spreads input');
-    assert.equal(await page.inputValue('#deck-choice'), 'gothic-ivory-rose');
-    await page.selectOption('#deck-choice', 'christmas-wish');
-    await page.reload(); await page.waitForSelector('#spreads input');
-    assert.equal(await page.inputValue('#deck-choice'), 'christmas-wish');
+    assert.equal(await page.locator('#active-deck').innerText(), 'Gothic Ivory Rose');
+    assert.equal(await page.locator('#deck-choice').count(), 0);
+    await page.evaluate(() => localStorage.setItem('taro.deck', 'christmas-wish'));
+    await page.goto(base + '?deck=christmas-wish'); await page.waitForSelector('#spreads input');
+    assert.equal(await page.locator('#active-deck').innerText(), 'Gothic Ivory Rose');
+    await page.clock.setFixedTime(new Date("2026-11-30T17:00:00.000Z"));
+    await page.goto(base + '?deck=gothic-ivory-rose'); await page.waitForSelector('#spreads input');
+    assert.equal(await page.locator('#active-deck').innerText(), 'Christmas Wish');
     assert.match(await page.locator('.dc').first().evaluate(n => getComputedStyle(n).backgroundImage), /christmas-wish/);
     await page.click('#n-cat'); await page.waitForSelector('#grid .tile');
     assert.equal(await page.locator('#grid img[src*="christmas-wish/previews/"]').count(), 78);
@@ -108,12 +113,13 @@ for (const [label, ctxOpts] of [['phone', devices['iPhone 13']], ['desktop', {vi
     }, null, {timeout: 8000});
     assert.match(await page.locator('#recap').innerText(),/Christmas Wish/);
     await noHScroll();
-    await page.goto(base + '?deck=gothic-ivory-rose'); await page.waitForSelector('#spreads input');
-    assert.equal(await page.inputValue('#deck-choice'), 'gothic-ivory-rose');
+    await page.clock.setFixedTime(new Date("2026-12-31T17:00:00.000Z"));
+    await page.evaluate(() => dispatchEvent(new Event('focus')));
+    assert.match(await page.locator('#recap').innerText(), /Christmas Wish/);
+    await page.click('#again');
+    assert.equal(await page.locator('#active-deck').innerText(), 'Gothic Ivory Rose');
     await page.goto(base + '?deck=christmas-wish'); await page.waitForSelector('#spreads input');
-    assert.equal(await page.inputValue('#deck-choice'), 'christmas-wish');
-    await page.selectOption('#deck-choice', 'gothic-ivory-rose'); await page.reload(); await page.waitForSelector('#spreads input');
-    assert.equal(await page.inputValue('#deck-choice'), 'gothic-ivory-rose');
+    assert.equal(await page.locator('#active-deck').innerText(), 'Gothic Ivory Rose');
   });
 
   await step(`${label}: no console/network problems`, async () => assert.deepEqual(problems, []));
@@ -124,6 +130,7 @@ for (const [label, ctxOpts] of [['phone', devices['iPhone 13']], ['desktop', {vi
 {
   const ctx = await browser.newContext({...devices['iPhone 13'], reducedMotion: 'reduce'});   // no start-up spin, so positions hold still
   const page = await ctx.newPage();
+  await page.clock.setFixedTime(new Date("2026-11-30T16:59:59.999Z"));
   const flush = () => page.evaluate(() => dispatchEvent(new Event('pagehide')));
   await step('tracking: nothing sent without consent, even with TRACK_URL set', async () => {
     await page.goto(trackBase); await page.waitForSelector('#spreads input');
@@ -189,6 +196,7 @@ for (const [label, ctxOpts] of [['phone', devices['iPhone 13']], ['desktop', {vi
     const email = `e2e-${label}@example.com`, pw1 = 'first long passphrase', pw2 = 'second long passphrase';
     const ctx = await browser.newContext(ctxOpts);
     const page = await ctx.newPage();
+  await page.clock.setFixedTime(new Date("2026-11-30T16:59:59.999Z"));
     page.setDefaultTimeout(8000);   // fail fast with a readable message instead of hanging for 30 s per step
     const problems = [];
     page.on('pageerror', e => problems.push('pageerror: ' + e.message));
@@ -235,7 +243,8 @@ for (const [label, ctxOpts] of [['phone', devices['iPhone 13']], ['desktop', {vi
     });
 
     await step(`account ${label}: Christmas Wish cannot write Gothic history or favourites`, async () => {
-      await page.selectOption('#deck-choice','christmas-wish');
+      await page.clock.setFixedTime(new Date("2026-11-30T17:00:00.000Z"));
+      await page.goto(web); await page.waitForFunction(() => document.getElementById('n-account').textContent === 'ทดสอบ');
       assert.equal(await page.locator('#daily').isVisible(), false);
       await page.click('#n-cat'); await page.locator('#grid .tile').first().click();
       assert.equal(await page.locator('#favbtn').count(),0);
@@ -244,8 +253,8 @@ for (const [label, ctxOpts] of [['phone', devices['iPhone 13']], ['desktop', {vi
       await page.locator('#fan .fc').nth(30).dispatchEvent('click'); await page.waitForSelector('#session:not([hidden])');
       assert.match(await page.locator('#savebar').innerText(),/ยังไม่บันทึกลงประวัติ/);
       assert.equal(await page.locator('#rsave').count(),0);
-      await page.click('#again'); await page.waitForSelector('#deck-choice');
-      await page.selectOption('#deck-choice','gothic-ivory-rose'); await page.waitForSelector('#dailybtn');
+      await page.clock.setFixedTime(new Date("2026-11-30T16:59:59.999Z"));
+      await page.click('#again'); await page.waitForSelector('#dailybtn');
     });
     await step(`account ${label}: save a reading with a note (consent asked first)`, async () => {
       await page.fill('#q', 'ความรัก'); await page.locator('#spreads input[value=single]').check({force: true});
@@ -339,6 +348,7 @@ for (const [label, ctxOpts] of [['phone', devices['iPhone 13']], ['desktop', {vi
 
   await step('account: without API_URL the account page says it is off and the home page shows no sign-in', async () => {
     const ctx = await browser.newContext(); const page = await ctx.newPage();
+  await page.clock.setFixedTime(new Date("2026-11-30T16:59:59.999Z"));
     await page.goto(base + 'account.html'); await page.waitForSelector('#off:not([hidden])');
     await page.goto(base); await page.waitForSelector('#spreads input');
     assert.equal(await page.locator('#n-account').isVisible(), false); assert.equal(await page.locator('#daily').isVisible(), false);

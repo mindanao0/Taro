@@ -34,7 +34,7 @@ def main():
     d.text((550, 157), 'IVORY ROSE TAROT', font=font(serif, 26, 500), fill=gold, anchor='mm')
     d.text((550, 241), 'Christmas', font=font(serif, 65, 500), fill=ivory, anchor='mm')
     d.text((550, 321), 'Wish Tarot', font=font(serif, 65, 500), fill=ivory, anchor='mm')
-    d.text((550, 401), 'เปิดไพ่ธีมคริสต์มาสฟรี', font=font(sans, 30, 500), fill=gold, anchor='mm')
+    d.text((550, 401), 'December 1–31, 2026', font=font(serif, 30, 500), fill=gold, anchor='mm')
     with Image.open(ART) as source:
         h = 468
         art = source.convert('RGB').resize((round(h * source.width / source.height), h), Image.Resampling.LANCZOS)
