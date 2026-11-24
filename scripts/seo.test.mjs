@@ -40,6 +40,15 @@ assert.match(christmas, /<meta property="og:image:width" content="1200">/);
 assert.match(christmas, /<meta property="og:image:height" content="630">/);
 assert.match(christmas, /<meta property="og:image:alt" content="[^"]*The Star">/);
 assert.ok(existsSync(root + 'assets/christmas-wish/previews/major-17-star.webp'), 'Christmas Wish hero must exist');
+const guidePath = 'articles/year-end-tarot-reflection.html';
+const guide = read(guidePath);
+for (const [sourceName, source] of [['seasonal landing', christmas], ['articles hub', read('articles/index.html')]]) {
+  assert.ok(source.includes(`href="/${guidePath}"`), `${sourceName} must link to the guide`);
+}
+assert.match(guide, /href="\/christmas-wish\/"/, 'guide must link back to seasonal landing');
+assert.match(guide, /href="\/\?deck=christmas-wish"/, 'guide CTA must select the seasonal deck');
+assert.equal([...guide.matchAll(/<h1>/g)].length, 1, 'guide must have a single descriptive h1');
+assert.doesNotMatch(guide, /"@type":\s*"FAQPage"/, 'reader questions are not a rich-results claim');
 const sitemap = [...read('sitemap.xml').matchAll(/<loc>([^<]+)/g)].map(m => m[1]).sort();
 assert.deepEqual(sitemap, [SITE + '/', ...pages.map(f => SITE + '/' + f.replace(/index\.html$/, ''))].sort(), 'sitemap.xml out of sync: run python3 scripts/build_seo.py');
 for (const id of ids) for (const f of [`assets/seo/thumb/${id}.webp`, `assets/seo/share/${id}.jpg`]) assert.ok(existsSync(root + f), `missing ${f}`);

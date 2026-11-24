@@ -131,6 +131,8 @@ for ia, ib, why in PAIRS:
 body = '<a href="/cards/">← ไพ่ทั้ง 78 ใบ</a><h1>ความหมายไพ่ทาโร่เมื่อออกคู่กัน</h1><p>คู่ไพ่ที่คนมักค้นหา อ่านความสัมพันธ์ของสองใบผ่านธาตุและความหมายของแต่ละใบ</p><ul>' + ''.join(pair_links) + '</ul>'
 (ROOT/'pairs'/'index.html').write_text(page('ความหมายไพ่ทาโร่เมื่อออกคู่กัน คู่ยอดนิยม - Ivory Rose Tarot', 'รวมความหมายไพ่ทาโร่เมื่อออกคู่กัน เช่น The Lovers + The Devil, Death + The Tower อ่านผ่านธาตุและความหมายของแต่ละใบ', 'pairs/', body), encoding='utf-8')
 urls.append(f'{SITE}/pairs/')
+christmas_guide_path = 'articles/year-end-tarot-reflection.html'
+christmas_guide_label = 'วิธีใช้ไพ่ทาโร่ทบทวนปลายปี: ตัวอย่าง 1 ใบและ 3 ใบ'
 # ---- /articles/: hand-written guides in data/seo_articles.json (sections of paragraphs; inline HTML allowed, links are checked by seo.test.mjs)
 articles = json.loads((ROOT/'data/seo_articles.json').read_text())
 (ROOT/'articles').mkdir(exist_ok=True)
@@ -140,7 +142,7 @@ for art in articles:
     ld = [{"@context": "https://schema.org", "@type": "Article", "headline": art['title'], "inLanguage": "th", "datePublished": "2026-11-12", "mainEntityOfPage": f"{SITE}/articles/{art['slug']}.html", "image": f"{SITE}/assets/share.jpg", "publisher": {"@type": "Organization", "name": "Ivory Rose Tarot", "url": SITE + "/"}}, crumbs((('หน้าแรก', '/'), ('บทความ', '/articles/'), (art['title'], f"/articles/{art['slug']}.html")))]
     (ROOT/'articles'/f"{art['slug']}.html").write_text(page(art['title'] + ' - Ivory Rose Tarot', art['desc'], f"articles/{art['slug']}.html", body, ld), encoding='utf-8')
     urls.append(f"{SITE}/articles/{art['slug']}.html")
-body = '<a href="/">← เปิดไพ่</a><h1>บทความไพ่ทาโร่</h1><ul>' + ''.join(f"<li><a href=\"/articles/{a['slug']}.html\">{e(a['title'])}</a><br><span class=\"kw\">{e(a['desc'])}</span></li>" for a in articles) + '</ul>'
+body = '<a href="/">← เปิดไพ่</a><h1>บทความไพ่ทาโร่</h1><ul>' + ''.join(f"<li><a href=\"/articles/{a['slug']}.html\">{e(a['title'])}</a><br><span class=\"kw\">{e(a['desc'])}</span></li>" for a in articles) + f'<li><a href="/{christmas_guide_path}">{christmas_guide_label}</a><br><span class="kw">ตัวอย่างการอ่านไพ่ที่จบด้วยก้าวเล็ก ๆ และวิธีเช็กผลในอีกหนึ่งสัปดาห์</span></li></ul>'
 (ROOT/'articles'/'index.html').write_text(page('บทความไพ่ทาโร่ สำหรับมือใหม่ - Ivory Rose Tarot', 'บทความสอนอ่านไพ่ทาโร่ด้วยตัวเอง ไพ่ตั้งไพ่กลับ ถามเรื่องความรัก อ่านไพ่เป็นคู่ และความต่างของไพ่เมเจอร์กับไมเนอร์', 'articles/', body), encoding='utf-8')
 urls.append(f'{SITE}/articles/')
 # ---- /christmas-wish/: one seasonal landing page, not 78 duplicate card pages
@@ -167,6 +169,7 @@ christmas_body = f'''<h1>เปิดไพ่ทาโร่ธีมคริ�
       <li>ใครหรืออะไรช่วยให้ปีนี้ผ่านไปได้?</li>
       <li>ก้าวเล็ก ๆ ที่ฉันทำได้จริงในสัปดาห์แรกของปีคืออะไร?</li>
     </ul>
+    <p>อยากเห็นคำอ่านตั้งแต่คำถามแรกถึงสิ่งที่จะลองทำ? อ่าน <a href="/{christmas_guide_path}">ตัวอย่างใช้ไพ่ 1 และ 3 ใบทบทวนปลายปี</a></p>
     <p>ถ้าอยากคุ้นกับความหมายของแต่ละใบก่อน เริ่มจาก <a href="/cards/">คู่มือความหมายไพ่ทั้ง 78 ใบ</a> ของ Ivory Rose Tarot ได้ค่ะ</p>
     <p class="kw">ใช้ไพ่เป็นเครื่องมือทบทวนตัวเอง ไม่ใช่คำทำนายที่แน่นอนหรือคำแนะนำด้านสุขภาพ กฎหมาย หรือการเงิน</p>
   </div>
@@ -182,5 +185,43 @@ christmas_ld = [{"@context": "https://schema.org", "@type": "WebPage",
          {'type': 'image/jpeg', 'width': 1200, 'height': 630, 'alt': 'Christmas Wish Tarot และภาพไพ่ The Star'}),
     encoding='utf-8')
 urls.append(f'{SITE}/{christmas_path}')
+# A practical companion to the seasonal landing, rather than another deck sales page.
+guide_desc = 'วิธีใช้ไพ่ทาโร่ทบทวนปลายปี พร้อมตัวอย่างอ่าน 1 ใบและ 3 ใบตามตำแหน่ง ตั้งคำถามที่ลองลงมือทำได้ และกลับมาเช็กผลในอีก 7 วัน'
+guide_body = f'''<a href="/articles/">← บทความไพ่ทาโร่ทั้งหมด</a>
+<h1>{christmas_guide_label}</h1>
+<p>ถ้าเป้าหมายปีใหม่ที่เขียนไว้ดูใหญ่เกินจะเริ่ม ลองใช้ไพ่เป็นตัวช่วยตั้งคำถาม ไม่ใช่ให้ไพ่ตัดสินแทน คู่มือนี้ชวนอ่านจากสถานการณ์สมมติเดียวกันสองแบบ แล้วเลือกก้าวที่ทำได้จริงในหนึ่งสัปดาห์</p>
+<h2>เริ่มด้วยเรื่องเดียวที่อยากเปลี่ยน</h2>
+<p>ตัวอย่างนี้คือ «ช่วงปลายปีงานแทรกจนแทบไม่ได้พัก ฉันจะลองจัดเวลาพักแบบไหนในสัปดาห์หน้า?» ถ้ายังนึกเรื่องไม่ออก ให้ย้อนดูหนึ่งวันที่รู้สึกฝืนมากที่สุด เขียนว่าเกิดอะไรขึ้นจริงหนึ่งประโยค แล้วถามว่ามีส่วนไหนที่ตนเองเลือกทำต่างไปได้</p>
+<h2>ไพ่ 1 ใบ: มองหาเรื่องที่ควรใส่ใจ</h2>
+<p>สมมติได้ <a href="/cards/the-star.html">The Star</a> ตั้งตรง อ่านเรื่องการค่อย ๆ ฟื้นกำลังใจ แล้วถามว่า «อะไรเคยช่วยให้ฉันพักได้จริง?» ในตัวอย่างนี้คำตอบคือการออกจากโต๊ะโดยไม่ถือโทรศัพท์ จึงลองพัก 15 นาทีหลังมื้อเที่ยงสองวัน แทนการตั้งเป้าว่าต้องพักทุกวันทันที</p>
+<h2>ไพ่ 3 ใบ: อ่านจากสถานการณ์ไปถึงก้าวถัดไป</h2>
+<p>เลือกแบบวางไพ่ «สถานการณ์และก้าวถัดไป» บนเว็บ ตัวอย่างนี้ใช้ไพ่ตั้งตรงเพื่อให้เห็นว่าความหมายเปลี่ยนตามตำแหน่งอย่างไร</p>
+<ol>
+  <li><strong>สถานการณ์ · <a href="/cards/the-hermit.html">The Hermit</a>:</strong> เมื่อทุกช่วงพักกลายเป็นเวลาตอบข้อความ อาจยังไม่มีช่วงเงียบพอให้สังเกตว่าตัวเองเหนื่อยตอนไหน</li>
+  <li><strong>สิ่งที่ต้องเข้าใจ · <a href="/cards/temperance.html">Temperance</a>:</strong> โจทย์ไม่ใช่เลือกระหว่างทำงานกับพัก แต่คือหาจังหวะที่อยู่ได้ทั้งคู่ ลองเริ่มกับสองวันที่ปฏิทินมีช่องว่างจริง</li>
+  <li><strong>ก้าวถัดไป · <a href="/cards/the-star.html">The Star</a>:</strong> เลือกการพักที่เคยได้ผล เช่น เดิน 15 นาทีหลังมื้อเที่ยงวันอังคารและพฤหัส แล้วใส่นัดไว้ก่อนงานอื่นเข้ามาแทน</li>
+</ol>
+<h2>กลับมาเช็กผลในอีก 7 วัน</h2>
+<p>จดไว้ว่า «ทำสองครั้งตามที่ตั้งใจไหม» และ «หลังพักกลับมาทำงานง่ายขึ้นหรือไม่» ถ้าทำไม่ได้เพราะเวลาไม่ลงตัว ลองย้ายช่วงพักหรือลดเหลือ 5 นาที ถ้าทำแล้วไม่ช่วย ก็ลองวิธีพักแบบอื่น ไม่จำเป็นต้องบังคับให้เหตุการณ์ตรงกับไพ่</p>
+<h2>คำถามที่มักเจอตอนลองเอง</h2>
+<h3>ควรเลือก 1 ใบหรือ 3 ใบ?</h3>
+<p>เลือก 1 ใบเมื่ออยากได้คำถามเดียวให้คิดต่อ เลือก 3 ใบเมื่อต้องการแยกสิ่งที่กำลังเกิด สิ่งที่ยังไม่เข้าใจ และก้าวที่ลองได้</p>
+<h3>ถ้าอ่านไม่เข้ากับสถานการณ์ ต้องจั่วซ้ำไหม?</h3>
+<p>ไม่ต้องค่ะ ลองเขียนแยกว่าสิ่งไหนมาจากข้อเท็จจริงและสิ่งไหนเป็นเพียงสมมติฐาน ถ้ายังไม่เห็นประโยชน์ก็หยุดได้ ไม่ต้องใช้ไพ่เพื่อยืนยันคำตอบที่อยากได้</p>
+<p><a class="cta" href="/?deck=christmas-wish">ลองเปิดไพ่ Christmas Wish ฟรี →</a></p>
+<p>ดู <a href="/christmas-wish/">ภาพและรายละเอียดสำรับ Christmas Wish Tarot</a> ก่อนเลือกไพ่ได้ค่ะ</p>
+<p class="kw">นี่คือตัวอย่างการทบทวนตัวเอง ไม่ใช่เหตุการณ์จริง คำทำนาย หรือคำแนะนำด้านสุขภาพ กฎหมาย หรือการเงิน</p>'''
+guide_url = f'{SITE}/{christmas_guide_path}'
+guide_ld = [{"@context": "https://schema.org", "@type": "Article",
+             "headline": christmas_guide_label, "description": guide_desc, "inLanguage": "th",
+             "mainEntityOfPage": guide_url, "image": SITE + christmas_share,
+             "publisher": {"@type": "Organization", "name": "Ivory Rose Tarot", "url": SITE + "/"}},
+            crumbs((('หน้าแรก', '/'), ('บทความ', '/articles/'),
+                    (christmas_guide_label, '/' + christmas_guide_path)))]
+(ROOT/christmas_guide_path).write_text(
+    page(christmas_guide_label + ' | Ivory Rose Tarot', guide_desc, christmas_guide_path, guide_body,
+         guide_ld, SITE + christmas_share),
+    encoding='utf-8')
+urls.append(guide_url)
 (ROOT/'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + ''.join(f'  <url><loc>{u}</loc></url>\n' for u in urls) + '</urlset>\n')
 print(f'wrote {len(cards)} card pages, hub, sitemap ({len(urls)} urls)')
