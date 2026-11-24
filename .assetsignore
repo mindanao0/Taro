@@ -28,3 +28,7 @@ scripts/*.test.mjs
 scripts/*.py
 scripts/launch-check.mjs
 scripts/test-all.mjs
+AGENTS.md
+assets/christmas-wish/drafts/
+assets/christmas-wish/README.md
+assets/christmas-wish/previews/fool-front-and-back-concept.webp

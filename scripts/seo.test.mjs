@@ -3,7 +3,7 @@ import {readFileSync, readdirSync, existsSync} from 'node:fs';
 import assert from 'node:assert/strict';
 const root = new URL('..', import.meta.url).pathname, SITE = 'https://ivoryrosetarot.online';
 const read = f => readFileSync(root + f, 'utf8');
-const DIRS = ['cards', 'topics', 'pairs', 'articles'];
+const DIRS = ['cards', 'topics', 'pairs', 'articles', 'christmas-wish'];
 const pages = DIRS.flatMap(d => readdirSync(root + d).map(f => d + '/' + f));
 const titles = new Set(), ids = JSON.parse(read('data/cards.public.json')).cards.map(c => c.id);
 for (const f of pages) {
@@ -12,9 +12,34 @@ for (const f of pages) {
   const t = h.match(/<title>([^<]+)/)?.[1]; assert.ok(t && !titles.has(t), `${f}: missing or duplicate title`); titles.add(t);
   assert.ok(/<meta name="description" content="[^"]{40,}/.test(h), `${f}: description`);
   assert.ok(!/noindex/.test(h), `${f}: noindex`);
-  for (const [, href] of h.matchAll(/href="(\/[^"#]*)"/g)) assert.ok(existsSync(root + href.slice(1) + (href.endsWith('/') ? 'index.html' : '')), `${f}: broken link ${href}`);
+  for (const [, href] of h.matchAll(/href="(\/[^"#]*)"/g)) {
+    const {pathname} = new URL(href, SITE);
+    assert.ok(existsSync(root + pathname.slice(1) + (pathname.endsWith('/') ? 'index.html' : '')), `${f}: broken link ${href}`);
+  }
   for (const m of h.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/g)) JSON.parse(m[1]);
 }
+const christmas = read('christmas-wish/index.html');
+assert.match(christmas, /href="\/\?deck=christmas-wish"/, 'Christmas Wish CTA must select the seasonal deck');
+const og = christmas.match(/<meta property="og:image" content="([^"]+)"/)?.[1];
+const ogUrl = new URL(og);
+assert.equal(ogUrl.origin, SITE);
+assert.equal(ogUrl.pathname, '/assets/seo/share/christmas-wish.jpg');
+const social = readFileSync(root + ogUrl.pathname.slice(1));
+assert.equal(social.readUInt16BE(0), 0xffd8, 'social image must be a JPEG');
+let dimensions;
+for (let i = 2; i + 9 < social.length && social[i] === 0xff;) {
+  const marker = social[i + 1];
+  if ([0xc0, 0xc1, 0xc2].includes(marker)) {
+    dimensions = [social.readUInt16BE(i + 7), social.readUInt16BE(i + 5)];
+    break;
+  }
+  i += 2 + social.readUInt16BE(i + 2);
+}
+assert.deepEqual(dimensions, [1200, 630], 'Christmas Wish social image dimensions');
+assert.match(christmas, /<meta property="og:image:width" content="1200">/);
+assert.match(christmas, /<meta property="og:image:height" content="630">/);
+assert.match(christmas, /<meta property="og:image:alt" content="[^"]*The Star">/);
+assert.ok(existsSync(root + 'assets/christmas-wish/previews/major-17-star.webp'), 'Christmas Wish hero must exist');
 const sitemap = [...read('sitemap.xml').matchAll(/<loc>([^<]+)/g)].map(m => m[1]).sort();
 assert.deepEqual(sitemap, [SITE + '/', ...pages.map(f => SITE + '/' + f.replace(/index\.html$/, ''))].sort(), 'sitemap.xml out of sync: run python3 scripts/build_seo.py');
 for (const id of ids) for (const f of [`assets/seo/thumb/${id}.webp`, `assets/seo/share/${id}.jpg`]) assert.ok(existsSync(root + f), `missing ${f}`);

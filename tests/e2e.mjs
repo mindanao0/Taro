@@ -86,6 +86,36 @@ for (const [label, ctxOpts] of [['phone', devices['iPhone 13']], ['desktop', {vi
     await noHScroll();
   });
 
+  await step(`${label}: Christmas Wish selection, catalog, complete reading and safe deck links`, async () => {
+    await page.goto(base); await page.waitForSelector('#spreads input');
+    assert.equal(await page.inputValue('#deck-choice'), 'gothic-ivory-rose');
+    await page.selectOption('#deck-choice', 'christmas-wish');
+    await page.reload(); await page.waitForSelector('#spreads input');
+    assert.equal(await page.inputValue('#deck-choice'), 'christmas-wish');
+    assert.match(await page.locator('.dc').first().evaluate(n => getComputedStyle(n).backgroundImage), /christmas-wish/);
+    await page.click('#n-cat'); await page.waitForSelector('#grid .tile');
+    assert.equal(await page.locator('#grid img[src*="christmas-wish/previews/"]').count(), 78);
+    await page.locator('#grid [data-id="cups-ace"]').click();
+    assert.match(await page.locator('#dlg .det img').getAttribute('src'), /cups-01.webp$/);
+    await page.keyboard.press('Escape'); await page.click('#n-read');
+    await page.locator('#spreads input[value=three]').check({force:true});
+    await page.click('#deckbtn');
+    for (const i of [16,31,54]) await page.locator('#fan .fc').nth(i).dispatchEvent('click');
+    await page.waitForSelector('#session:not([hidden])'); await page.click('#all');
+    await page.waitForFunction(() => {
+      const images = [...document.querySelectorAll('#chapters img')];
+      return images.length === 3 && images.every(i => i.src.includes('christmas-wish/') && i.complete && i.naturalWidth > 0);
+    }, null, {timeout: 8000});
+    assert.match(await page.locator('#recap').innerText(),/Christmas Wish/);
+    await noHScroll();
+    await page.goto(base + '?deck=gothic-ivory-rose'); await page.waitForSelector('#spreads input');
+    assert.equal(await page.inputValue('#deck-choice'), 'gothic-ivory-rose');
+    await page.goto(base + '?deck=christmas-wish'); await page.waitForSelector('#spreads input');
+    assert.equal(await page.inputValue('#deck-choice'), 'christmas-wish');
+    await page.selectOption('#deck-choice', 'gothic-ivory-rose'); await page.reload(); await page.waitForSelector('#spreads input');
+    assert.equal(await page.inputValue('#deck-choice'), 'gothic-ivory-rose');
+  });
+
   await step(`${label}: no console/network problems`, async () => assert.deepEqual(problems, []));
   await ctx.close();
 }
@@ -204,6 +234,19 @@ for (const [label, ctxOpts] of [['phone', devices['iPhone 13']], ['desktop', {vi
       await noHScroll();
     });
 
+    await step(`account ${label}: Christmas Wish cannot write Gothic history or favourites`, async () => {
+      await page.selectOption('#deck-choice','christmas-wish');
+      assert.equal(await page.locator('#daily').isVisible(), false);
+      await page.click('#n-cat'); await page.locator('#grid .tile').first().click();
+      assert.equal(await page.locator('#favbtn').count(),0);
+      await page.keyboard.press('Escape'); await page.click('#n-read');
+      await page.locator('#spreads input[value=single]').check({force:true}); await page.click('#deckbtn');
+      await page.locator('#fan .fc').nth(30).dispatchEvent('click'); await page.waitForSelector('#session:not([hidden])');
+      assert.match(await page.locator('#savebar').innerText(),/ยังไม่บันทึกลงประวัติ/);
+      assert.equal(await page.locator('#rsave').count(),0);
+      await page.click('#again'); await page.waitForSelector('#deck-choice');
+      await page.selectOption('#deck-choice','gothic-ivory-rose'); await page.waitForSelector('#dailybtn');
+    });
     await step(`account ${label}: save a reading with a note (consent asked first)`, async () => {
       await page.fill('#q', 'ความรัก'); await page.locator('#spreads input[value=single]').check({force: true});
       await page.click('#deckbtn'); await page.waitForSelector('#fan .fc', {state: 'attached'});

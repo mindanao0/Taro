@@ -1,4 +1,4 @@
-"""Static SEO pages: cards/<slug>.html for each card + cards/index.html + sitemap.xml. Run after editing data/cards.public.json."""
+"""Generate static card, topic, pair, article and deck landing pages, and sitemap.xml."""
 import json, re, html
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,10 +27,12 @@ h2.grp{margin:2.2em 0 1em;padding-bottom:.5em;border-bottom:1px solid #ffffff1c;
 a.tile{display:block;color:inherit;text-decoration:none}a.tile img{width:100%;aspect-ratio:560/1003;object-fit:contain;background:#14110f;border-radius:0;box-shadow:0 22px 44px -18px #000}a.tile:hover img{outline:1px solid #c8a25a;outline-offset:4px}
 a.tile strong{display:block;margin-top:14px;font:400 1.4rem/1.2 "Instrument Serif",Georgia,serif}a.tile span{display:block;color:#9a8f7e;font-size:.9rem;line-height:1.5}a.tile small{display:block;margin-top:6px;color:#9a8f7e;font-size:.85rem;line-height:1.6}.tiles.wide a.tile small{color:#ece4d3;font-size:.95rem}@media(max-width:720px){.tiles,.tiles.wide{grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 16px}a.tile strong{font-size:1.15rem}}</style>'''
 HEADER = '<header class="site"><a class="brand" href="/">Ivory Rose Tarot</a><nav><a href="/">เลือกไพ่</a><a href="/cards/">ไพ่ทั้งสำรับ</a><a href="/pairs/">ไพ่คู่</a><a href="/articles/">บทความ</a></nav></header>'
-def page(title, desc, path, body, ld=None, img=None):
+def page(title, desc, path, body, ld=None, img=None, og_details=None):
     ld = ld if isinstance(ld, list) or ld is None else [ld]
     url = f'{SITE}/{path}'
     if 'class="cl"' not in body and 'class="g"' not in body and 'class="tiles' not in body: body = f'<div class="txt">{body}</div>'  # long text: keep a readable line length
+    og_meta = '' if og_details is None else ''.join(
+        f'<meta property="og:image:{key}" content="{e(str(value))}">' for key, value in og_details.items())
     og = img or f'{SITE}/assets/share.jpg'
     ldj = ''.join(f'<script type="application/ld+json">{json.dumps(x,ensure_ascii=False)}</script>\n' for x in (ld or []))
     return f'''<!doctype html>
@@ -41,7 +43,7 @@ def page(title, desc, path, body, ld=None, img=None):
 <link rel="icon" type="image/png" href="/assets/favicon.png">
 <meta property="og:type" content="article"><meta property="og:locale" content="th_TH"><meta property="og:site_name" content="Ivory Rose Tarot">
 <meta property="og:title" content="{e(title)}"><meta property="og:description" content="{e(desc)}"><meta property="og:url" content="{url}"><meta property="og:image" content="{og}">
-<meta name="twitter:card" content="summary_large_image">
+{og_meta}<meta name="twitter:card" content="summary_large_image">
 {ldj}{CSS}
 </head><body>{HEADER}<main>
 {body}
@@ -141,5 +143,44 @@ for art in articles:
 body = '<a href="/">← เปิดไพ่</a><h1>บทความไพ่ทาโร่</h1><ul>' + ''.join(f"<li><a href=\"/articles/{a['slug']}.html\">{e(a['title'])}</a><br><span class=\"kw\">{e(a['desc'])}</span></li>" for a in articles) + '</ul>'
 (ROOT/'articles'/'index.html').write_text(page('บทความไพ่ทาโร่ สำหรับมือใหม่ - Ivory Rose Tarot', 'บทความสอนอ่านไพ่ทาโร่ด้วยตัวเอง ไพ่ตั้งไพ่กลับ ถามเรื่องความรัก อ่านไพ่เป็นคู่ และความต่างของไพ่เมเจอร์กับไมเนอร์', 'articles/', body), encoding='utf-8')
 urls.append(f'{SITE}/articles/')
+# ---- /christmas-wish/: one seasonal landing page, not 78 duplicate card pages
+christmas_path = 'christmas-wish/'
+christmas_title = 'Christmas Wish Tarot | เปิดไพ่ทาโร่ธีมคริสต์มาสฟรี'
+christmas_desc = 'ลองเปิดไพ่ Christmas Wish Tarot สำรับ 78 ใบในภาพวาดสีน้ำธีมคริสต์มาส เลือกไพ่ 1 หรือ 3 ใบฟรี เพื่อทบทวนปีที่ผ่านมาและสิ่งที่อยากพาไปสู่ปีใหม่'
+christmas_share = '/assets/seo/share/christmas-wish.jpg'
+christmas_img = '/assets/christmas-wish/previews/major-17-star.webp'
+christmas_body = f'''<h1>เปิดไพ่ทาโร่ธีมคริสต์มาส: Christmas Wish Tarot</h1>
+<div class="cl">
+  <figure class="cl-img" style="margin:0"><img src="{christmas_img}" alt="ไพ่ The Star ในสำรับ Christmas Wish Tarot" width="900" height="1350" fetchpriority="high"><figcaption class="kw">The Star · Christmas Wish Tarot</figcaption></figure>
+  <div class="txt">
+    <p>ถ้าปลายปีทำให้คุณอยากหยุดคิดสักครู่ ลองใช้ไพ่หนึ่งใบเป็นจุดเริ่มต้น Christmas Wish Tarot เป็นสำรับ 78 ใบตามโครงสร้างทาโร่ดั้งเดิม ในภาพวาดสีน้ำธีมคริสต์มาส โครงคำอ่านใช้ร่วมกับสำรับ Gothic Ivory Rose แต่ภาพหน้าและหลังไพ่เป็นของชุด Christmas Wish</p>
+    <a class="cta" href="/?deck=christmas-wish">เปิดไพ่ Christmas Wish ฟรี →</a>
+    <h2>เริ่มอ่านไพ่คริสต์มาสยังไง?</h2>
+    <ol>
+      <li>นึกถึงคำถามที่อยากทบทวน เช่น ปีนี้มีอะไรที่ฉันอยากขอบคุณตัวเอง?</li>
+      <li>เลือก 1 ใบเพื่อหาประเด็นชวนคิด หรือ 3 ใบเพื่อลองมองสถานการณ์ สิ่งที่ต้องเข้าใจ และก้าวถัดไป</li>
+      <li>อ่านภาพกับความหมายของไพ่ แล้วเลือกหนึ่งเรื่องที่อยากลองทำหลังอ่านจบ</li>
+    </ol>
+    <h2>ลองถามตัวเองก่อนขึ้นปีใหม่</h2>
+    <ul>
+      <li>มีเรื่องไหนที่ฉันพร้อมวางลงแล้ว?</li>
+      <li>ใครหรืออะไรช่วยให้ปีนี้ผ่านไปได้?</li>
+      <li>ก้าวเล็ก ๆ ที่ฉันทำได้จริงในสัปดาห์แรกของปีคืออะไร?</li>
+    </ul>
+    <p>ถ้าอยากคุ้นกับความหมายของแต่ละใบก่อน เริ่มจาก <a href="/cards/">คู่มือความหมายไพ่ทั้ง 78 ใบ</a> ของ Ivory Rose Tarot ได้ค่ะ</p>
+    <p class="kw">ใช้ไพ่เป็นเครื่องมือทบทวนตัวเอง ไม่ใช่คำทำนายที่แน่นอนหรือคำแนะนำด้านสุขภาพ กฎหมาย หรือการเงิน</p>
+  </div>
+</div>'''
+christmas_ld = [{"@context": "https://schema.org", "@type": "WebPage",
+                 "url": f"{SITE}/{christmas_path}", "name": christmas_title,
+                 "description": christmas_desc, "inLanguage": "th",
+                 "primaryImageOfPage": {"@type": "ImageObject", "url": SITE + christmas_img}},
+                crumbs((('หน้าแรก', '/'), ('Christmas Wish Tarot', '/' + christmas_path)))]
+(ROOT/christmas_path).mkdir(exist_ok=True)
+(ROOT/christmas_path/'index.html').write_text(
+    page(christmas_title, christmas_desc, christmas_path, christmas_body, christmas_ld, SITE + christmas_share,
+         {'type': 'image/jpeg', 'width': 1200, 'height': 630, 'alt': 'Christmas Wish Tarot และภาพไพ่ The Star'}),
+    encoding='utf-8')
+urls.append(f'{SITE}/{christmas_path}')
 (ROOT/'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + ''.join(f'  <url><loc>{u}</loc></url>\n' for u in urls) + '</urlset>\n')
 print(f'wrote {len(cards)} card pages, hub, sitemap ({len(urls)} urls)')

@@ -100,7 +100,7 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 .switch input{accent-color:var(--gold);width:18px;height:18px}
 .deck-btn{display:flex;flex-direction:column;align-items:center;gap:22px;margin-top:10px}
 .deck{position:relative;display:block;width:min(560px,88vw);height:196px}   /* 196 = what dealDeck() computes for the default 3-card spread (60*1.6*1.79+24); JS overrides it, so starting here avoids a 64px jump on load */
-.dc{position:absolute;left:0;top:0;width:var(--w);aspect-ratio:937/1678;background:var(--back) center/100% 100%;box-shadow:0 12px 20px -10px #000;will-change:transform;backface-visibility:hidden;
+.dc{position:absolute;left:0;top:0;width:var(--w);aspect-ratio:var(--card-aspect,937/1678);background:var(--back) center/100% 100%;box-shadow:0 12px 20px -10px #000;will-change:transform;backface-visibility:hidden;
   transform:translate(var(--x),calc(var(--y) + var(--l,0px))) rotate(var(--r));transition:transform .65s cubic-bezier(.2,.9,.2,1) var(--d,0ms),opacity .3s}
 .dc.gather{transition:transform .3s ease-in,opacity .3s}
 .deck-btn:hover .dc:not(.stack){--l:-7px}
@@ -111,6 +111,9 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 .dc.stack:nth-child(3n+1){--o:-1}.dc.stack:nth-child(3n){--o:1}
 .deck-btn span.t{color:var(--gold);font-weight:500}
 
+.deck-choice{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px 12px;margin:0;padding:0;border:0}
+.deck-choice label{color:var(--dim)} .deck-choice select{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--field);border-radius:8px;padding:5px 10px;min-height:44px;max-width:100%}
+.deck-choice .note{flex-basis:100%}
 /* session */
 .recap{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 28px;padding:32px 0 20px;border-bottom:1px solid var(--line)}
 .rq{margin:0;font:400 clamp(1.5rem,3vw,2.2rem)/1.3 var(--display)}
@@ -121,7 +124,7 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 .slot.deal{animation:deal .7s cubic-bezier(.2,.7,.2,1) backwards;animation-delay:var(--d)}
 @keyframes deal{from{transform:translate(var(--fx),var(--fy));opacity:0}to{transform:none;opacity:1}}
 .turn{perspective:900px}
-.card{display:block;position:relative;width:100%;aspect-ratio:937/1678;transform-style:preserve-3d;transition:transform .6s}
+.card{display:block;position:relative;width:100%;aspect-ratio:var(--card-aspect,937/1678);transform-style:preserve-3d;transition:transform .6s}
 .card[aria-pressed=true]{transform:rotateY(180deg)}
 .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden;box-shadow:0 22px 44px -16px #000}
 .back{background:var(--back) center/100% 100%}
@@ -148,7 +151,7 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 .pstep{margin:0;font:400 clamp(1.5rem,3vw,2.2rem)/1.3 var(--display)}
 .slots{list-style:none;display:flex;flex-wrap:wrap;justify-content:center;gap:10px 16px;margin:26px 0 0;padding:0}
 .slots li{display:grid;justify-items:center;gap:6px;width:92px;text-align:center;font-size:.78rem;line-height:1.3;color:var(--dim)}
-.sl{display:block;width:52px;aspect-ratio:937/1678;border:1px dashed #ffffff40}
+.sl{display:block;width:52px;aspect-ratio:var(--card-aspect,937/1678);border:1px dashed #ffffff40}
 .slots li.on .sl{border:0;background:var(--back) center/100% 100%;box-shadow:0 8px 18px -8px #000}
 .slots li.on .sl{cursor:pointer;transition:transform .18s} .slots li.on .sl:hover,.slots li.on .sl:focus-visible{transform:translateY(-4px)}
 .pickhead{position:relative}
@@ -161,7 +164,7 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 .fanwrap.drag{cursor:grabbing}
 .fan{position:relative;margin:0 auto}
 /* The button keeps a fixed hit area; only its face (::before) lifts, so the card never slips away from the pointer. */
-.fc{position:absolute;left:0;top:0;width:var(--cw);aspect-ratio:937/1678;background:none;
+.fc{position:absolute;left:0;top:0;width:var(--cw);aspect-ratio:var(--card-aspect,937/1678);background:none;
   transform:translate(var(--x),var(--y)) rotate(var(--a));z-index:var(--z);transition:opacity .3s}
 .fc::before{content:'';position:absolute;inset:0;background:var(--back) center/100% 100%;box-shadow:0 10px 24px -8px #000;transform:translateY(var(--l,0px));transition:transform .15s}
 .fc:hover,.fc:focus-visible{--l:-26px;z-index:400}
@@ -217,7 +220,7 @@ h2{font:400 2rem/1.2 var(--display);margin:0 0 16px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:40px 26px}
 .tile{text-align:left;display:block;width:100%;position:relative}
 .star{position:absolute;top:8px;right:10px;color:var(--gold);font-style:normal;font-size:1.3rem;text-shadow:0 1px 6px #000}
-.tile img{display:block;width:100%;aspect-ratio:937/1678;object-fit:contain;background:#14110f;box-shadow:0 22px 44px -18px #000}
+.tile img{display:block;width:100%;aspect-ratio:var(--card-aspect,937/1678);object-fit:contain;background:#14110f;box-shadow:0 22px 44px -18px #000}
 .tile:hover img{outline:1px solid var(--gold);outline-offset:4px}
 .tile span{display:block;margin-top:14px;font:400 1.4rem/1.2 var(--display)}
 .tile b{display:block;font-weight:400;color:var(--dim);font-size:.9rem;line-height:1.5}
@@ -271,6 +274,11 @@ dialog::backdrop{background:#000c}
   <form class="ask" id="ask">
     <input class="q" id="q" type="text" maxlength="300" enterkeyhint="go" aria-label="คำถามของฉัน" placeholder="คุณอยากถามอะไรกับไพ่" autocomplete="off">
     <fieldset class="picks" id="spreads"><legend class="sr">รูปแบบการวาง</legend></fieldset>
+    <div class="deck-choice">
+      <label for="deck-choice">สำรับไพ่</label>
+      <select id="deck-choice" aria-describedby="deck-help"><option value="gothic-ivory-rose">Gothic Ivory Rose · กอทิก</option><option value="christmas-wish">Christmas Wish · คริสต์มาส</option></select>
+      <p id="deck-help" class="note">เลือกภาพที่ชอบ ทั้งสองสำรับใช้ความหมายไพ่ชุดเดียวกัน · <a class="link" href="./christmas-wish/">รู้จัก Christmas Wish</a></p>
+    </div>
     <label class="switch"><input type="checkbox" id="rev"> ให้มีไพ่กลับหัว</label>
     <button class="deck-btn" type="submit" id="deckbtn">
       <span class="deck" id="deckstage" aria-hidden="true"><i class="dc stack"></i><i class="dc stack"></i><i class="dc stack"></i><i class="dc stack"></i><i class="dc stack"></i><i class="dc stack"></i><i class="dc stack"></i><i class="dc stack"></i><i class="dc stack"></i><i class="dc stack"></i></span>
@@ -309,7 +317,7 @@ dialog::backdrop{background:#000c}
 </section>
 
 <section id="cat" hidden>
-  <h2>ไพ่ทั้งสำรับ</h2>
+  <h2>ไพ่ทั้งสำรับ · <span id="catalog-deck">Gothic Ivory Rose</span></h2>
   <div class="finder">
     <input id="s" type="search" placeholder="ค้นหาชื่อไทย อังกฤษ หรือคำสำคัญ" aria-label="ค้นหาไพ่">
     <div class="cats" id="cats"></div>
@@ -322,6 +330,7 @@ dialog::backdrop{background:#000c}
 <dialog id="dlg"><button class="x" id="dx" aria-label="ปิด">✕</button><div id="dbody"></div></dialog>
 
 <script type="module">
+import {DEFAULT_DECK, DECKS, initialDeck, artFor} from './scripts/deck-art.mjs';
 import {meaningFor, randomBelow, shuffled} from './scripts/reading-core.mjs';
 import {frameFor, bridgeFor, pairReadings, useFor, TOPICS, POSITIONS} from './scripts/reading-guide.mjs';
 import {topicFor} from './scripts/topic-model.mjs';
@@ -346,13 +355,23 @@ const trackClick = (type, o) => tracker.track(type, o);   // click-sequence log 
 addEventListener('pagehide', () => tracker.flush());
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') tracker.flush(); });
 const CATS = [['', 'ทั้งหมด'], ['major', 'ไพ่ใหญ่'], ['wands', 'ไม้เท้า'], ['cups', 'ถ้วย'], ['swords', 'ดาบ'], ['pentacles', 'เหรียญ']];
-let cards, byId, spreads, PM, TM, reading, shown = new Set(), cat = '';
+let canonicalCards, cards, byId, spreads, PM, TM, reading, shown = new Set(), cat = '';
 
+let deckId = initialDeck(new URLSearchParams(location.search).get('deck'), store.get('taro.deck'));
+function applyDeck() {
+  const deck = DECKS[deckId];
+  $('deck-choice').value = deckId;
+  $('catalog-deck').textContent = deck.name;
+  document.documentElement.style.setProperty('--back', 'url("' + deck.back + '")');
+  document.documentElement.style.setProperty('--card-aspect', String(1 / deck.heightPerWidth));
+  cards = canonicalCards.map(c => artFor(deckId, c));
+  byId = Object.fromEntries(cards.map(c => [c.id, c]));
+}
 try {
   const [c, s, pm, tm] = await Promise.all(['data/cards.public.json', 'data/spreads.json', 'data/position_meanings_major.json', 'data/topic_model.json']
     .map(u => fetch(u).then(r => r.json()).catch(e => { if (!/position_meanings|topic_model/.test(u)) throw e; })));
   PM = pm; TM = tm;   // both optional: without the topic model the keyword table decides
-  cards = c.cards; spreads = s.spreads; byId = Object.fromEntries(cards.map(x => [x.id, x]));
+  canonicalCards = c.cards; spreads = s.spreads; applyDeck();
   $('rev').checked = s.default_reversed;
 } catch (e) {
   $('err').hidden = false;
@@ -392,7 +411,7 @@ document.addEventListener('click', e => {
 
 /* ---------- layout shared by glyphs and the table ---------- */
 function layout(sp, w) {
-  const h = w * 1.79, ux = w * 1.15, P = sp.positions;
+  const h = w * DECKS[deckId].heightPerWidth, ux = w * 1.15, P = sp.positions;
   const lbl = P.every(p => p.y === 0) ? w * 0.5 : 0;   // labels fit only in single-row spreads
   const uy = (h * 1.05) / 1.5;
   const x0 = Math.min(...P.map(p => p.x)), y0 = Math.min(...P.map(p => p.y));
@@ -429,7 +448,7 @@ let dealT = 0;
 function dealDeck(animate) {
   const W = stage.clientWidth; if (!W) return;
   const P = chosen().positions, L = layout(chosen(), 60), h0 = L.H - L.lbl;
-  const s = Math.min(W / L.W, Math.max(220, Math.min(innerHeight * 0.45, 480)) / h0, 1.6), cw = 60 * s, ch = cw * 1.79;
+  const s = Math.min(W / L.W, Math.max(220, Math.min(innerHeight * 0.45, 480)) / h0, 1.6), cw = 60 * s, ch = cw * DECKS[deckId].heightPerWidth;
   const H = Math.max(h0 * s, ch) + 24;
   stage.style.height = H + 'px';
   const ox = (W - L.W * s) / 2, oy = (H - h0 * s) / 2, sx = (W - cw) / 2, sy = (H - ch) / 2;
@@ -592,7 +611,7 @@ function begin(rd) {
   reading = rd; reading.topic = topicFor(TM, rd.question); shown = new Set(); saved = false; track('reading_start'); track('topic_' + reading.topic);
   $('ask').hidden = true; $('pick').hidden = true; $('session').hidden = false;
   $('recap').innerHTML = `<p class="rq">${esc(rd.question) || 'ไม่ได้ตั้งคำถาม'}</p>
-    <p class="rm"><span>${esc(spreadOf(rd.spread_id).name_th)}</span><button class="link" id="again" type="button">เลือกใหม่</button></p>
+    <p class="rm"><span>${esc(DECKS[rd.deck_id].name)} · ${esc(spreadOf(rd.spread_id).name_th)}</span><button class="link" id="again" type="button">เลือกใหม่</button></p>
     ${TOPICS[reading.topic] ? `<p class="note">คำถามนี้ดูเกี่ยวกับ${esc(TOPICS[reading.topic].th)} จึงวางมุมนั้นไว้ก่อนในแต่ละใบ</p>` : ''}`;
   renderTable(true); renderChapters(); renderSaveBar();
   scrollTo(0, 0);
@@ -625,11 +644,16 @@ function renderPickHead() {
 }
 // The deck is a wheel: drag or swipe sideways to spin it, tap a card to pick it.
 const wheel = {th: 0, v: 0, raf: 0, last: 0, moved: false};
+// Stop momentum when Tab reaches a card, so it cannot move out of view before Enter.
+$('fan').addEventListener('focusin', e => {
+  if (!e.target.classList.contains('fc')) return;
+  cancelAnimationFrame(wheel.raf); wheel.v = 0;
+});
 function startPick() {
   enter();
   const sp = chosen();
   trackClick('start_pick', {view: 'pick', target: 'spread:' + sp.id, data: {rev: $('rev').checked}});
-  pk = {order: shuffled(cards.map(c => c.id)), picks: Array(sp.positions.length).fill(null), sp, question: $('q').value, reversed: $('rev').checked};
+  pk = {deckId, order: shuffled(cards.map(c => c.id)), picks: Array(sp.positions.length).fill(null), sp, question: $('q').value, reversed: $('rev').checked};
   $('ask').hidden = true; $('pick').hidden = false;
   $('fan').innerHTML = cards.map((_, k) => `<button type="button" class="fc" data-k="${k}" aria-label="ไพ่คว่ำใบที่ ${k + 1} จาก ${cards.length}"></button>`).join('');
   renderPickHead();
@@ -641,7 +665,7 @@ function startPick() {
 function fitFan() {
   const W = $('fanwrap').clientWidth, n = cards.length, step = 2 * Math.PI / n;
   if (!W) return;   // hidden (e.g. user is in the catalog); refit when shown again
-  const cw = Math.max(64, Math.min(132, W / 13)), ch = cw * 1.79, R = cw * 0.5 / step;
+  const cw = Math.max(64, Math.min(132, W / 13)), ch = cw * DECKS[deckId].heightPerWidth, R = cw * 0.5 / step;
   const max = Math.min(Math.asin(Math.min(1, (W / 2 - cw / 2) / R)), 1.08);
   Object.assign(wheel, {W, step, cw, R, max});
   $('fan').style.cssText = `width:${W}px;height:${R * (1 - Math.cos(max)) + ch + 44}px;--cw:${cw}px`;
@@ -719,7 +743,7 @@ try {
   localStorage.setItem('irt-last', today);
 } catch {}
 function shareText() {
-  return 'Ivory Rose Tarot\n' + spreadOf(reading.spread_id).name_th + '\n' + reading.cards.map((r,i) => `${posOf(r).label_th}: ${nameOf(byId[r.card_id])} (${oriTh(r.orientation)})`).join('\n') + '\nhttps://ivoryrosetarot.online/';
+  return 'Ivory Rose Tarot · ' + DECKS[reading.deck_id].name + '\n' + spreadOf(reading.spread_id).name_th + '\n' + reading.cards.map((r,i) => `${posOf(r).label_th}: ${nameOf(byId[r.card_id])} (${oriTh(r.orientation)})`).join('\n') + '\nhttps://ivoryrosetarot.online/' + (reading.deck_id === DEFAULT_DECK ? '' : '?deck=' + reading.deck_id);
 }
 $('share-reading').onclick = async () => {
   const text = shareText();
@@ -728,7 +752,7 @@ $('share-reading').onclick = async () => {
 };
 $('save-reading').onclick = () => {
   const blob = new Blob([shareText()], {type:'text/plain;charset=utf-8'}), url = URL.createObjectURL(blob), a = document.createElement('a');
-  a.href = url; a.download = 'ivory-rose-reading.txt'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); track('download');
+  a.href = url; a.download = reading.deck_id === DEFAULT_DECK ? 'ivory-rose-reading.txt' : 'christmas-wish-reading.txt'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); track('download');
 };
 for (const [id,event] of [['interest-deep','interest_deep'],['interest-club','interest_club']]) $(id).onclick = () => { track(event); $('offer-status').textContent = EVENT_URL ? 'ขอบคุณที่สนใจ ยังไม่มีการสมัครหรือรับชำระเงิน' : 'ขอบคุณที่สนใจ ขณะนี้ยังไม่เปิดรับสมัคร'; };
 function finishPick() {
@@ -737,7 +761,7 @@ function finishPick() {
   picks.forEach((k, i) => trackClick('pick_kept', {view: 'pick', target: 'fan:' + k, outcome: 'kept', data: {pos: i}}));
   trackClick('auto_open', {view: 'pick', data: {n: picks.length}});
   logQuestion(question, sp.id);
-  begin({schema_version: '1.0.0', deck_id: 'gothic-ivory-rose', spread_id: sp.id, question: String(question),
+  begin({schema_version: '1.0.0', deck_id: pk.deckId, spread_id: sp.id, question: String(question),
     created_at: new Date().toISOString(), reversed_enabled: Boolean(reversed),
     cards: picks.map((k, i) => ({card_id: order[k], position_id: sp.positions[i].id,
       orientation: reversed && randomBelow(2) === 1 ? 'reversed' : 'upright'}))});
@@ -775,8 +799,8 @@ function detail(c) {
     <p class="en">${esc(c.name_en)}</p><h2>${esc(c.name_th)}</h2>
     <p class="kw">${esc(c.keywords_th.join(', '))}</p>
     <dl>${rows.map(([k, label, v]) => `<div class="k-${k}"><dt>${label}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
-    <p class="qq">${esc(c.reflection_th)}</p>${account ? `<button type="button" class="fav" id="favbtn" aria-pressed="${favs.has(c.id)}">${favs.has(c.id) ? '★ ไพ่โปรด' : '☆ เพิ่มเป็นไพ่โปรด'}</button>` : ''}</div></div>`;
-  if (account) $('favbtn').onclick = async () => {
+    <p class="qq">${esc(c.reflection_th)}</p>${account && memberArt() ? `<button type="button" class="fav" id="favbtn" aria-pressed="${favs.has(c.id)}">${favs.has(c.id) ? '★ ไพ่โปรด' : '☆ เพิ่มเป็นไพ่โปรด'}</button>` : ''}</div></div>`;
+  if (account && memberArt()) $('favbtn').onclick = async () => {
     const on = !favs.has(c.id), r = on ? await api.put('/me/favorites/' + c.id) : await api.del('/me/favorites/' + c.id);
     if (!r.ok) return;
     on ? favs.add(c.id) : favs.delete(c.id);
@@ -791,6 +815,8 @@ $('dlg').onclick = e => { if (e.target === $('dlg')) { trackClick('dialog_close'
 
 /* ---------- optional account features (only when API_URL is set in scripts/config.mjs) ---------- */
 const api = API_URL ? createApi(API_URL) : null;
+let dailyId = null;
+const memberArt = () => deckId === DEFAULT_DECK;
 let account = null, saveConsent = false, saved = false;
 const favs = new Set();
 async function loadAccount() {
@@ -811,6 +837,7 @@ function renderSaveBar() {
   const bar = $('savebar');
   bar.hidden = !api || !reading;
   if (bar.hidden) return;
+  if (reading.deck_id !== DEFAULT_DECK) { bar.textContent = 'ผลอ่าน Christmas Wish ดาวน์โหลดเป็นข้อความได้เมื่อเปิดครบทุกใบ ยังไม่บันทึกลงประวัติบัญชี'; return; }
   if (saved) { bar.innerHTML = '<p class="note" style="margin:0">บันทึกลงประวัติแล้ว ดูได้ที่ <a class="link" href="account.html">หน้าบัญชี</a></p>'; return; }
   if (!account) { bar.innerHTML = '<p class="note" style="margin:0"><a class="link" href="account.html">เข้าสู่ระบบ</a> เพื่อบันทึกการอ่านนี้ลงประวัติและเขียนโน้ตส่วนตัว</p>'; return; }
   bar.innerHTML = `<label for="rnote" class="note">โน้ตส่วนตัว (ไม่บังคับ)</label><textarea id="rnote" maxlength="2000"></textarea>
@@ -818,7 +845,7 @@ function renderSaveBar() {
     <button type="button" class="go" id="rsave">${saveConsent ? 'บันทึกลงประวัติ' : 'ยินยอมและบันทึก'}</button> <span class="note" id="rsay" role="status"></span>`;
 }
 $('savebar').onclick = async e => {
-  if (e.target.id !== 'rsave' || !reading) return;
+  if (e.target.id !== 'rsave' || reading?.deck_id !== DEFAULT_DECK) return;
   const btn = e.target, say = t => { $('rsay').textContent = t; };
   btn.disabled = true;
   if (!saveConsent) {
@@ -833,22 +860,26 @@ $('savebar').onclick = async e => {
 async function showDaily() {
   if (!api) return;
   const r = await api.get('/content/daily');
-  const c = r.ok && byId[r.data.card_id];
-  if (!c) return;
+  dailyId = r.ok ? r.data.card_id : null;
+  renderDaily();
+}
+function renderDaily() {
+  const c = dailyId && memberArt() && byId[dailyId];
+  if (!c) { $('daily').hidden = true; return; }
   $('daily').hidden = false;
   $('daily').innerHTML = `<button type="button" class="dailybtn" id="dailybtn"><img src="${c.image_web}" alt="${esc(c.alt_th)}" width="52"><span><small>ไพ่ประจำวันนี้</small><b>${esc(c.name_th)}</b><small>${esc(c.name_en)}</small></span></button>`;
   $('dailybtn').onclick = () => detail(c);
 }
 
 function renderCat() {
+  if (cat === 'fav' && (!account || !memberArt())) cat = '';
   const q = $('s').value.trim().toLowerCase();
   const list = cards.filter(c => (!cat || (cat === 'fav' ? favs.has(c.id) : c.arcana === cat || c.suit === cat)) &&
     (!q || [c.name_th, c.name_en, ...c.keywords_th].some(t => t.toLowerCase().includes(q))));
-  const chips = account ? [...CATS, ['fav', '★ ไพ่โปรด']] : CATS;   // the favourites filter exists only for signed-in visitors
-  if (cat === 'fav' && !account) cat = '';
+  const chips = account && memberArt() ? [...CATS, ['fav', '★ ไพ่โปรด']] : CATS;   // the favourites filter exists only for signed-in visitors
   $('cats').innerHTML = chips.map(([k, n]) => `<button data-k="${k}" aria-pressed="${k === cat}">${n}</button>`).join('');
   $('grid').innerHTML = list.map(c => `<button class="tile" data-id="${c.id}">
-    <img loading="lazy" src="${c.image_web}" alt="${esc(c.alt_th)}">${account && favs.has(c.id) ? '<i class="star" aria-hidden="true">★</i><span class="sr">ไพ่โปรด</span>' : ''}<span>${esc(c.name_en)}</span><b>${esc(c.name_th)}</b></button>`).join('')
+    <img loading="lazy" src="${c.image_web}" alt="${esc(c.alt_th)}">${account && memberArt() && favs.has(c.id) ? '<i class="star" aria-hidden="true">★</i><span class="sr">ไพ่โปรด</span>' : ''}<span>${esc(c.name_en)}</span><b>${esc(c.name_th)}</b></button>`).join('')
     || `<p class="empty">${cat === 'fav' ? 'ยังไม่มีไพ่โปรด เปิดรายละเอียดไพ่แล้วกดดาวเพื่อเพิ่ม' : 'ไม่พบไพ่ที่ตรงกับคำค้น ลองใช้ชื่อสั้นลงหรือเลือกหมวดทั้งหมด'}</p>`;
 }
 $('cats').onclick = e => { if (e.target.dataset.k != null) { cat = e.target.dataset.k; trackClick('catalog_filter', {view: 'cat', target: 'cat:' + (cat || 'all'), point: pointOf(e, e.target)}); renderCat(); } };
@@ -860,6 +891,15 @@ $('s').oninput = () => {   // log only the length and result count, never the wo
 };
 renderCat();
 loadAccount(); showDaily();
+$('deck-choice').addEventListener('change', e => {
+  deckId = initialDeck(e.target.value, null);
+  store.set('taro.deck', deckId);
+  // Keep a shared seasonal URL honest on refresh without creating an extra Back step.
+  const url = new URL(location.href);
+  if (url.searchParams.has('deck')) { url.searchParams.set('deck', deckId); history.replaceState(history.state, '', url); }
+  applyDeck();
+  renderCat(); renderDaily(); dealDeck(true);
+});
 </script>
 <script>
 /* ทุกโดเมนที่ไม่ใช่ production (uat.*, *.pages.dev, localhost): ไม่ให้ search engine เก็บ และไม่นับสถิติปนกับ production */

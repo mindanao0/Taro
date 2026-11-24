@@ -1,4 +1,5 @@
 /** No dependencies. Import into browser or Node. Does not persist or transmit data. */
+import {DEFAULT_DECK, isDeck} from './deck-art.mjs';
 export function randomBelow(limit, cryptoProvider = globalThis.crypto) {
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 0x100000000) throw new RangeError('Invalid limit');
   if (!cryptoProvider?.getRandomValues) throw new Error('Web Crypto is required');
@@ -16,7 +17,8 @@ export function shuffled(items, randomInt = randomBelow) {
   }
   return out;
 }
-export function createReading(cards, spread, {question = '', reversed = false, randomInt = randomBelow, now = () => new Date().toISOString()} = {}) {
+export function createReading(cards, spread, {question = '', reversed = false, deckId = DEFAULT_DECK, randomInt = randomBelow, now = () => new Date().toISOString()} = {}) {
+  if (!isDeck(deckId)) throw new RangeError('Unknown deck');
   if (!Array.isArray(cards) || !Array.isArray(spread?.positions)) throw new TypeError('Invalid deck or spread');
   const ids = cards.map(c => c.id);
   if (ids.some(id => typeof id !== 'string' || !id) || new Set(ids).size !== ids.length) throw new Error('Card IDs must be unique');
@@ -25,7 +27,7 @@ export function createReading(cards, spread, {question = '', reversed = false, r
   if (new Set(posIds).size !== posIds.length) throw new Error('Position IDs must be unique');
   const dealt = shuffled(ids, randomInt).slice(0, spread.positions.length);
   return {
-    schema_version: '1.0.0', deck_id: 'gothic-ivory-rose', spread_id: spread.id,
+    schema_version: '1.0.0', deck_id: deckId, spread_id: spread.id,
     question: String(question), created_at: now(), reversed_enabled: Boolean(reversed),
     cards: dealt.map((card_id, i) => ({
       card_id, position_id: spread.positions[i].id,
